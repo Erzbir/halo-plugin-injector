@@ -1,0 +1,42 @@
+apiVersion: v1alpha1
+kind: Setting
+metadata:
+  name: plugin-injector-settings
+spec:
+  forms:
+    - group: basic
+      label: 基本设置
+      formSchema:
+        - $formkit: repeater
+          name: rules
+          id: rules
+          key: rules
+          label: 注入规则
+          value: []
+          children:
+            - $formkit: code
+              name: code
+              label: 代码
+              value: ""
+              validation: required
+            - $formkit: repeater
+              name: pathPatterns
+              label: 路径匹配
+              value: []
+              validation: required
+              help: 可以添加多个页面路径. 每个路径的符合 Ant-style 的表达式, 如 /archives/**, 被匹配的页面将会被注入代码
+              children:
+                - $formkit: text
+                  name: pathPattern
+                  label: 路径模式
+                  value: ""
+                  validation: required
+            - $formkit: select
+              name: location
+              label: 注入位置
+              value: "footer"
+              options:
+                - label: "footer"
+                  value: "footer"
+                - label: "head"
+                  value: "head"

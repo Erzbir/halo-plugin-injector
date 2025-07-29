@@ -1,0 +1,24 @@
+# Refer https://docs.halo.run/developer-guide/plugin/basics/manifest
+
+apiVersion: plugin.halo.run/v1alpha1
+kind: Plugin
+metadata:
+  name: injector
+spec:
+  enabled: true
+  version: 0.0.1
+  settingName: plugin-injector-settings
+  configMapName: plugin-injector-configMap
+  requires: ">=2.21.0"
+  author:
+    name: Erzbir
+    website: https://github.com/Erzbir
+  logo: logo.png
+  homepage: https://github.com/Erzbir/halo-plugin-injector#readme
+  repo: https://github.com/Erzbir/halo-plugin-injector
+  issues: https://github.com/Erzbir/halo-plugin-injector/issues
+  displayName: "Injector"
+  description: "适用于 Halo 的 HTML 代码注入插件"
+  license:
+    - name: "GPL-3.0"
+      url: "https://github.com/Erzbir/halo-plugin-injector/blob/main/LICENSE"
