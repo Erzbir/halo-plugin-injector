@@ -15,12 +15,10 @@ public class InjectionRule {
 
     private String location = "footer";
 
-    private boolean enableTemplateProcess = false;
+    private String id = "";
+    private String selector = "";
 
-    @Data
-    public static class PathMatchRule {
-        private String pathPattern = "";
-    }
+    private boolean enableTemplateProcess = false;
 
     public Location getLocationEnum() {
         try {
@@ -34,11 +32,24 @@ public class InjectionRule {
         return code != null && !code.trim().isEmpty()
             && pathPatterns != null && !pathPatterns.isEmpty()
             && pathPatterns.stream()
-            .anyMatch(pattern -> pattern.pathPattern != null && !pattern.pathPattern.trim().isEmpty());
+            .anyMatch(
+                pattern -> pattern.pathPattern != null && !pattern.pathPattern.trim().isEmpty());
     }
 
     public enum Location {
         HEAD,
-        FOOTER
+        FOOTER,
+        ID,
+        SELECTOR;
+
+        @Override
+        public String toString() {
+            return name().toLowerCase();
+        }
+    }
+
+    @Data
+    public static class PathMatchRule {
+        private String pathPattern = "";
     }
 }
