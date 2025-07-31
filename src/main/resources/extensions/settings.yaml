@@ -18,6 +18,8 @@ spec:
               name: code
               label: 代码
               value: ""
+              language: html
+              height: 150px
               validation: required
             - $formkit: repeater
               name: pathPatterns
