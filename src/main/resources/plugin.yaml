@@ -6,7 +6,6 @@ metadata:
   name: injector
 spec:
   enabled: true
-  version: 0.0.1
   settingName: plugin-injector-settings
   configMapName: plugin-injector-configMap
   requires: ">=2.21.0"
