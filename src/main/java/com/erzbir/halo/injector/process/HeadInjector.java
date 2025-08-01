@@ -14,7 +14,7 @@ import run.halo.app.theme.dialect.TemplateHeadProcessor;
  * @since 1.0.0
  */
 @Component
-public class HeadInjector extends AbstrictInjector implements TemplateHeadProcessor {
+public class HeadInjector extends AbstractInjector implements TemplateHeadProcessor {
 
     public HeadInjector(ReactiveSettingFetcher reactiveSettingFetcher) {
         super(reactiveSettingFetcher);

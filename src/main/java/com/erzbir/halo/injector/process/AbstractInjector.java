@@ -5,6 +5,7 @@ import com.erzbir.halo.injector.setting.InjectionRule;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.pf4j.Extension;
 import org.springframework.http.server.PathContainer;
 import org.springframework.util.RouteMatcher;
 import org.springframework.web.util.pattern.PathPatternParser;
@@ -24,8 +25,9 @@ import run.halo.app.plugin.ReactiveSettingFetcher;
  */
 @Slf4j
 @RequiredArgsConstructor
-public abstract class AbstrictInjector implements Injector {
-    private final ReactiveSettingFetcher reactiveSettingFetcher;
+@Extension
+public abstract class AbstractInjector implements Injector {
+    protected final ReactiveSettingFetcher reactiveSettingFetcher;
     private final RouteMatcher routeMatcher = createRouteMatcher();
 
     public Mono<Void> inject(ITemplateContext context, IModel model,

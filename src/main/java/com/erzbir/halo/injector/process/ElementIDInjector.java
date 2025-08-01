@@ -16,7 +16,7 @@ import run.halo.app.theme.dialect.TemplateFooterProcessor;
  * @since 1.0.0
  */
 @Component
-public class ElementIDInjector extends AbstrictInjector implements TemplateFooterProcessor {
+public class ElementIDInjector extends AbstractInjector implements TemplateFooterProcessor {
 
     public ElementIDInjector(ReactiveSettingFetcher reactiveSettingFetcher) {
         super(reactiveSettingFetcher);
@@ -32,18 +32,8 @@ public class ElementIDInjector extends AbstrictInjector implements TemplateFoote
         String code = rule.getCode();
         String elementId = rule.getId();
         if (StringUtils.hasText(elementId)) {
-            code = """
-                    <script defer>
-                      let code = '%s';
-                      let dom = new DOMParser().parseFromString(code, 'text/html');
-                      let element = dom.body.firstElementChild;
-                      document.getElementById('%s').appendChild(element);
-                    </script>
-                """.formatted(code, elementId);
+            code = ScriptTemplates.ELEMENT_INJECTION_SCRIPT.formatted(code, elementId, elementId);
         }
-        String comment_start = "<!-- PluginInjector start -->";
-        String comment_end = "<!-- PluginInjector end -->";
-        return comment_start + code + comment_end;
+        return code;
     }
-
 }

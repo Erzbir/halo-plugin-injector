@@ -15,7 +15,7 @@ import run.halo.app.theme.dialect.TemplateFooterProcessor;
  * @since 1.0.0
  */
 @Component
-public class FooterInjector extends AbstrictInjector implements TemplateFooterProcessor {
+public class FooterInjector extends AbstractInjector implements TemplateFooterProcessor {
 
     public FooterInjector(ReactiveSettingFetcher reactiveSettingFetcher) {
         super(reactiveSettingFetcher);

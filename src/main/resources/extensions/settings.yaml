@@ -51,10 +51,10 @@ spec:
               name: id
               value: ''
               label: 元素 id
-              help: 使用 getElementById 来注入
+              help: 插入到指定 id 的元素中 (尚未完善)
             - $formkit: text
               if: "$value.location === 'selector'"
               name: selector
               value: ''
               label: 选择器
-              help: 使用 querySelector 来注入
+              help: 插入到 CSS selector 匹配到的元素中 (尚未完善)
