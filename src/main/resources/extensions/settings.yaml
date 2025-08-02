@@ -5,7 +5,7 @@ metadata:
 spec:
   forms:
     - group: basic
-      label: 基本设置
+      label: 通用注入
       formSchema:
         - $formkit: repeater
           name: rules
