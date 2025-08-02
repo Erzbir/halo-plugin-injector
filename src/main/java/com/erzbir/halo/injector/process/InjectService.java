@@ -5,50 +5,31 @@ import com.erzbir.halo.injector.setting.InjectionRule;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.pf4j.Extension;
 import org.springframework.http.server.PathContainer;
+import org.springframework.stereotype.Component;
 import org.springframework.util.RouteMatcher;
 import org.springframework.web.util.pattern.PathPatternParser;
 import org.springframework.web.util.pattern.PathPatternRouteMatcher;
 import org.springframework.web.util.pattern.PatternParseException;
-import org.thymeleaf.context.Contexts;
-import org.thymeleaf.context.ITemplateContext;
-import org.thymeleaf.model.IModel;
-import org.thymeleaf.web.IWebRequest;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import run.halo.app.plugin.ReactiveSettingFetcher;
 
 /**
  * @author Erzbir
  * @since 1.0.0
  */
+@Component
 @Slf4j
 @RequiredArgsConstructor
-@Extension
-public abstract class AbstractInjector implements Injector {
+public class InjectService {
     protected final ReactiveSettingFetcher reactiveSettingFetcher;
-    private final RouteMatcher routeMatcher = createRouteMatcher();
+    protected final RouteMatcher routeMatcher = createRouteMatcher();
 
-    public Mono<Void> inject(ITemplateContext context, IModel model,
-        InjectionRule.Location location) {
-        return getMatchedRulesForLocation(context, location)
-            .map(this::processRuleCode)
-            .filter(code -> !code.trim().isEmpty())
-            .doOnNext(code -> {
-                model.add(context.getModelFactory().createText(finalProcessCode(code)));
-                log.debug("Injected code: {}",
-                    code.length() > 50 ? code.substring(0, 50) + "..." : code);
-            })
-            .then();
-    }
-
-    private Flux<InjectionRule> getMatchedRulesForLocation(ITemplateContext context,
+    public Flux<InjectionRule> getMatchedRules(String targetPath,
         InjectionRule.Location targetLocation) {
         return reactiveSettingFetcher.fetch("basic", BasicConfig.class)
             .flatMapMany(basicConfig -> {
-                String currentPath = getCurrentPath(context);
-                if (currentPath.isEmpty()) {
+                if (targetPath.isEmpty()) {
                     return Flux.empty();
                 }
 
@@ -56,7 +37,7 @@ public abstract class AbstractInjector implements Injector {
                     basicConfig.getRulesByLocation(targetLocation);
 
                 return Flux.fromIterable(locationRules)
-                    .filter(rule -> matchesPath(rule.getPathPatterns(), currentPath, routeMatcher));
+                    .filter(rule -> matchesPath(rule.getPathPatterns(), targetPath, routeMatcher));
             })
             .onErrorResume(e -> {
                 log.error("Failed to get matched rules for location: {}", targetLocation, e);
@@ -86,35 +67,9 @@ public abstract class AbstractInjector implements Injector {
             });
     }
 
-    private String finalProcessCode(String code) {
-        String comment_start = "<!-- PluginInjector start -->";
-        String comment_end = "<!-- PluginInjector end -->";
-        return comment_start + code + comment_end;
-    }
-
-    protected String processRuleCode(InjectionRule rule) {
-        return rule.getCode();
-    }
-
-    private String getCurrentPath(ITemplateContext context) {
-        try {
-            if (!Contexts.isWebContext(context)) {
-                return "";
-            }
-            IWebRequest request = Contexts.asWebContext(context).getExchange().getRequest();
-            return request.getRequestPath();
-        } catch (Exception e) {
-            log.debug("Failed to get current path from context", e);
-            return "";
-        }
-    }
-
     private RouteMatcher createRouteMatcher() {
         var parser = new PathPatternParser();
         parser.setPathOptions(PathContainer.Options.HTTP_PATH);
         return new PathPatternRouteMatcher(parser);
     }
 }
-
-
-

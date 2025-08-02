@@ -1,34 +1,35 @@
 package com.erzbir.halo.injector.process;
 
 import com.erzbir.halo.injector.setting.InjectionRule;
+import com.erzbir.halo.injector.util.ContextUtil;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.thymeleaf.context.ITemplateContext;
 import org.thymeleaf.model.IModel;
-import org.thymeleaf.model.IProcessableElementTag;
-import org.thymeleaf.processor.element.IElementTagStructureHandler;
+import org.thymeleaf.processor.element.IElementModelStructureHandler;
 import reactor.core.publisher.Mono;
-import run.halo.app.plugin.ReactiveSettingFetcher;
-import run.halo.app.theme.dialect.TemplateFooterProcessor;
+import run.halo.app.theme.dialect.TemplateHeadProcessor;
 
 /**
  * @author Erzbir
  * @since 1.0.0
  */
 @Component
-public class ElementIDInjector extends AbstractInjector implements TemplateFooterProcessor {
+public class ElementIDInjector extends AbstractTemplateInjector implements TemplateHeadProcessor {
 
-    public ElementIDInjector(ReactiveSettingFetcher reactiveSettingFetcher) {
-        super(reactiveSettingFetcher);
+    public ElementIDInjector(InjectService injectService) {
+        super(injectService);
     }
 
     @Override
-    public Mono<Void> process(ITemplateContext context, IProcessableElementTag tag,
-        IElementTagStructureHandler structureHandler, IModel model) {
-        return inject(context, model, InjectionRule.Location.ID);
+    public Mono<Void> process(ITemplateContext context, IModel model,
+        IElementModelStructureHandler structureHandler) {
+        return inject(new HeadInjectorProvider(context, model, structureHandler),
+            ContextUtil.getPath(context),
+            InjectionRule.Location.ID);
     }
 
-    protected String processRuleCode(InjectionRule rule) {
+    public String processRuleCode(InjectionRule rule) {
         String code = rule.getCode();
         String elementId = rule.getId();
         if (StringUtils.hasText(elementId)) {

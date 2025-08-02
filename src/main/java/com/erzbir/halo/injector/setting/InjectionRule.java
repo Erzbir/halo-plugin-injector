@@ -10,15 +10,10 @@ import lombok.Data;
 @Data
 public class InjectionRule {
     private String code = "";
-
     private List<PathMatchRule> pathPatterns;
-
     private String location = "footer";
-
     private String id = "";
     private String selector = "";
-
-    private boolean enableTemplateProcess = false;
 
     public Location getLocationEnum() {
         try {

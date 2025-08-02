@@ -12,6 +12,7 @@ public interface ScriptTemplates {
                         let dom = new DOMParser().parseFromString(code, 'text/html');
                         let injection = dom.body.firstElementChild;
                         let element = document.querySelector('%s');
+                        if (!element) return;
                         let key = "%s";
                         const existing = element.querySelector(`[data-injected-selector='${key}']`);
                         if (existing) existing.remove();
@@ -27,6 +28,7 @@ public interface ScriptTemplates {
                         let dom = new DOMParser().parseFromString(code, 'text/html');
                         let injection = dom.body.firstElementChild;
                         let element = document.getElementById('%s');
+                        if (!element) return;
                         let key = "%s";
                         const existing = element.querySelector(`[data-injected-id='${key}']`);
                         if (existing) existing.remove();
