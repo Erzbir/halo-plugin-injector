@@ -14,7 +14,7 @@ spec:
   author:
     name: Erzbir
     website: https://github.com/Erzbir
-  logo: logo.png
+  logo: logo.svg
   homepage: https://github.com/Erzbir/halo-plugin-injector#readme
   repo: https://github.com/Erzbir/halo-plugin-injector
   issues: https://github.com/Erzbir/halo-plugin-injector/issues
