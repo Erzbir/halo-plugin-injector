@@ -32,11 +32,8 @@ public class InjectService {
                 if (targetPath.isEmpty()) {
                     return Flux.empty();
                 }
-
-                List<InjectionRule> locationRules =
-                    basicConfig.getRulesByLocation(targetLocation);
-
-                return Flux.fromIterable(locationRules)
+                return Flux.fromStream(basicConfig.getRulesByLocation(targetLocation).stream()
+                        .filter(InjectionRule::getEnabled))
                     .filter(rule -> matchesPath(rule.getPathPatterns(), targetPath, routeMatcher));
             })
             .onErrorResume(e -> {

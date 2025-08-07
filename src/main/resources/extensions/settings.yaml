@@ -14,6 +14,10 @@ spec:
           label: 注入规则
           value: [ ]
           children:
+            - $formkit: checkbox
+              name: enabled
+              label: 是否启用
+              value: true
             - $formkit: code
               name: code
               label: 代码

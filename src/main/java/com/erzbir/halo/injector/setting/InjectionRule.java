@@ -9,6 +9,7 @@ import lombok.Data;
  */
 @Data
 public class InjectionRule {
+    private Boolean enabled = true;
     private String code = "";
     private List<PathMatchRule> pathPatterns;
     private String location = "footer";
