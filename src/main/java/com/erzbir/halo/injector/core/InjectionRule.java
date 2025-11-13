@@ -1,4 +1,4 @@
-package com.erzbir.halo.injector.setting;
+package com.erzbir.halo.injector.core;
 
 import java.util.List;
 import lombok.Data;
@@ -12,15 +12,25 @@ public class InjectionRule {
     private Boolean enabled = true;
     private String code = "";
     private List<PathMatchRule> pathPatterns;
-    private String location = "footer";
+    private String mode = "footer";
     private String id = "";
     private String selector = "";
+    private String position = "inner";
 
-    public Location getLocationEnum() {
+
+    public Position getPosition() {
         try {
-            return Location.valueOf(location.toUpperCase());
+            return Position.valueOf(position.toUpperCase());
         } catch (IllegalArgumentException e) {
-            return Location.FOOTER;
+            return Position.APPEND;
+        }
+    }
+
+    public Mode getMode() {
+        try {
+            return Mode.valueOf(mode.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return Mode.FOOTER;
         }
     }
 
@@ -32,11 +42,23 @@ public class InjectionRule {
                 pattern -> pattern.pathPattern != null && !pattern.pathPattern.trim().isEmpty());
     }
 
-    public enum Location {
+    public enum Mode {
         HEAD,
         FOOTER,
         ID,
         SELECTOR;
+
+        @Override
+        public String toString() {
+            return name().toLowerCase();
+        }
+    }
+
+    public enum Position {
+        APPEND,
+        PREPEND,
+        BEFORE,
+        AFTER;
 
         @Override
         public String toString() {

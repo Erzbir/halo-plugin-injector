@@ -1,5 +1,6 @@
 package com.erzbir.halo.injector.setting;
 
+import com.erzbir.halo.injector.core.InjectionRule;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
@@ -15,12 +16,5 @@ public class BasicConfig {
 
     public List<InjectionRule> nullSafeRules() {
         return ObjectUtils.defaultIfNull(rules, List.of());
-    }
-
-    public List<InjectionRule> getRulesByLocation(InjectionRule.Location location) {
-        return nullSafeRules().stream()
-            .filter(rule -> location.equals(rule.getLocationEnum()))
-            .filter(InjectionRule::isValid)
-            .toList();
     }
 }

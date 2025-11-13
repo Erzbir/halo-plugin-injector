@@ -15,6 +15,7 @@ public class HaloInjectorPlugin extends BasePlugin {
 
     @Override
     public void start() {
+
     }
 
     @Override

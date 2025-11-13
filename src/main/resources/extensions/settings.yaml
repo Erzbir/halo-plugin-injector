@@ -38,8 +38,8 @@ spec:
                   value: ""
                   validation: required
             - $formkit: select
-              name: location
-              label: 注入位置
+              name: mode
+              label: 注入模式
               value: "footer"
               options:
                 - label: "footer"
@@ -51,14 +51,29 @@ spec:
                 - label: "selector"
                   value: "selector"
             - $formkit: text
-              if: "$value.location === 'id'"
+              if: "$value.mode === 'id'"
               name: id
               value: ''
               label: 元素 id
               help: 插入到指定 id 的元素中 (尚未完善)
             - $formkit: text
-              if: "$value.location === 'selector'"
+              if: "$value.mode === 'selector'"
               name: selector
               value: ''
               label: 选择器
               help: 插入到 CSS selector 匹配到的元素中 (尚未完善)
+            - $formkit: select
+              if: "$value.mode === 'id' || $value.mode === 'selector'"
+              name: position
+              label: 注入位置
+              help: "选择插入的位置 (相对于目标元素). append: 追加一个子元素; prepend: 插入到第一个子元素之前; before: 插入到这个元素之前; after: 插入到这个元素之后"
+              value: 'append'
+              options:
+                - label: "append"
+                - value: "append"
+                - label: "prepend"
+                  value: "prepend"
+                - label: "before"
+                  value: "before"
+                - label: "after"
+                  value: "after"

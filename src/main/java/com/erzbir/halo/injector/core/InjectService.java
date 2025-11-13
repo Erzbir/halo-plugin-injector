@@ -1,7 +1,6 @@
-package com.erzbir.halo.injector.process;
+package com.erzbir.halo.injector.core;
 
-import com.erzbir.halo.injector.setting.BasicConfig;
-import com.erzbir.halo.injector.setting.InjectionRule;
+import com.erzbir.halo.injector.setting.BasicSettingSupplier;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +11,6 @@ import org.springframework.web.util.pattern.PathPatternParser;
 import org.springframework.web.util.pattern.PathPatternRouteMatcher;
 import org.springframework.web.util.pattern.PatternParseException;
 import reactor.core.publisher.Flux;
-import run.halo.app.plugin.ReactiveSettingFetcher;
 
 /**
  * @author Erzbir
@@ -22,22 +20,30 @@ import run.halo.app.plugin.ReactiveSettingFetcher;
 @Slf4j
 @RequiredArgsConstructor
 public class InjectService {
-    protected final ReactiveSettingFetcher reactiveSettingFetcher;
+    protected final BasicSettingSupplier basicSettingSupplier;
     protected final RouteMatcher routeMatcher = createRouteMatcher();
 
+    public Flux<InjectionRule> getRulesByMode(InjectionRule.Mode mode) {
+        return basicSettingSupplier.get()
+            .flatMapMany(basicConfig -> Flux.fromStream(
+                basicConfig.nullSafeRules().stream()
+                    .filter(rule -> mode.equals(rule.getMode()))
+            ));
+    }
+
     public Flux<InjectionRule> getMatchedRules(String targetPath,
-        InjectionRule.Location targetLocation) {
-        return reactiveSettingFetcher.fetch("basic", BasicConfig.class)
+        InjectionRule.Mode mode) {
+        return basicSettingSupplier.get()
             .flatMapMany(basicConfig -> {
                 if (targetPath.isEmpty()) {
                     return Flux.empty();
                 }
-                return Flux.fromStream(basicConfig.getRulesByLocation(targetLocation).stream()
-                        .filter(InjectionRule::getEnabled))
+                return getRulesByMode(mode)
+                    .filter(rule -> rule.getEnabled() && rule.isValid())
                     .filter(rule -> matchesPath(rule.getPathPatterns(), targetPath, routeMatcher));
             })
             .onErrorResume(e -> {
-                log.error("Failed to get matched rules for location: {}", targetLocation, e);
+                log.error("Failed to get matched rules for mode: {}", mode, e);
                 return Flux.empty();
             });
     }

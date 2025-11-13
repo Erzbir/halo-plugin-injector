@@ -13,9 +13,7 @@ jobs:
     permissions:
       contents: write
     with:
-      ui-path: "ui"
-      pnpm-version: 9
+      skip-node-setup: true
       node-version: 22
       java-version: 21
       app-id: app-5sauowct
-

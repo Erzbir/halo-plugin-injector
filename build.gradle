@@ -35,10 +35,10 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.register('processUiResources', Copy) {
-    from project(':ui').layout.buildDirectory.dir('dist')
-    into layout.buildDirectory.dir('resources/main/console')
-    dependsOn project(':ui').tasks.named('assemble')
-    shouldRunAfter tasks.named('processResources')
+//    from project(':ui').layout.buildDirectory.dir('dist')
+//    into layout.buildDirectory.dir('resources/main/console')
+//    dependsOn project(':ui').tasks.named('assemble')
+//    shouldRunAfter tasks.named('processResources')
 }
 
 tasks.named('classes') {
@@ -47,5 +47,7 @@ tasks.named('classes') {
 
 halo {
     version = '2.21'
+    debug = true
+    suspend = true
 }
 
