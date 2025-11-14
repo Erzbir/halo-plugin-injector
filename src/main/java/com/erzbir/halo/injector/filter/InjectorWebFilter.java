@@ -152,9 +152,7 @@ public class InjectorWebFilter implements AdditionalWebFilter {
             var flattenedBody = Flux.from(body).flatMapSequential(publisher -> publisher);
             var processedBody = DataBufferUtils.join(flattenedBody).flatMap(dataBuffer -> {
                 try {
-                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
-                    dataBuffer.read(bytes);
-                    String html = new String(bytes, StandardCharsets.UTF_8);
+                    String html = dataBuffer.toString(StandardCharsets.UTF_8);
                     return inject(html, path).onErrorResume(e -> Mono.just(html))
                         .map(processedHtml -> {
                             byte[] resultBytes = processedHtml.getBytes(StandardCharsets.UTF_8);
