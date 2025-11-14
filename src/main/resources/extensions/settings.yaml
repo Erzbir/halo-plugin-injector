@@ -70,7 +70,7 @@ spec:
               value: 'append'
               options:
                 - label: "append"
-                - value: "append"
+                  value: "append"
                 - label: "prepend"
                   value: "prepend"
                 - label: "before"
