@@ -78,15 +78,20 @@ public class InjectorWebFilter implements AdditionalWebFilter {
 
     ServerWebExchangeMatcher createPathMatcher() {
         var pathMatcher = pathMatchers(HttpMethod.GET, "/**");
-        var excludeConsoleMatcher =
-            new NegatedServerWebExchangeMatcher(pathMatchers("/console/**", "/uc"));
+        var excludeeMatcher =
+            new NegatedServerWebExchangeMatcher(
+                pathMatchers("/console/**", "/uc/**", "/login/**",
+                    "/signup/**", "/logout/**", "/themes/**",
+                    "/plugins/**", "/actuator/**", "/api/**",
+                    "/apis/**", "/system/**",
+                    "/upload/**", "/webjars/**"));
         var mediaTypeMatcher = new MediaTypeServerWebExchangeMatcher(MediaType.TEXT_HTML);
         mediaTypeMatcher.setIgnoredMediaTypes(Set.of(MediaType.ALL));
 
         return new AndServerWebExchangeMatcher(
-            excludeConsoleMatcher,
-            pathMatcher,
-            mediaTypeMatcher
+            mediaTypeMatcher,
+            excludeeMatcher,
+            pathMatcher
         );
     }
 
@@ -149,10 +154,16 @@ public class InjectorWebFilter implements AdditionalWebFilter {
                 return super.writeAndFlushWith(body);
             }
             String path = exchange.getRequest().getPath().value();
+            if (path.isBlank()) {
+                return super.writeAndFlushWith(body);
+            }
             var flattenedBody = Flux.from(body).flatMapSequential(publisher -> publisher);
             var processedBody = DataBufferUtils.join(flattenedBody).flatMap(dataBuffer -> {
                 try {
                     String html = dataBuffer.toString(StandardCharsets.UTF_8);
+                    if (html.isBlank()) {
+                        return Mono.just(dataBuffer);
+                    }
                     return inject(html, path).onErrorResume(e -> Mono.just(html))
                         .map(processedHtml -> {
                             byte[] resultBytes = processedHtml.getBytes(StandardCharsets.UTF_8);
