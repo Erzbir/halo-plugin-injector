@@ -1,0 +1,19 @@
+apiVersion: plugin.halo.run/v1alpha1
+kind: ExtensionDefinition
+metadata:
+  name: ext-def-injector-footer
+spec:
+  extensionPointName: template-footer-processor
+  className: com.erzbir.halo.injector.process.InjectorFooterProcessor
+  displayName: "InjectorFooterProcessor"
+  description: "Inject code into <footer>"
+---
+apiVersion: plugin.halo.run/v1alpha1
+kind: ExtensionDefinition
+metadata:
+  name: ext-def-injector-additional-webfilter
+spec:
+  extensionPointName: additional-webfilter
+  className: com.erzbir.halo.injector.filter.InjectorWebFilter
+  displayName: "InjectorWebFilter"
+  description: "Inject code into whole HTML"
