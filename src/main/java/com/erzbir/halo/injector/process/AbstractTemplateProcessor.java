@@ -30,7 +30,7 @@ public abstract class AbstractTemplateProcessor {
             .doOnNext(rule -> {
                 doProcess(context, model, rule);
                 String code = rule.getCode();
-                log.info("Injected code: [{}] into [{}]",
+                log.debug("Injected code: [{}] into [{}]",
                     code.length() > 50 ? code.substring(0, 50) + "..." : code, path);
             })
             .then();

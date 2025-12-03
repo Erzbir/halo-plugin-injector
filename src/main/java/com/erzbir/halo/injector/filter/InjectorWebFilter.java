@@ -121,7 +121,7 @@ public class InjectorWebFilter implements AdditionalWebFilter {
             .reduce(html, (ctx, rule) -> {
                 String content = injector.inject(html, rule);
                 String code = rule.getCode();
-                log.info("Injected code: [{}] into [{}]",
+                log.debug("Injected code: [{}] into [{}]",
                     code.length() > 50 ? code.substring(0, 50) + "..." : code, path);
                 return content;
             });
