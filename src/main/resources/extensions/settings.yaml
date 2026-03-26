@@ -77,3 +77,5 @@ spec:
                   value: "before"
                 - label: "after"
                   value: "after"
+                - label: "replace"
+                  value: "replace"

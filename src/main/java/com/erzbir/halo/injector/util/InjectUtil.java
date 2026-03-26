@@ -1,6 +1,7 @@
 package com.erzbir.halo.injector.util;
 
 import com.erzbir.halo.injector.core.InjectionRule;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 
 /**
@@ -14,6 +15,7 @@ public class InjectUtil {
             case PREPEND -> element.prepend(code);
             case BEFORE -> element.before(code);
             case AFTER -> element.after(code);
+            case REPLACE -> element.replaceWith(Jsoup.parse(code));
         }
     }
 }
