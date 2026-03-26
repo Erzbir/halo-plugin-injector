@@ -15,7 +15,7 @@ public class InjectionRule {
     private String mode = "footer";
     private String id = "";
     private String selector = "";
-    private String position = "inner";
+    private String position = "prepend";
 
 
     public Position getPosition() {
@@ -58,7 +58,8 @@ public class InjectionRule {
         APPEND,
         PREPEND,
         BEFORE,
-        AFTER;
+        AFTER,
+        REPLACE;
 
         @Override
         public String toString() {
