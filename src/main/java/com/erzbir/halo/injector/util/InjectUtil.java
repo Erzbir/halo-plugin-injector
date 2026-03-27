@@ -15,7 +15,7 @@ public class InjectUtil {
             case PREPEND -> element.prepend(code);
             case BEFORE -> element.before(code);
             case AFTER -> element.after(code);
-            case REPLACE -> element.replaceWith(Jsoup.parse(code));
+            case REPLACE -> element.replaceWith(Jsoup.parse(code).body());
         }
     }
 }
