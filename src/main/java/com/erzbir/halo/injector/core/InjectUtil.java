@@ -1,5 +1,6 @@
-package com.erzbir.halo.injector.core;
+package com.erzbir.halo.injector.util;
 
+import com.erzbir.halo.injector.core.InjectionRule;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 
