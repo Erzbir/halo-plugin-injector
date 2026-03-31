@@ -44,12 +44,12 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
 
     public boolean isValid() {
         if (Mode.ID.equals(getMode()) || Mode.SELECTOR.equals(getMode())) {
-            return !getMatch().isEmpty();
+            return !getMatch().isBlank();
         }
         Set<InjectionRule.PathMatchRule> pathPatterns = getPathPatterns();
         return pathPatterns != null
                 && !pathPatterns.isEmpty()
                 && pathPatterns.stream()
-                .anyMatch(p -> p.getPathPattern() != null && !p.getPathPattern().trim().isEmpty());
+                .anyMatch(p -> p.getPathPattern() != null && !p.getPathPattern().isBlank());
     }
 }
