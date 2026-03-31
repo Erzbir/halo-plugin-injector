@@ -14,16 +14,16 @@ import org.springframework.stereotype.Component;
 public class SelectorInjector implements HTMLInjector {
 
     @Override
-    public String inject(String html, InjectionRule rule) {
+    public String inject(String html, String match, String code, IInjectionRule.Position position) {
         Document doc = Jsoup.parse(html);
 
-        Elements elements = doc.select(rule.getSelector());
+        Elements elements = doc.select(match);
         if (elements.isEmpty()) {
             return html;
         }
 
         for (Element element : elements) {
-            InjectUtil.inject(element, processCode(rule.getCode()), rule.getPosition());
+            InjectUtil.inject(element, processCode(code), position);
         }
 
         doc.outputSettings(new Document.OutputSettings().prettyPrint(false));

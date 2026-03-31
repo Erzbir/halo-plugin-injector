@@ -8,8 +8,6 @@ metadata:
     "store.halo.run/app-id": "app-5sauowct"
 spec:
   enabled: true
-  settingName: plugin-injector-settings
-  configMapName: plugin-injector-configMap
   requires: ">=2.21.0"
   author:
     name: Erzbir

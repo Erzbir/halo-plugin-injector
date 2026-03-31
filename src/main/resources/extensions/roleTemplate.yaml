@@ -10,8 +10,8 @@ metadata:
     rbac.authorization.halo.run/ui-permissions: |
       ["plugin:injector:view"]
 rules:
-  - apiGroups: [ "injector.halo.run" ]
-    resources: [ "pushLogs" , "pushUniques" ]
+  - apiGroups: [ "injector.erzbir.com" ]
+    resources: [ "injectionRules" , "codeSnippets" ]
     verbs: [ "get", "list" ]
 ---
 apiVersion: v1alpha1
@@ -28,6 +28,6 @@ metadata:
     rbac.authorization.halo.run/dependencies: |
       ["role-template-injector-view"]
 rules:
-  - apiGroups: [ "injector.halo.run" ]
-    resources: [ "pushLogs" , "pushUniques" ]
-    verbs: [ "create", "patch", "update", "delete", "deletecollection" ]
+  - apiGroups: [ "injector.erzbir.com" ]
+    resources: [ "injectionRules" , "codeSnippets" ]
+    verbs: [ "add", "update", "delete" ]

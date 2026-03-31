@@ -1,8 +1,9 @@
 package com.erzbir.halo.injector.process;
 
+import com.erzbir.halo.injector.util.InjectHelper;
 import com.erzbir.halo.injector.core.FooterInjector;
-import com.erzbir.halo.injector.core.InjectService;
-import com.erzbir.halo.injector.core.InjectionRule;
+import com.erzbir.halo.injector.manager.CodeSnippetManager;
+import com.erzbir.halo.injector.scheme.InjectionRule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.context.ITemplateContext;
@@ -19,17 +20,17 @@ import run.halo.app.theme.dialect.TemplateFooterProcessor;
 @Slf4j
 @Component
 public class InjectorFooterProcessor extends AbstractTemplateProcessor
-    implements TemplateFooterProcessor {
+        implements TemplateFooterProcessor {
     private final FooterInjector footerInjector;
 
-    public InjectorFooterProcessor(InjectService injectService, FooterInjector footerInjector) {
-        super(injectService);
+    public InjectorFooterProcessor(InjectHelper injectHelper, FooterInjector footerInjector, CodeSnippetManager codeSnippetManager) {
+        super(injectHelper, codeSnippetManager);
         this.footerInjector = footerInjector;
     }
 
     @Override
     public Mono<Void> process(ITemplateContext context, IProcessableElementTag tag,
-        IElementTagStructureHandler structureHandler, IModel model) {
+                              IElementTagStructureHandler structureHandler, IModel model) {
         return processInternal(context, model);
     }
 
@@ -39,7 +40,7 @@ public class InjectorFooterProcessor extends AbstractTemplateProcessor
     }
 
     @Override
-    protected void doProcess(ITemplateContext context, IModel model, InjectionRule rule) {
-        footerInjector.inject(context, model, rule);
+    protected void doProcess(ITemplateContext context, IModel model, String code) {
+        footerInjector.inject(context, model, code);
     }
 }

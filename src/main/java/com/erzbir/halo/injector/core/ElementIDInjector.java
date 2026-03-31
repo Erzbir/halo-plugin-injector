@@ -13,15 +13,15 @@ import org.springframework.stereotype.Component;
 public class ElementIDInjector implements HTMLInjector {
 
     @Override
-    public String inject(String html, InjectionRule rule) {
+    public String inject(String html, String match, String code, IInjectionRule.Position position) {
         Document doc = Jsoup.parse(html);
 
-        Element element = doc.getElementById(rule.getId());
+        Element element = doc.getElementById(match);
         if (element == null) {
             return html;
         }
 
-        InjectUtil.inject(element, processCode(rule.getCode()), rule.getPosition());
+        InjectUtil.inject(element, processCode(code), position);
 
         doc.outputSettings(new Document.OutputSettings().prettyPrint(false));
 
