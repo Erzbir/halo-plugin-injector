@@ -17,6 +17,6 @@ public class InjectionRuleManager {
 
     public Flux<InjectionRule> list() {
         return client.list(InjectionRule.class, null, null)
-                .doOnError(e -> log.error("Failed to refresh InjectionRule cache", e));
+                .doOnError(e -> log.error("Failed to fetch InjectionRules", e));
     }
 }
