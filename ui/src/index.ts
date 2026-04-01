@@ -1,5 +1,5 @@
 import { definePlugin } from '@halo-dev/console-shared'
-import HomeView from './views/HomeView.vue'
+import InjectorView from './views/InjectorView.vue'
 import { IconPlug } from '@halo-dev/components'
 import { markRaw } from 'vue'
 
@@ -9,17 +9,16 @@ export default definePlugin({
     {
       parentName: 'ToolsRoot',
       route: {
-        path: '/injector',
+        path: 'injector',
         name: 'Injector',
-        component: HomeView,
+        component: InjectorView,
         meta: {
-          title: '注入插件',
+          title: 'Injector',
+          description: '支持根据规则进行 HTML 代码注入',
           searchable: true,
+          permissions: ['plugin:injector:manage'],
           menu: {
-            name: '注入插件',
-            description: 'HTML 代码注入增强',
-            permissions: ['plugin:injector:manage'],
-            group: 'tool',
+            name: 'Injector',
             icon: markRaw(IconPlug),
             priority: 0,
           },

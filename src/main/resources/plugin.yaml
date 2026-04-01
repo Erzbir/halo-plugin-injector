@@ -17,7 +17,7 @@ spec:
   repo: https://github.com/Erzbir/halo-plugin-injector
   issues: https://github.com/Erzbir/halo-plugin-injector/issues
   displayName: "Injector"
-  description: "适用于 Halo 的 HTML 代码注入插件"
+  description: "支持根据规则进行 HTML 代码注入"
   license:
     - name: "GPL-3.0"
       url: "https://github.com/Erzbir/halo-plugin-injector/blob/main/LICENSE"
