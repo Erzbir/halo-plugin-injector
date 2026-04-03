@@ -17,22 +17,11 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 @GVK(kind = "CodeSnippet", group = "injector.erzbir.com",
         version = "v1alpha1", singular = "codeSnippet", plural = "codeSnippets")
 public class CodeSnippet extends AbstractExtension implements ICodeSnippet {
-    @Schema(requiredMode = REQUIRED)
     private String name = "";
-
-    @Schema(requiredMode = REQUIRED, minLength = 1)
     private String code = "";
-
-    @Schema
     private String description = "";
-
-    @Schema(defaultValue = "true")
     private Boolean enabled = true;
-
-    @Schema
     private Set<String> ruleIds = new LinkedHashSet<>();
-
-    private String generateName = "CodeSnippet-";
 
     @Override
     public boolean isEnabled() {

@@ -22,7 +22,6 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     private Position position = Position.APPEND;
     private Set<PathMatchRule> pathPatterns = new LinkedHashSet<>();
     private Set<String> snippetIds = new LinkedHashSet<>();
-    private String generateName = "InjectionRule-";
 
     @Override
     public String getId() {
