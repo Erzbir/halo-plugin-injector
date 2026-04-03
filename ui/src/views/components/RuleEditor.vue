@@ -7,7 +7,6 @@ import PathPatternEditor from './PathPatternEditor.vue'
 import EditorToolbar from './EditorToolbar.vue'
 import EditorFooter from './EditorFooter.vue'
 import FormField from './FormField.vue'
-import { codePreview } from '@/views/composables/util'
 
 const props = defineProps<{
   rule: InjectionRule | null
@@ -138,7 +137,6 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
           </div>
           <ItemPicker
             :items="snippets"
-            :preview-fn="(s) => codePreview(s.code)"
             :selected-ids="selectedSnippetIds"
             empty-text="暂无代码块, 请先创建"
             @toggle="(id) => emit('toggle-snippet', id)"

@@ -4,7 +4,7 @@ import { IconPlug, VButton, VCard, VLoading, VPageHeader } from '@halo-dev/compo
 
 import type { ActiveTab } from '@/types'
 import { useInjectorData } from './composables/useInjectorData.ts'
-import { codePreview, rulePreview } from './composables/util.ts'
+import { rulePreview } from './composables/util.ts'
 
 import ItemListV from './components/ItemListV.vue'
 import SnippetEditor from './components/SnippetEditor.vue'
@@ -125,9 +125,6 @@ function jumpToSnippet(id: string) {
               @create="showSnippetModal = true"
               @select="selectedSnippetId = $event"
             >
-              <template #meta="{ item: r }">
-                <span class=":uno: text-xs text-gray-500">{{ codePreview(r.code) }}</span>
-              </template>
             </ItemListV>
 
             <ItemListV

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { CodeSnippet, InjectionRule } from '@/types'
 import ItemListV from './ItemListV.vue'
-import { codePreview, rulePreview } from '@/views/composables/util'
+import { rulePreview } from '@/views/composables/util'
 
 defineProps<{
   mode: 'snippets' | 'rules'
@@ -72,12 +72,6 @@ const emit = defineEmits<{
           empty-text="该规则暂未关联代码块, 请在编辑面板中添加"
           @select="emit('jump-to-snippet', $event)"
         >
-          <template #meta="{ item: s }">
-            <p class=":uno: text-xs text-gray-400 font-mono line-clamp-2">
-              {{ codePreview(s.code) }}
-            </p>
-          </template>
-
           <template #hint>
             <span
               class=":uno: text-xs text-primary opacity-0 mt-0.5 group-hover:opacity-100 transition-opacity"

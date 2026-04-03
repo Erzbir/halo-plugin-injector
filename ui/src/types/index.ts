@@ -51,8 +51,8 @@ export type ActiveTab = 'snippets' | 'rules'
 export const MODE_OPTIONS: { value: InjectionMode; label: string }[] = [
   { value: 'HEAD', label: 'head' },
   { value: 'FOOTER', label: 'footer' },
-  { value: 'ID', label: '元素 ID' },
-  { value: 'SELECTOR', label: 'CSS 选择器' },
+  { value: 'ID', label: 'Element ID' },
+  { value: 'SELECTOR', label: 'CSS Selector' },
 ]
 
 export const POSITION_OPTIONS: { value: InjectionPosition; label: string }[] = [

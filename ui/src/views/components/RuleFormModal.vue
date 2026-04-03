@@ -11,7 +11,6 @@ import BaseFormModal from './BaseFormModal.vue'
 import ItemPicker from './ItemPicker.vue'
 import PathPatternEditor from './PathPatternEditor.vue'
 import FormField from './FormField.vue'
-import { codePreview } from '@/views/composables/util'
 
 defineProps<{
   snippets: CodeSnippet[]
@@ -112,7 +111,6 @@ function handleSubmit() {
       </div>
       <ItemPicker
         :items="snippets"
-        :preview-fn="(s) => codePreview(s.code)"
         :selected-ids="selectedSnippetIds"
         empty-text="暂无代码块, 请先创建"
         @toggle="toggleSnippet"
