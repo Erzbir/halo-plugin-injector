@@ -8,7 +8,7 @@ metadata:
     "store.halo.run/app-id": "app-5sauowct"
 spec:
   enabled: true
-  requires: ">=2.21.0"
+  requires: ">=2.22.0"
   author:
     name: Erzbir
     website: https://github.com/Erzbir
@@ -17,7 +17,7 @@ spec:
   repo: https://github.com/Erzbir/halo-plugin-injector
   issues: https://github.com/Erzbir/halo-plugin-injector/issues
   displayName: "Injector"
-  description: "支持根据规则进行 HTML 代码注入"
+  description: "支持根据规则向指定页面的指定位置注入 HTML 代码"
   license:
     - name: "GPL-3.0"
       url: "https://github.com/Erzbir/halo-plugin-injector/blob/main/LICENSE"
