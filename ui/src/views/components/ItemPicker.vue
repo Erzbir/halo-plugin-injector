@@ -3,6 +3,7 @@
   lang="ts"
   setup
 >
+import StatusDot from './StatusDot.vue'
 
 defineProps<{
   items: T[]
@@ -49,11 +50,7 @@ const emit = defineEmits<{
           {{ previewFn(item) }}
         </span>
       </div>
-      <span
-        :class="item.enabled ? ':uno: bg-primary' : ':uno: bg-gray-500'"
-        :title="item.enabled ? '已启用' : '已停用'"
-        class=":uno: shrink-0 w-1.5 h-1.5 rounded-full"
-      />
+      <StatusDot :enabled="item.enabled" />
     </label>
   </div>
 </template>

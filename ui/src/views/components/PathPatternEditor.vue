@@ -44,6 +44,7 @@ function remove(pattern: string) {
       />
       <VButton size="sm" @click="add">添加</VButton>
     </div>
+
     <div class=":uno: space-y-1">
       <div
         v-for="p in modelValue"

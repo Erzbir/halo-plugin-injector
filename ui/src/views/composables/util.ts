@@ -16,3 +16,8 @@ export function codePreview(code: string) {
   const t = code.replace(/\s+/g, ' ').trim()
   return t.length > 55 ? t.slice(0, 55) + '...' : t
 }
+
+export function uniqueStrings(values: string[]) {
+  const seen = new Set<string>()
+  return values.map((v) => v.trim()).filter((v) => v && !seen.has(v) && seen.add(v))
+}
