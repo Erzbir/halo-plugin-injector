@@ -7,6 +7,7 @@ import PathPatternEditor from './PathPatternEditor.vue'
 import EditorToolbar from './EditorToolbar.vue'
 import EditorFooter from './EditorFooter.vue'
 import FormField from './FormField.vue'
+import { sortSelectedFirst } from '@/views/composables/util.ts'
 
 const props = defineProps<{
   rule: InjectionRule | null
@@ -24,6 +25,8 @@ const emit = defineEmits<{
   (e: 'field-change'): void
   (e: 'update:rule', rule: InjectionRule): void
 }>()
+
+const sortedSnippets = computed(() => sortSelectedFirst(props.snippets, props.selectedSnippetIds))
 
 const needsTarget = computed(() => props.rule?.mode === 'ID' || props.rule?.mode === 'SELECTOR')
 
@@ -136,7 +139,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
             </span>
           </div>
           <ItemPicker
-            :items="snippets"
+            :items="sortedSnippets"
             :selected-ids="selectedSnippetIds"
             empty-text="暂无代码块, 请先创建"
             @toggle="(id) => emit('toggle-snippet', id)"

@@ -21,3 +21,13 @@ export function uniqueStrings(values: string[]) {
   const seen = new Set<string>()
   return values.map((v) => v.trim()).filter((v) => v && !seen.has(v) && seen.add(v))
 }
+
+export function sortSelectedFirst<T extends { id: string }>(items: T[], selectedIds: string[]) {
+  const selected = new Set(selectedIds)
+  return [...items].sort((a, b) => {
+    const aSelected = selected.has(a.id)
+    const bSelected = selected.has(b.id)
+    if (aSelected === bSelected) return 0
+    return aSelected ? -1 : 1
+  })
+}

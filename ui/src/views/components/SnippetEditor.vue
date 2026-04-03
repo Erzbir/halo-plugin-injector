@@ -4,7 +4,8 @@ import ItemPicker from './ItemPicker.vue'
 import EditorToolbar from './EditorToolbar.vue'
 import EditorFooter from './EditorFooter.vue'
 import FormField from './FormField.vue'
-import { rulePreview } from '@/views/composables/util'
+import { rulePreview, sortSelectedFirst } from '@/views/composables/util'
+import { computed } from 'vue'
 
 const props = defineProps<{
   snippet: CodeSnippet | null
@@ -22,6 +23,8 @@ const emit = defineEmits<{
   (e: 'field-change'): void
   (e: 'update:snippet', snippet: CodeSnippet): void
 }>()
+
+const sortedRules = computed(() => sortSelectedFirst(props.rules, props.selectedRuleIds))
 
 function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K]) {
   if (!props.snippet) return
@@ -82,7 +85,7 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
             <span class=":uno: text-xs text-gray-400">{{ selectedRuleIds.length }} 个已选</span>
           </div>
           <ItemPicker
-            :items="rules"
+            :items="sortedRules"
             :preview-fn="rulePreview"
             :selected-ids="selectedRuleIds"
             empty-text="暂无规则, 请先创建"
