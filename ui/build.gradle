@@ -6,7 +6,7 @@ plugins {
 group 'com.erzbir.halo.injector.ui'
 
 node {
-    version.set("20.13.1")
+    version.set("22.22.2")
     download.set(true)
 }
 
