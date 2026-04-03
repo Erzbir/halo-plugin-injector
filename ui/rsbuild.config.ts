@@ -17,5 +17,13 @@ export default rsbuildConfig({
         plugins: [Icons({ compiler: 'vue3' }), UnoCSSRspackPlugin()],
       },
     },
+    server: {
+      proxy: {
+        '/': {
+          target: 'http://localhost:63497',
+          changeOrigin: true,
+        },
+      },
+    },
   },
 }) as RsbuildConfig

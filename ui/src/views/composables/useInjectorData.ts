@@ -35,6 +35,7 @@ export function useInjectorData() {
   const editSnippetRuleIds = ref<string[]>([])
 
   const editRule = ref<InjectionRule | null>(null)
+  const editRuleSnippetIds = ref<string[]>([])
 
   const editDirty = ref(false)
 
@@ -51,6 +52,50 @@ export function useInjectorData() {
       .map((id) => snippets.value.find((s) => s.id === id))
       .filter((s): s is CodeSnippet => !!s)
   })
+
+  function _validateRule(rule: InjectionRule): string | null {
+    const pats = uniqueStrings(rule.pathPatterns.map((p) => p.pathPattern))
+    if (!pats.length) return '至少需要一条路径规则'
+    if ((rule.mode === 'SELECTOR' || rule.mode === 'ID') && !rule.match.trim())
+      return '请填写匹配内容'
+    return null
+  }
+
+  async function _applySnippetRuleSelection(snippetId: string, nextRuleIds: string[]) {
+    const next = new Set(uniqueStrings(nextRuleIds))
+    const current = new Set(
+      rules.value.filter((r) => r.snippetIds?.includes(snippetId)).map((r) => r.id),
+    )
+    await Promise.all(
+      rules.value.map(async (rule) => {
+        const has = current.has(rule.id)
+        const shouldHave = next.has(rule.id)
+        if (has === shouldHave) return
+        const updatedIds = shouldHave
+          ? uniqueStrings([...(rule.snippetIds ?? []), snippetId])
+          : (rule.snippetIds ?? []).filter((id) => id !== snippetId)
+        await ruleApi.update(rule.id, { ...rule, snippetIds: updatedIds })
+      }),
+    )
+  }
+
+  async function _applyRuleSnippetSelection(ruleId: string, nextSnippetIds: string[]) {
+    const next = new Set(uniqueStrings(nextSnippetIds))
+    const current = new Set(
+      snippets.value.filter((s) => s.ruleIds?.includes(ruleId)).map((s) => s.id),
+    )
+    await Promise.all(
+      snippets.value.map(async (snippet) => {
+        const has = current.has(snippet.id)
+        const shouldHave = next.has(snippet.id)
+        if (has === shouldHave) return
+        const updatedIds = shouldHave
+          ? uniqueStrings([...(snippet.ruleIds ?? []), ruleId])
+          : (snippet.ruleIds ?? []).filter((id) => id !== ruleId)
+        await snippetApi.update(snippet.id, { ...snippet, ruleIds: updatedIds })
+      }),
+    )
+  }
 
   async function fetchAll() {
     loading.value = true
@@ -75,7 +120,7 @@ export function useInjectorData() {
       return
     }
     const found = snippets.value.find((s) => s.id === selectedSnippetId.value)
-    editSnippet.value = found ? JSON.parse(JSON.stringify(found)) : null
+    editSnippet.value = found ? found : null
     editSnippetRuleIds.value = rules.value
       .filter((r) => r.snippetIds?.includes(selectedSnippetId.value!))
       .map((r) => r.id)
@@ -85,11 +130,15 @@ export function useInjectorData() {
   function _syncEditRule() {
     if (!selectedRuleId.value) {
       editRule.value = null
+      editRuleSnippetIds.value = []
       editDirty.value = false
       return
     }
     const found = rules.value.find((r) => r.id === selectedRuleId.value)
-    editRule.value = found ? JSON.parse(JSON.stringify(found)) : null
+    editRule.value = found ? found : null
+    editRuleSnippetIds.value = snippets.value
+      .filter((s) => s.ruleIds?.includes(selectedRuleId.value!))
+      .map((s) => s.id)
     editDirty.value = false
   }
 
@@ -101,15 +150,47 @@ export function useInjectorData() {
       Toast.error('代码内容不能为空')
       return null
     }
+    const nextRuleIds = uniqueStrings(ruleIds)
     saving.value = true
     try {
-      const res = await snippetApi.add(snippet)
+      const res = await snippetApi.add({ ...snippet, ruleIds: nextRuleIds })
       const id = res.data.id
-      if (ruleIds.length) await _applySnippetRuleSelection(id, ruleIds)
+      if (nextRuleIds.length) await _applySnippetRuleSelection(id, nextRuleIds)
       await fetchAll()
       selectedSnippetId.value = id
       Toast.success('代码块已创建')
       return id
+    } catch {
+      Toast.error('创建失败')
+      return null
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function addRule(rule: InjectionRule, snippetIds: string[]): Promise<string | null> {
+    const err = _validateRule(rule)
+    if (err) {
+      Toast.error(err)
+      return null
+    }
+    const nextSnippetIds = uniqueStrings(snippetIds)
+    const nextRule = {
+      ...rule,
+      snippetIds: nextSnippetIds,
+      pathPatterns: uniqueStrings(rule.pathPatterns.map((p) => p.pathPattern)).map((p) => ({
+        pathPattern: p,
+      })),
+    }
+    saving.value = true
+    try {
+      const res = await ruleApi.add(nextRule)
+      const id = res.data.id
+      if (nextSnippetIds.length) await _applyRuleSnippetSelection(id, nextSnippetIds)
+      await fetchAll()
+      selectedRuleId.value = res.data.id
+      Toast.success('规则已创建')
+      return res.data.id
     } catch {
       Toast.error('创建失败')
       return null
@@ -123,10 +204,40 @@ export function useInjectorData() {
       Toast.error('代码内容不能为空')
       return
     }
+    const nextRuleIds = uniqueStrings(editSnippetRuleIds.value)
     saving.value = true
     try {
-      await snippetApi.update(editSnippet.value.id, editSnippet.value)
-      await _applySnippetRuleSelection(editSnippet.value.id, editSnippetRuleIds.value)
+      await snippetApi.update(editSnippet.value.id, { ...editSnippet.value, ruleIds: nextRuleIds })
+      await _applySnippetRuleSelection(editSnippet.value.id, nextRuleIds)
+      await fetchAll()
+      editDirty.value = false
+      Toast.success('保存成功')
+    } catch {
+      Toast.error('保存失败')
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function saveRule() {
+    if (!editRule.value) return
+    const err = _validateRule(editRule.value)
+    if (err) {
+      Toast.error(err)
+      return
+    }
+    const nextSnippetIds = uniqueStrings(editRuleSnippetIds.value)
+    const nextRule = {
+      ...editRule.value,
+      snippetIds: nextSnippetIds,
+      pathPatterns: uniqueStrings(editRule.value.pathPatterns.map((p) => p.pathPattern)).map(
+        (p) => ({ pathPattern: p }),
+      ),
+    }
+    saving.value = true
+    try {
+      await ruleApi.update(editRule.value.id, nextRule)
+      await _applyRuleSnippetSelection(editRule.value.id, nextSnippetIds)
       await fetchAll()
       editDirty.value = false
       Toast.success('保存成功')
@@ -148,6 +259,33 @@ export function useInjectorData() {
     }
   }
 
+  async function toggleRuleEnabled() {
+    if (!editRule.value) return
+    try {
+      editRule.value.enabled = !editRule.value.enabled
+      await ruleApi.update(editRule.value.id, editRule.value)
+      await fetchAll()
+    } catch {
+      Toast.error('操作失败')
+    }
+  }
+
+  function toggleRuleInSnippetEditor(ruleId: string) {
+    const ids = editSnippetRuleIds.value
+    editSnippetRuleIds.value = ids.includes(ruleId)
+      ? ids.filter((id) => id !== ruleId)
+      : [...ids, ruleId]
+    editDirty.value = true
+  }
+
+  function toggleSnippetInRuleEditor(snippetId: string) {
+    const ids = editRuleSnippetIds.value
+    editRuleSnippetIds.value = ids.includes(snippetId)
+      ? ids.filter((n) => n !== snippetId)
+      : [...ids, snippetId]
+    editDirty.value = true
+  }
+
   function confirmDeleteSnippet() {
     if (!editSnippet.value) return
     const id = editSnippet.value.id
@@ -157,13 +295,9 @@ export function useInjectorData() {
       confirmType: 'danger',
       async onConfirm() {
         try {
+          await _applySnippetRuleSelection(id, [])
           await snippetApi.delete(id)
           snippetsResp.value.items = snippetsResp.value.items.filter((s) => s.id !== id)
-
-          rulesResp.value.items = rulesResp.value.items.map((r) => ({
-            ...r,
-            snippetIds: (r.snippetIds ?? []).filter((sid) => sid !== id),
-          }))
           if (selectedSnippetId.value === id) selectedSnippetId.value = null
           editSnippet.value = null
           editSnippetRuleIds.value = []
@@ -176,80 +310,6 @@ export function useInjectorData() {
     })
   }
 
-  function toggleRuleInSnippetEditor(ruleId: string) {
-    const ids = editSnippetRuleIds.value
-    editSnippetRuleIds.value = ids.includes(ruleId)
-      ? ids.filter((id) => id !== ruleId)
-      : [...ids, ruleId]
-    editDirty.value = true
-  }
-
-  function _validateRule(rule: InjectionRule): string | null {
-    const pats = uniqueStrings(rule.pathPatterns.map((p) => p.pathPattern))
-    if (!pats.length) return '至少需要一条路径规则'
-    if ((rule.mode === 'SELECTOR' || rule.mode === 'ID') && !rule.match.trim())
-      return '请填写匹配内容'
-    return null
-  }
-
-  async function addRule(rule: InjectionRule): Promise<string | null> {
-    const err = _validateRule(rule)
-    if (err) {
-      Toast.error(err)
-      return null
-    }
-    rule.pathPatterns = uniqueStrings(rule.pathPatterns.map((p) => p.pathPattern)).map((p) => ({
-      pathPattern: p,
-    }))
-    saving.value = true
-    try {
-      const res = await ruleApi.add(rule)
-      await fetchAll()
-      selectedRuleId.value = res.data.id
-      Toast.success('规则已创建')
-      return res.data.id
-    } catch {
-      Toast.error('创建失败')
-      return null
-    } finally {
-      saving.value = false
-    }
-  }
-
-  async function saveRule() {
-    if (!editRule.value) return
-    const err = _validateRule(editRule.value)
-    if (err) {
-      Toast.error(err)
-      return
-    }
-    editRule.value.pathPatterns = uniqueStrings(
-      editRule.value.pathPatterns.map((p) => p.pathPattern),
-    ).map((p) => ({ pathPattern: p }))
-    saving.value = true
-    try {
-      await ruleApi.update(editRule.value.id, editRule.value)
-      await fetchAll()
-      editDirty.value = false
-      Toast.success('保存成功')
-    } catch {
-      Toast.error('保存失败')
-    } finally {
-      saving.value = false
-    }
-  }
-
-  async function toggleRuleEnabled() {
-    if (!editRule.value) return
-    try {
-      editRule.value.enabled = !editRule.value.enabled
-      await ruleApi.update(editRule.value.id, editRule.value)
-      await fetchAll()
-    } catch {
-      Toast.error('操作失败')
-    }
-  }
-
   function confirmDeleteRule() {
     if (!editRule.value) return
     const id = editRule.value.id
@@ -259,10 +319,12 @@ export function useInjectorData() {
       confirmType: 'danger',
       async onConfirm() {
         try {
+          await _applyRuleSnippetSelection(id, [])
           await ruleApi.delete(id)
           rulesResp.value.items = rulesResp.value.items.filter((r) => r.id !== id)
           if (selectedRuleId.value === id) selectedRuleId.value = null
           editRule.value = null
+          editRuleSnippetIds.value = []
           editDirty.value = false
           Toast.success('规则已删除')
         } catch {
@@ -270,33 +332,6 @@ export function useInjectorData() {
         }
       },
     })
-  }
-
-  function toggleSnippetInRuleEditor(snippetId: string) {
-    if (!editRule.value) return
-    const ids = editRule.value.snippetIds ?? []
-    editRule.value.snippetIds = ids.includes(snippetId)
-      ? ids.filter((n) => n !== snippetId)
-      : [...ids, snippetId]
-    editDirty.value = true
-  }
-
-  async function _applySnippetRuleSelection(snippetId: string, nextRuleIds: string[]) {
-    const next = new Set(nextRuleIds)
-    const current = new Set(
-      rules.value.filter((r) => r.snippetIds?.includes(snippetId)).map((r) => r.id),
-    )
-    await Promise.all(
-      rules.value.map(async (rule) => {
-        const has = current.has(rule.id)
-        const shouldHave = next.has(rule.id)
-        if (has === shouldHave) return
-        const updatedIds = shouldHave
-          ? [...(rule.snippetIds ?? []), snippetId]
-          : (rule.snippetIds ?? []).filter((id) => id !== snippetId)
-        await ruleApi.update(rule.id, { ...rule, snippetIds: updatedIds })
-      }),
-    )
   }
 
   return {
@@ -309,6 +344,7 @@ export function useInjectorData() {
     editSnippet,
     editSnippetRuleIds,
     editRule,
+    editRuleSnippetIds,
     editDirty,
     rulesUsingSnippet,
     snippetsInRule,

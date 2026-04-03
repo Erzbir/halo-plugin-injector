@@ -1,7 +1,12 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue'
-import type { CodeSnippet, InjectionRule } from '@/types'
-import { makeRule, MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
+import {
+  type CodeSnippet,
+  type InjectionRule,
+  makeRule,
+  MODE_OPTIONS,
+  POSITION_OPTIONS,
+} from '@/types'
 import BaseFormModal from './BaseFormModal.vue'
 import ItemPicker from './ItemPicker.vue'
 import PathPatternEditor from './PathPatternEditor.vue'
@@ -15,21 +20,29 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'submit', rule: InjectionRule): void
+  (e: 'submit', rule: InjectionRule, snippetIds: string[]): void
 }>()
 
 const rule = ref<InjectionRule>(makeRule())
+const selectedSnippetIds = ref<string[]>([])
 
-onMounted(() => {
+onMounted(reset)
+
+function reset() {
   rule.value = makeRule()
-})
+  selectedSnippetIds.value = []
+}
 
 const needsTarget = computed(() => rule.value.mode === 'ID' || rule.value.mode === 'SELECTOR')
 
 function toggleSnippet(id: string) {
-  const ids = rule.value.snippetIds ?? []
-  const idx = ids.indexOf(id)
-  rule.value.snippetIds = idx === -1 ? [...ids, id] : ids.filter((n) => n !== id)
+  const idx = selectedSnippetIds.value.indexOf(id)
+  if (idx === -1) selectedSnippetIds.value.push(id)
+  else selectedSnippetIds.value.splice(idx, 1)
+}
+
+function handleSubmit() {
+  emit('submit', rule.value, selectedSnippetIds.value)
 }
 </script>
 
@@ -38,7 +51,7 @@ function toggleSnippet(id: string) {
     :saving="saving"
     title="新建注入规则"
     @close="emit('close')"
-    @submit="emit('submit', rule)"
+    @submit="handleSubmit"
   >
     <template #form>
       <FormField label="名称">
@@ -95,14 +108,12 @@ function toggleSnippet(id: string) {
     <template #picker>
       <div class=":uno: flex items-center justify-between">
         <label class=":uno: text-xs font-medium text-gray-600">关联代码块</label>
-        <span class=":uno: text-xs text-gray-400">
-          {{ (rule.snippetIds ?? []).length }} 个已选
-        </span>
+        <span class=":uno: text-xs text-gray-400"> {{ selectedSnippetIds.length }} 个已选 </span>
       </div>
       <ItemPicker
         :items="snippets"
         :preview-fn="(s) => codePreview(s.code)"
-        :selected-ids="rule.snippetIds ?? []"
+        :selected-ids="selectedSnippetIds"
         empty-text="暂无代码块, 请先创建"
         @toggle="toggleSnippet"
       />

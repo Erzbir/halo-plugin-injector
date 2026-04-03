@@ -12,6 +12,7 @@ import { codePreview } from '@/views/composables/util'
 const props = defineProps<{
   rule: InjectionRule | null
   snippets: CodeSnippet[]
+  selectedSnippetIds: string[]
   saving: boolean
   dirty: boolean
 }>()
@@ -132,13 +133,13 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
           <div class=":uno: flex items-center justify-between mb-1">
             <span />
             <span class=":uno: text-xs text-gray-400">
-              {{ (rule.snippetIds ?? []).length }} 个已选
+              {{ selectedSnippetIds.length }} 个已选
             </span>
           </div>
           <ItemPicker
             :items="snippets"
             :preview-fn="(s) => codePreview(s.code)"
-            :selected-ids="rule.snippetIds ?? []"
+            :selected-ids="selectedSnippetIds"
             empty-text="暂无代码块, 请先创建"
             @toggle="(id) => emit('toggle-snippet', id)"
           />

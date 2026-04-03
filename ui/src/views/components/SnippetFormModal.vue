@@ -28,7 +28,8 @@ function reset() {
 }
 
 function toggleRule(id: string) {
-  const idx = selectedRuleIds.value.indexOf(id)
+  const ids = snippet.value.ruleIds ?? []
+  const idx = ids.indexOf(id)
   if (idx === -1) selectedRuleIds.value.push(id)
   else selectedRuleIds.value.splice(idx, 1)
 }

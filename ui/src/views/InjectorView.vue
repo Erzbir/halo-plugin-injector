@@ -28,6 +28,7 @@ const {
   editSnippet,
   editSnippetRuleIds,
   editRule,
+  editRuleSnippetIds,
   editDirty,
   rulesUsingSnippet,
   snippetsInRule,
@@ -133,6 +134,7 @@ function jumpToSnippet(id: string) {
               v-else
               :items="rules"
               :selected-id="selectedRuleId"
+              :stretch="true"
               empty-text="暂无注入规则"
               @create="showRuleModal = true"
               @select="selectedRuleId = $event"
@@ -184,6 +186,7 @@ function jumpToSnippet(id: string) {
               :dirty="editDirty"
               :rule="editRule"
               :saving="saving"
+              :selected-snippet-ids="editRuleSnippetIds"
               :snippets="snippets"
               @delete="confirmDeleteRule"
               @save="saveRule"
