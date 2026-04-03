@@ -1,0 +1,10 @@
+\.^settings$
+\.^project$
+\.^git$
+\.^idea$
+\.^gradle$
+\.classpath$
+^LICENSE$
+\.^factorypath$
+^gradlew$
+^gradlew\.bat$

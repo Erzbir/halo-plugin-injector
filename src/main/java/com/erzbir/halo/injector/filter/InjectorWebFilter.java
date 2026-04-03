@@ -1,16 +1,13 @@
 package com.erzbir.halo.injector.filter;
 
-import static org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers;
-
 import com.erzbir.halo.injector.core.ElementIDInjector;
 import com.erzbir.halo.injector.core.HTMLInjector;
-import com.erzbir.halo.injector.core.InjectService;
-import com.erzbir.halo.injector.core.InjectionRule;
 import com.erzbir.halo.injector.core.SelectorInjector;
-import java.nio.charset.StandardCharsets;
-import java.util.Set;
+import com.erzbir.halo.injector.scheme.InjectionRule;
+import com.erzbir.halo.injector.util.InjectHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
@@ -19,7 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.http.server.reactive.ServerHttpResponseDecorator;
-import org.springframework.lang.NonNull;
 import org.springframework.security.web.server.util.matcher.AndServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.MediaTypeServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher;
@@ -31,42 +27,46 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.halo.app.security.AdditionalWebFilter;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Set;
+
+import static org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class InjectorWebFilter implements AdditionalWebFilter {
-    private final InjectService injectService;
+    private final InjectHelper injectHelper;
     private final SelectorInjector selectorInjector;
     private final ElementIDInjector elementIDInjector;
     private final ServerWebExchangeMatcher pathMatcher = createPathMatcher();
 
     @Override
-    @NonNull
-    public Mono<Void> filter(@NonNull ServerWebExchange exchange, @NonNull WebFilterChain chain) {
+    public @NonNull Mono<Void> filter(@NonNull ServerWebExchange exchange, @NonNull WebFilterChain chain) {
         return pathMatcher.matches(exchange)
-            .flatMap(matchResult -> {
-                if (matchResult.isMatch() && shouldInject(exchange)) {
-                    String path = exchange.getRequest().getPath().value();
-                    return hasMatchingRules(path).flatMap(hasRules -> {
-                        if (hasRules) {
-                            var decoratedExchange = exchange.mutate()
-                                .response(new InjectorResponseDecorator(exchange))
-                                .build();
-                            return chain.filter(decoratedExchange);
-                        }
-                        return chain.filter(exchange);
-                    });
-                }
-                return chain.filter(exchange);
-            });
+                .flatMap(matchResult -> {
+                    if (matchResult.isMatch() && shouldInject(exchange)) {
+                        String path = exchange.getRequest().getPath().value();
+                        return hasMatchingRules(path).flatMap(hasRules -> {
+                            if (hasRules) {
+                                var decoratedExchange = exchange.mutate()
+                                        .response(new InjectorResponseDecorator(exchange))
+                                        .build();
+                                return chain.filter(decoratedExchange);
+                            }
+                            return chain.filter(exchange);
+                        });
+                    }
+                    return chain.filter(exchange);
+                });
     }
 
     private Mono<Boolean> hasMatchingRules(String path) {
         return Mono.zip(
-                injectService.getMatchedRules(path, InjectionRule.Mode.SELECTOR).hasElements(),
-                injectService.getMatchedRules(path, InjectionRule.Mode.ID).hasElements()
-            ).map(tuple -> tuple.getT1() || tuple.getT2())
-            .defaultIfEmpty(false);
+                        injectHelper.getMatchedRules(path, InjectionRule.Mode.SELECTOR).hasElements(),
+                        injectHelper.getMatchedRules(path, InjectionRule.Mode.ID).hasElements()
+                ).map(tuple -> tuple.getT1() || tuple.getT2())
+                .defaultIfEmpty(false);
     }
 
 
@@ -79,52 +79,60 @@ public class InjectorWebFilter implements AdditionalWebFilter {
     ServerWebExchangeMatcher createPathMatcher() {
         var pathMatcher = pathMatchers(HttpMethod.GET, "/**");
         var excludeeMatcher =
-            new NegatedServerWebExchangeMatcher(
-                pathMatchers("/console/**", "/uc/**", "/login/**",
-                    "/signup/**", "/logout/**", "/themes/**",
-                    "/plugins/**", "/actuator/**", "/api/**",
-                    "/apis/**", "/system/**",
-                    "/upload/**", "/webjars/**"));
+                new NegatedServerWebExchangeMatcher(
+                        pathMatchers("/console/**", "/uc/**", "/login/**",
+                                "/signup/**", "/logout/**", "/themes/**",
+                                "/plugins/**", "/actuator/**", "/api/**",
+                                "/apis/**", "/system/**",
+                                "/upload/**", "/webjars/**"));
         var mediaTypeMatcher = new MediaTypeServerWebExchangeMatcher(MediaType.TEXT_HTML);
         mediaTypeMatcher.setIgnoredMediaTypes(Set.of(MediaType.ALL));
 
         return new AndServerWebExchangeMatcher(
-            mediaTypeMatcher,
-            excludeeMatcher,
-            pathMatcher
+                mediaTypeMatcher,
+                excludeeMatcher,
+                pathMatcher
         );
     }
 
     public Mono<String> inject(String html, String permalink) {
-        return dispatchInject(html, permalink, InjectionRule.Mode.SELECTOR).flatMap(
-            ctx -> dispatchInject(ctx, permalink, InjectionRule.Mode.ID)).onErrorResume(e -> {
-            log.warn("Failed to inject HTML response", e);
-            return Mono.just(html);
-        });
+        return dispatchInject(html, permalink, InjectionRule.Mode.SELECTOR)
+                .flatMap(
+                        ctx -> dispatchInject(ctx, permalink, InjectionRule.Mode.ID)).onErrorResume(e -> {
+                    log.warn("Failed to inject HTML response", e);
+                    return Mono.just(html);
+                });
     }
 
     private Mono<String> dispatchInject(
-        String html,
-        String path,
-        InjectionRule.Mode mode) {
+            String html,
+            String path,
+            InjectionRule.Mode mode) {
+
         HTMLInjector injector = switch (mode) {
             case SELECTOR -> selectorInjector;
             case ID -> elementIDInjector;
             default -> null;
         };
+
         if (injector == null) {
             log.warn("No injector found for mode {}", mode);
             return Mono.just(html);
         }
 
-        return injectService.getMatchedRules(path, mode)
-            .reduce(html, (ctx, rule) -> {
-                String content = injector.inject(html, rule);
-                String code = rule.getCode();
-                log.debug("Injected code: [{}] into [{}]",
-                    code.length() > 50 ? code.substring(0, 50) + "..." : code, path);
-                return content;
-            });
+        return injectHelper.getMatchedRules(path, mode)
+                .concatMap(rule ->
+                        injectHelper.getConcatCode(rule)
+                                .map(code -> new Object[]{rule, code})
+                )
+                .reduce(html, (ctx, tuple) -> {
+                    InjectionRule rule = (InjectionRule) tuple[0];
+                    String code = (String) tuple[1];
+
+                    log.debug("Injected rule: [{}] into [{}]", rule.getId(), path);
+
+                    return injector.inject(ctx, rule.getMatch(), code, rule.getPosition());
+                });
     }
 
     @Override
@@ -142,13 +150,13 @@ public class InjectorWebFilter implements AdditionalWebFilter {
 
         boolean isHtmlResponse(ServerHttpResponse response) {
             return response.getHeaders().getContentType() != null &&
-                response.getHeaders().getContentType().includes(MediaType.TEXT_HTML);
+                    response.getHeaders().getContentType().includes(MediaType.TEXT_HTML);
         }
 
         @Override
         @NonNull
         public Mono<Void> writeAndFlushWith(
-            @NonNull Publisher<? extends Publisher<? extends DataBuffer>> body) {
+                @NonNull Publisher<? extends Publisher<? extends DataBuffer>> body) {
             var response = getDelegate();
             if (!isHtmlResponse(response)) {
                 return super.writeAndFlushWith(body);
@@ -165,10 +173,10 @@ public class InjectorWebFilter implements AdditionalWebFilter {
                         return Mono.just(dataBuffer);
                     }
                     return inject(html, path).onErrorResume(e -> Mono.just(html))
-                        .map(processedHtml -> {
-                            byte[] resultBytes = processedHtml.getBytes(StandardCharsets.UTF_8);
-                            return response.bufferFactory().wrap(resultBytes);
-                        });
+                            .map(processedHtml -> {
+                                byte[] resultBytes = processedHtml.getBytes(StandardCharsets.UTF_8);
+                                return response.bufferFactory().wrap(resultBytes);
+                            });
                 } finally {
                     DataBufferUtils.release(dataBuffer);
                 }

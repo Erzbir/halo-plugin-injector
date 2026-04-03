@@ -1,8 +1,9 @@
 package com.erzbir.halo.injector.process;
 
 import com.erzbir.halo.injector.core.HeadInjector;
-import com.erzbir.halo.injector.core.InjectService;
-import com.erzbir.halo.injector.core.InjectionRule;
+import com.erzbir.halo.injector.manager.CodeSnippetManager;
+import com.erzbir.halo.injector.scheme.InjectionRule;
+import com.erzbir.halo.injector.util.InjectHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.context.ITemplateContext;
@@ -18,18 +19,18 @@ import run.halo.app.theme.dialect.TemplateHeadProcessor;
 @Slf4j
 @Component
 public class InjectorHeadProcessor extends AbstractTemplateProcessor
-    implements TemplateHeadProcessor {
+        implements TemplateHeadProcessor {
     private final HeadInjector headInjector;
 
-    public InjectorHeadProcessor(InjectService injectService,
-        HeadInjector headInjector) {
-        super(injectService);
+    public InjectorHeadProcessor(InjectHelper injectHelper,
+                                 HeadInjector headInjector, CodeSnippetManager codeSnippetManager) {
+        super(injectHelper, codeSnippetManager);
         this.headInjector = headInjector;
     }
 
     @Override
     public Mono<Void> process(ITemplateContext context, IModel model,
-        IElementModelStructureHandler structureHandler) {
+                              IElementModelStructureHandler structureHandler) {
         return processInternal(context, model);
     }
 
@@ -39,7 +40,7 @@ public class InjectorHeadProcessor extends AbstractTemplateProcessor
     }
 
     @Override
-    protected void doProcess(ITemplateContext context, IModel model, InjectionRule rule) {
-        headInjector.inject(context, model, rule);
+    protected void doProcess(ITemplateContext context, IModel model, String code) {
+        headInjector.inject(context, model, code);
     }
 }

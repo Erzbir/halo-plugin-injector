@@ -1,8 +1,9 @@
 package com.erzbir.halo.injector.process;
 
-import com.erzbir.halo.injector.core.InjectService;
-import com.erzbir.halo.injector.core.InjectionRule;
+import com.erzbir.halo.injector.manager.CodeSnippetManager;
+import com.erzbir.halo.injector.scheme.InjectionRule;
 import com.erzbir.halo.injector.util.ContextUtil;
+import com.erzbir.halo.injector.util.InjectHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.thymeleaf.context.ITemplateContext;
@@ -17,22 +18,26 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public abstract class AbstractTemplateProcessor {
 
-    private final InjectService injectService;
+    protected final InjectHelper injectHelper;
+    protected final CodeSnippetManager codeSnippetManager;
 
     protected abstract InjectionRule.Mode mode();
 
-    protected abstract void doProcess(ITemplateContext context, IModel model, InjectionRule rule);
+    protected abstract void doProcess(ITemplateContext context, IModel model, String code);
 
 
     protected Mono<Void> processInternal(ITemplateContext context, IModel model) {
         String path = ContextUtil.getPath(context);
-        return injectService.getMatchedRules(path, mode())
-            .doOnNext(rule -> {
-                doProcess(context, model, rule);
-                String code = rule.getCode();
-                log.debug("Injected code: [{}] into [{}]",
-                    code.length() > 50 ? code.substring(0, 50) + "..." : code, path);
-            })
-            .then();
+
+        return injectHelper.getMatchedRules(path, mode())
+                .flatMap(rule ->
+                        injectHelper.getConcatCode(rule)
+                                .doOnNext(code -> {
+                                    doProcess(context, model, code);
+                                }).doOnSuccess(s -> log.debug("Injected rule: [{}] into [{}]",
+                                        rule.getId(),
+                                        path))
+                )
+                .then();
     }
 }

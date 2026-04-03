@@ -11,7 +11,7 @@ import org.thymeleaf.model.IModel;
 @Component
 public class FooterInjector implements TemplateInjector {
     @Override
-    public void inject(ITemplateContext context, IModel model, InjectionRule rule) {
-        model.add(context.getModelFactory().createText(processCode(rule.getCode())));
+    public void inject(ITemplateContext context, IModel model, String code) {
+        model.add(context.getModelFactory().createText(processCode(code)));
     }
 }
