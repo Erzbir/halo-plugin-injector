@@ -13,7 +13,7 @@ export interface CodeSnippet {
 }
 
 export type InjectionMode = 'HEAD' | 'FOOTER' | 'ID' | 'SELECTOR'
-export type InjectionPosition = 'APPEND' | 'PREPEND' | 'BEFORE' | 'AFTER' | 'REPLACE'
+export type InjectionPosition = 'APPEND' | 'PREPEND' | 'BEFORE' | 'AFTER' | 'REPLACE' | 'REMOVE'
 export type MatchRuleType = 'GROUP' | 'PATH' | 'TEMPLATE_ID'
 export type MatchRuleOperator = 'AND' | 'OR'
 export type MatchRuleMatcher = 'ANT' | 'REGEX' | 'EXACT'
@@ -72,6 +72,7 @@ export const POSITION_OPTIONS: { value: InjectionPosition; label: string }[] = [
   { value: 'BEFORE', label: '元素之前 (before)' },
   { value: 'AFTER', label: '元素之后 (after)' },
   { value: 'REPLACE', label: '替换元素 (replace)' },
+  { value: 'REMOVE', label: '移除元素 (remove)' },
 ]
 
 export const MATCH_RULE_GROUP_OPTIONS: { value: MatchRuleOperator; label: string }[] = [

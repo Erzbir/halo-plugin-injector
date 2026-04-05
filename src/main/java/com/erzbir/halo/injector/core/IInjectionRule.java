@@ -29,6 +29,6 @@ public interface IInjectionRule {
     }
 
     enum Position {
-        APPEND, PREPEND, BEFORE, AFTER, REPLACE
+        APPEND, PREPEND, BEFORE, AFTER, REPLACE, REMOVE
     }
 }

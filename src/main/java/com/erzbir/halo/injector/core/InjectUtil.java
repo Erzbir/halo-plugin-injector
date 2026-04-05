@@ -17,6 +17,7 @@ public class InjectUtil {
                 element.after(code);
                 element.remove();
             }
+            case REMOVE -> element.remove();
         }
     }
 }
