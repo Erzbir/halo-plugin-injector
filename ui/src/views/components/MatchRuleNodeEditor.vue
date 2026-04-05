@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { VButton } from '@halo-dev/components'
 import type { MatchRule } from '@/types'
+import type { MatchRuleValidationError } from '@/views/composables/matchRule'
 import {
   MATCH_RULE_GROUP_OPTIONS,
   PATH_MATCHER_OPTIONS,
@@ -23,6 +24,8 @@ const props = defineProps<{
   canRemove?: boolean
   canMoveUp?: boolean
   canMoveDown?: boolean
+  path?: string
+  validationError?: MatchRuleValidationError | null
 }>()
 
 const emit = defineEmits<{
@@ -35,9 +38,28 @@ const emit = defineEmits<{
 
 const rule = computed(() => normalizeMatchRule(props.modelValue))
 const isGroup = computed(() => rule.value.type === 'GROUP')
+const currentPath = computed(() => props.path ?? '$')
 const matcherOptions = computed(() =>
   rule.value.type === 'TEMPLATE_ID' ? TEMPLATE_MATCHER_OPTIONS : PATH_MATCHER_OPTIONS,
 )
+const ownErrorPath = computed(() => {
+  const errorPath = props.validationError?.path
+  if (!errorPath) {
+    return null
+  }
+  const prefix = `${currentPath.value}.`
+  if (!errorPath.startsWith(prefix)) {
+    return errorPath === currentPath.value ? errorPath : null
+  }
+  const suffix = errorPath.slice(prefix.length)
+  return ['children', 'operator', 'negate', 'type', 'matcher', 'value'].includes(suffix)
+    ? errorPath
+    : null
+})
+const ownErrorMessage = computed(() =>
+  ownErrorPath.value ? (props.validationError?.message ?? '') : '',
+)
+const hasNodeError = computed(() => !!ownErrorPath.value)
 
 function updateRule(next: MatchRule) {
   emit('update:modelValue', next)
@@ -112,10 +134,17 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
     type === 'PATH' ? makePathMatchRule(sharedFields) : makeTemplateMatchRule(sharedFields)
   updateRule(next)
 }
+
+function hasFieldError(field: 'children' | 'operator' | 'negate' | 'type' | 'matcher' | 'value') {
+  return ownErrorPath.value === `${currentPath.value}.${field}`
+}
 </script>
 
 <template>
-  <div class=":uno: rounded-md border border-gray-200 bg-white p-3 space-y-3">
+  <div
+    :class="hasNodeError ? ':uno: border-red-300 bg-red-50/40' : ':uno: border-gray-200 bg-white'"
+    class=":uno: rounded-md border p-3 space-y-3"
+  >
     <template v-if="isGroup">
       <div class=":uno: flex flex-wrap items-center gap-2">
         <span class=":uno: text-sm font-medium text-gray-700">
@@ -123,7 +152,12 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
         </span>
         <select
           :value="rule.operator"
-          class=":uno: min-w-[7rem] shrink-0 rounded-md border border-gray-200 bg-white px-2 py-1 pr-8 text-sm focus:border-primary focus:outline-none"
+          :class="
+            hasFieldError('operator')
+              ? ':uno: border-red-300 focus:border-red-500'
+              : ':uno: border-gray-200 focus:border-primary'
+          "
+          class=":uno: min-w-[7rem] shrink-0 rounded-md border bg-white px-2 py-1 pr-8 text-sm focus:outline-none"
           @wheel.prevent="updateSelectByWheel"
           @change="
             updateGroupField(
@@ -140,7 +174,10 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
             {{ option.label }}
           </option>
         </select>
-        <label class=":uno: inline-flex items-center gap-2 text-sm text-gray-700">
+        <label
+          :class="hasFieldError('negate') ? ':uno: text-red-600' : ':uno: text-gray-700'"
+          class=":uno: inline-flex items-center gap-2 text-sm"
+        >
           <input
             :checked="rule.negate"
             type="checkbox"
@@ -178,7 +215,10 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
         </VButton>
       </div>
 
-      <div class=":uno: space-y-2 pl-3 border-l border-gray-200">
+      <div
+        :class="hasFieldError('children') ? ':uno: border-red-300' : ':uno: border-gray-200'"
+        class=":uno: space-y-2 pl-3 border-l"
+      >
         <MatchRuleNodeEditor
           v-for="(child, index) in rule.children ?? []"
           :key="index"
@@ -186,6 +226,8 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
           :can-move-up="index > 0"
           :can-remove="true"
           :model-value="child"
+          :path="`${currentPath}.children[${index}]`"
+          :validation-error="validationError"
           @change="emit('change')"
           @move-down="moveChild(index, 1)"
           @move-up="moveChild(index, -1)"
@@ -204,7 +246,12 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
       <div class=":uno: flex flex-wrap items-center gap-2">
         <select
           :value="rule.type"
-          class=":uno: min-w-[8rem] shrink-0 rounded-md border border-gray-200 bg-white px-2 py-1 pr-8 text-sm focus:border-primary focus:outline-none"
+          :class="
+            hasFieldError('type')
+              ? ':uno: border-red-300 focus:border-red-500'
+              : ':uno: border-gray-200 focus:border-primary'
+          "
+          class=":uno: min-w-[8rem] shrink-0 rounded-md border bg-white px-2 py-1 pr-8 text-sm focus:outline-none"
           @wheel.prevent="updateSelectByWheel"
           @change="
             switchLeafType(($event.target as HTMLSelectElement).value as 'PATH' | 'TEMPLATE_ID')
@@ -216,7 +263,12 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
 
         <select
           :value="rule.matcher"
-          class=":uno: min-w-[8rem] shrink-0 rounded-md border border-gray-200 bg-white px-2 py-1 pr-8 text-sm focus:border-primary focus:outline-none"
+          :class="
+            hasFieldError('matcher')
+              ? ':uno: border-red-300 focus:border-red-500'
+              : ':uno: border-gray-200 focus:border-primary'
+          "
+          class=":uno: min-w-[8rem] shrink-0 rounded-md border bg-white px-2 py-1 pr-8 text-sm focus:outline-none"
           @wheel.prevent="updateSelectByWheel"
           @change="
             updateGroupField(
@@ -230,7 +282,10 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
           </option>
         </select>
 
-        <label class=":uno: inline-flex items-center gap-2 text-sm text-gray-700">
+        <label
+          :class="hasFieldError('negate') ? ':uno: text-red-600' : ':uno: text-gray-700'"
+          class=":uno: inline-flex items-center gap-2 text-sm"
+        >
           <input
             :checked="rule.negate"
             type="checkbox"
@@ -267,10 +322,19 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
 
       <input
         :value="rule.value"
-        class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm font-mono focus:border-primary focus:outline-none"
+        :class="
+          hasFieldError('value')
+            ? ':uno: border-red-300 focus:border-red-500'
+            : ':uno: border-gray-200 focus:border-primary'
+        "
+        class=":uno: w-full rounded-md border px-3 py-1.5 text-sm font-mono focus:outline-none"
         :placeholder="rule.type === 'PATH' ? '/** 或 ^/posts/.*$' : 'post 或 ^(post|page)$'"
         @input="updateGroupField('value', ($event.target as HTMLInputElement).value)"
       />
     </template>
+
+    <p v-if="ownErrorMessage" class=":uno: text-xs text-red-500">
+      {{ ownErrorMessage }}
+    </p>
   </div>
 </template>

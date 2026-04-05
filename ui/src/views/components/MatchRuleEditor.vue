@@ -6,6 +6,7 @@ import { makeMatchRuleGroup } from '@/types'
 import {
   formatMatchRule,
   formatMatchRuleError,
+  type MatchRuleValidationError,
   normalizeMatchRule,
   parseMatchRuleDraft,
   validateMatchRuleTree,
@@ -59,6 +60,9 @@ const parseResult = computed(() => parseMatchRuleDraft(jsonDraft.value))
 const parseError = computed(() => formatMatchRuleError(parseResult.value.error))
 const simpleValidateResult = computed(() =>
   validateMatchRuleTree(normalizeMatchRule(props.modelValue)),
+)
+const simpleValidationError = computed<MatchRuleValidationError | null>(
+  () => simpleValidateResult.value.error,
 )
 const simpleError = computed(() => formatMatchRuleError(simpleValidateResult.value.error))
 const jsonActionLabel = computed(() => (parseResult.value.error ? '重建 JSON' : '格式化 JSON'))
@@ -210,6 +214,7 @@ function formatJson() {
     <template v-if="currentMode === 'SIMPLE'">
       <MatchRuleNodeEditor
         :model-value="normalizeMatchRule(modelValue)"
+        :validation-error="simpleValidationError"
         root
         @change="emit('change')"
         @update:model-value="updateSimple"
