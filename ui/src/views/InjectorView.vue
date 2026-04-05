@@ -177,7 +177,7 @@ watch(
 )
 
 watch(
-  [activeTab, selectedSnippetId, selectedRuleId],
+  [activeTab, selectedSnippetId, selectedRuleId, showSnippetModal, showRuleModal],
   () => {
     if (syncingQuery.value) return
     syncQueryState()

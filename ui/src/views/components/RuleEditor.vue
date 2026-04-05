@@ -145,18 +145,23 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
       </template>
 
       <FormField v-if="needsWrapMarker" label="注释标记">
-        <label class=":uno: inline-flex flex-nowrap items-center gap-2 text-sm text-gray-700 whitespace-nowrap">
-          <input
-            :checked="currentRule.wrapMarker"
-            type="checkbox"
-            @change="updateField('wrapMarker', ($event.target as HTMLInputElement).checked)"
-          />
-          <span>输出</span>
-          <span class=":uno: font-mono text-xs text-gray-500">
-            &lt;!-- PluginInjector start/end --&gt;
-          </span>
-          <span>注释标记</span>
-        </label>
+        <div class=":uno: space-y-2">
+          <div class=":uno: text-sm text-gray-700">
+            输出
+            <span class=":uno: font-mono text-xs text-gray-500">
+              &lt;!-- PluginInjector start/end --&gt;
+            </span>
+            注释标记
+          </div>
+          <label class=":uno: inline-flex items-center gap-2 text-sm text-gray-700">
+            <input
+              :checked="currentRule.wrapMarker"
+              type="checkbox"
+              @change="updateField('wrapMarker', ($event.target as HTMLInputElement).checked)"
+            />
+            启用
+          </label>
+        </div>
       </FormField>
 
       <FormField label="匹配规则" required>
