@@ -234,6 +234,10 @@ function validateMatchRuleInput(
     if (input.matcher !== undefined && input.matcher !== 'ANT' && input.matcher !== 'REGEX' && input.matcher !== 'EXACT') {
       return invalid(`${path}.matcher`, '仅支持 ANT、REGEX、EXACT')
     }
+    if (input.matcher === 'REGEX') {
+      const regexError = validateRegexValue(input.value, `${path}.value`)
+      if (regexError) return regexError
+    }
     return {
       rule: makePathMatchRule({
         negate: input.negate === true,
@@ -247,6 +251,10 @@ function validateMatchRuleInput(
 
   if (input.matcher !== undefined && input.matcher !== 'REGEX' && input.matcher !== 'EXACT') {
     return invalid(`${path}.matcher`, '模板 ID 仅支持 REGEX 或 EXACT')
+  }
+  if (input.matcher === 'REGEX') {
+    const regexError = validateRegexValue(input.value, `${path}.value`)
+    if (regexError) return regexError
   }
 
   return {
@@ -263,6 +271,17 @@ function invalid(path: string, message: string): MatchRuleParseResult {
   return {
     rule: null,
     error: { path, message },
+  }
+}
+
+function validateRegexValue(value: string, path: string): MatchRuleParseResult | null {
+  try {
+    // 前端提前编译一次，尽早把错误定位到具体字段，避免用户保存后才发现规则无法生效。
+    new RegExp(value)
+    return null
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '正则表达式无效'
+    return invalid(path, `正则表达式无效：${message}`)
   }
 }
 
