@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
 import { IconPlug, VButton, VCard, VLoading, VPageHeader } from '@halo-dev/components'
 
 import type { ActiveTab } from '@/types'
@@ -15,9 +16,12 @@ import SnippetFormModal from './components/SnippetFormModal.vue'
 import RuleFormModal from './components/RuleFormModal.vue'
 
 const activeTab = ref<ActiveTab>('snippets')
+const route = useRoute()
+const router = useRouter()
 
 const showSnippetModal = ref(false)
 const showRuleModal = ref(false)
+const syncingQuery = ref(false)
 
 const {
   loading,
@@ -48,6 +52,142 @@ const {
 
 onMounted(fetchAll)
 
+function normalizeTab(tab: unknown): ActiveTab {
+  return tab === 'rules' ? 'rules' : 'snippets'
+}
+
+function normalizeAction(action: unknown): 'create' | null {
+  return action === 'create' ? 'create' : null
+}
+
+function currentSelectedId(tab: ActiveTab) {
+  return tab === 'snippets' ? selectedSnippetId.value : selectedRuleId.value
+}
+
+function currentAction(tab: ActiveTab) {
+  if (tab === 'snippets' && showSnippetModal.value) return 'create'
+  if (tab === 'rules' && showRuleModal.value) return 'create'
+  return null
+}
+
+function applyQueryState() {
+  const nextTab = normalizeTab(route.query.tab)
+  const nextId = typeof route.query.id === 'string' ? route.query.id : null
+  const nextAction = normalizeAction(route.query.action)
+
+  activeTab.value = nextTab
+  showSnippetModal.value = nextTab === 'snippets' && nextAction === 'create'
+  showRuleModal.value = nextTab === 'rules' && nextAction === 'create'
+
+  if (nextAction === 'create') {
+    if (nextTab === 'snippets') {
+      selectedSnippetId.value = null
+    } else {
+      selectedRuleId.value = null
+    }
+    return
+  }
+
+  if (nextTab === 'snippets') {
+    selectedSnippetId.value = nextId
+  } else {
+    selectedRuleId.value = nextId
+  }
+}
+
+function syncQueryState() {
+  const tab = activeTab.value
+  const id = currentSelectedId(tab)
+  const action = currentAction(tab)
+  const currentTab = normalizeTab(route.query.tab)
+  const currentId = typeof route.query.id === 'string' ? route.query.id : null
+  const currentActionValue = normalizeAction(route.query.action)
+
+  if (currentTab === tab && currentId === id && currentActionValue === action) {
+    return
+  }
+
+  const nextQuery: LocationQueryRaw = {
+    ...route.query,
+    tab,
+  }
+
+  if (action) {
+    nextQuery.action = action
+    delete nextQuery.id
+  } else {
+    delete nextQuery.action
+    if (id) {
+      nextQuery.id = id
+    } else {
+      delete nextQuery.id
+    }
+  }
+
+  syncingQuery.value = true
+  void router
+    .replace({
+      query: nextQuery,
+    })
+    .finally(() => {
+      syncingQuery.value = false
+    })
+}
+
+function validateSelection() {
+  const hasSnippet = !!selectedSnippetId.value && snippets.value.some((item) => item.id === selectedSnippetId.value)
+  const hasRule = !!selectedRuleId.value && rules.value.some((item) => item.id === selectedRuleId.value)
+
+  if (selectedSnippetId.value && !hasSnippet) {
+    selectedSnippetId.value = null
+  }
+  if (selectedRuleId.value && !hasRule) {
+    selectedRuleId.value = null
+  }
+}
+
+function openCreateModal(tab: ActiveTab) {
+  activeTab.value = tab
+  if (tab === 'snippets') {
+    selectedSnippetId.value = null
+    showSnippetModal.value = true
+    showRuleModal.value = false
+  } else {
+    selectedRuleId.value = null
+    showRuleModal.value = true
+    showSnippetModal.value = false
+  }
+}
+
+function closeSnippetModal() {
+  showSnippetModal.value = false
+}
+
+function closeRuleModal() {
+  showRuleModal.value = false
+}
+
+watch(
+  () => [route.query.tab, route.query.id, route.query.action],
+  () => {
+    if (syncingQuery.value) return
+    applyQueryState()
+  },
+  { immediate: true },
+)
+
+watch(
+  [activeTab, selectedSnippetId, selectedRuleId],
+  () => {
+    if (syncingQuery.value) return
+    syncQueryState()
+  },
+)
+
+watch([snippets, rules], () => {
+  validateSelection()
+})
+
 async function handleAddSnippet(...args: Parameters<typeof addSnippet>) {
   const id = await addSnippet(...args)
   if (id) showSnippetModal.value = false
@@ -60,11 +200,15 @@ async function handleAddRule(...args: Parameters<typeof addRule>) {
 
 function jumpToRule(id: string) {
   activeTab.value = 'rules'
+  showSnippetModal.value = false
+  showRuleModal.value = false
   selectedRuleId.value = id
 }
 
 function jumpToSnippet(id: string) {
   activeTab.value = 'snippets'
+  showSnippetModal.value = false
+  showRuleModal.value = false
   selectedSnippetId.value = id
 }
 </script>
@@ -75,14 +219,14 @@ function jumpToSnippet(id: string) {
       v-if="showSnippetModal"
       :rules="rules"
       :saving="saving"
-      @close="showSnippetModal = false"
+      @close="closeSnippetModal"
       @submit="handleAddSnippet"
     />
     <RuleFormModal
       v-if="showRuleModal"
       :saving="saving"
       :snippets="snippets"
-      @close="showRuleModal = false"
+      @close="closeRuleModal"
       @submit="handleAddRule"
     />
 
@@ -123,7 +267,7 @@ function jumpToSnippet(id: string) {
               :items="snippets"
               :selected-id="selectedSnippetId"
               empty-text="暂无代码块"
-              @create="showSnippetModal = true"
+              @create="openCreateModal('snippets')"
               @select="selectedSnippetId = $event"
             >
             </ItemListV>
@@ -134,7 +278,7 @@ function jumpToSnippet(id: string) {
               :selected-id="selectedRuleId"
               :stretch="true"
               empty-text="暂无注入规则"
-              @create="showRuleModal = true"
+              @create="openCreateModal('rules')"
               @select="selectedRuleId = $event"
             >
               <template #meta="{ item: r }">
@@ -152,13 +296,7 @@ function jumpToSnippet(id: string) {
             </ItemListV>
 
             <div class=":uno: h-12 flex items-center justify-center border-t bg-white shrink-0">
-              <VButton
-                size="sm"
-                type="secondary"
-                @click="
-                  activeTab === 'snippets' ? (showSnippetModal = true) : (showRuleModal = true)
-                "
-              >
+              <VButton size="sm" type="secondary" @click="openCreateModal(activeTab)">
                 {{ activeTab === 'snippets' ? '新建代码块' : '新建注入规则' }}
               </VButton>
             </div>
