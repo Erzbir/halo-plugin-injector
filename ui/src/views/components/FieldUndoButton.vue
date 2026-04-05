@@ -84,7 +84,12 @@ function handleClick() {
 
 <template>
   <button
-    class=":uno: relative overflow-hidden rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-700"
+    :class="
+      pressing
+        ? ':uno: border-amber-300 text-amber-700 bg-amber-50'
+        : ':uno: border-gray-200 text-gray-500'
+    "
+    class=":uno: relative overflow-hidden rounded border px-2 py-0.5 text-xs transition-colors hover:border-gray-300 hover:text-gray-700"
     title="单击撤销上一步，长按回到未修改状态"
     type="button"
     @click="handleClick"
@@ -98,7 +103,7 @@ function handleClick() {
       :style="{ width: `${progress}%` }"
     />
     <span class=":uno: relative z-1">
-      {{ pressing ? `长按恢复 ${Math.max(0, 100 - Math.round(progress))}%` : '撤销修改' }}
+      {{ pressing ? '长按恢复初始值' : '撤销修改' }}
     </span>
   </button>
 </template>
