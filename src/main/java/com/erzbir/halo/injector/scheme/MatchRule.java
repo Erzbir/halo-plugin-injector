@@ -100,7 +100,7 @@ public class MatchRule {
         }
         List<MatchRule> children = rule.getChildren();
         if (children == null || children.isEmpty()) {
-            throw new IllegalArgumentException(path + ".children：至少需要一个子条件");
+            throw new IllegalArgumentException(path + ".children：不能有空组");
         }
         if (rule.getOperator() != Operator.AND && rule.getOperator() != Operator.OR) {
             throw new IllegalArgumentException(path + ".operator：仅支持 AND 或 OR");

@@ -291,7 +291,7 @@ function validateMatchRuleInput(
       return invalid(`${path}.children`, '必须是数组')
     }
     if (!input.children.length) {
-      return invalid(`${path}.children`, '至少需要一个子条件')
+      return invalid(`${path}.children`, '不能有空组')
     }
 
     const children: MatchRule[] = []
