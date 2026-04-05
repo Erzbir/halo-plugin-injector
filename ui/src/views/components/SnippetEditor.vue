@@ -54,9 +54,19 @@ watch(
   { immediate: true },
 )
 
-function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K]) {
+/**
+ * why: 用户正常编辑时才记录撤销历史；撤销/重置写回旧值时必须跳过入栈，
+ * 否则连续撤销会在新旧值之间反复横跳，无法稳定回退到更早状态。
+ */
+function updateField<K extends keyof CodeSnippet>(
+  key: K,
+  value: CodeSnippet[K],
+  options?: { trackHistory?: boolean },
+) {
   if (!props.snippet) return
-  undo.trackChange(String(key), props.snippet[key], value)
+  if (options?.trackHistory ?? true) {
+    undo.trackChange(String(key), props.snippet[key], value)
+  }
   emit('update:snippet', { ...props.snippet, [key]: value })
   emit('field-change')
 }
@@ -101,7 +111,7 @@ function undoField(field: 'name' | 'description' | 'ruleIds' | 'code') {
     return
   }
 
-  updateField(field, previous as CodeSnippet[typeof field])
+  updateField(field, previous as CodeSnippet[typeof field], { trackHistory: false })
 }
 
 function resetField(field: 'name' | 'description' | 'ruleIds' | 'code') {
@@ -115,7 +125,7 @@ function resetField(field: 'name' | 'description' | 'ruleIds' | 'code') {
     return
   }
 
-  updateField(field, baseline as CodeSnippet[typeof field])
+  updateField(field, baseline as CodeSnippet[typeof field], { trackHistory: false })
 }
 </script>
 

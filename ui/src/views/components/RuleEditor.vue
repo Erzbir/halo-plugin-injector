@@ -83,13 +83,27 @@ watch(
   { immediate: true },
 )
 
-function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule[K]) {
+/**
+ * why: 正常编辑需要记录撤销历史，但撤销/重置本身不能再次入栈，
+ * 否则会把“当前值”重新压回历史，导致连续撤销时来回跳动。
+ */
+function updateField<K extends keyof InjectionRule>(
+  key: K,
+  value: InjectionRule[K],
+  options?: { trackHistory?: boolean },
+) {
   if (!currentRule.value) return
+  const trackHistory = options?.trackHistory ?? true
   const next = { ...currentRule.value, [key]: value }
   if (key === 'position' && value === 'REMOVE') {
     next.wrapMarker = false
   }
-  if (key !== 'matchRule' && key !== 'matchRuleDraft' && key !== 'matchRuleEditorMode') {
+  if (
+    trackHistory &&
+    key !== 'matchRule' &&
+    key !== 'matchRuleDraft' &&
+    key !== 'matchRuleEditorMode'
+  ) {
     undo.trackChange(
       key === 'position' ? 'position' : String(key),
       key === 'position'
@@ -258,7 +272,7 @@ function undoField(
     return
   }
 
-  updateField(field, previous as InjectionRule[typeof field])
+  updateField(field, previous as InjectionRule[typeof field], { trackHistory: false })
 }
 
 function resetField(
@@ -312,7 +326,7 @@ function resetField(
     return
   }
 
-  updateField(field, baseline as InjectionRule[typeof field])
+  updateField(field, baseline as InjectionRule[typeof field], { trackHistory: false })
 }
 </script>
 
