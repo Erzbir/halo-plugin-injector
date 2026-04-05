@@ -3,7 +3,12 @@ import { computed, ref, watch } from 'vue'
 import { VButton } from '@halo-dev/components'
 import type { MatchRule, MatchRuleEditorMode } from '@/types'
 import { makeMatchRuleGroup } from '@/types'
-import { formatMatchRule, normalizeMatchRule, parseMatchRuleDraft } from '@/views/composables/matchRule'
+import {
+  formatMatchRule,
+  formatMatchRuleError,
+  normalizeMatchRule,
+  parseMatchRuleDraft,
+} from '@/views/composables/matchRule'
 import MatchRuleNodeEditor from './MatchRuleNodeEditor.vue'
 
 const props = defineProps<{
@@ -41,7 +46,8 @@ watch(
 )
 
 const currentMode = computed(() => props.editorMode ?? 'SIMPLE')
-const parseError = computed(() => (parseMatchRuleDraft(jsonDraft.value) ? '' : 'JSON 格式无效'))
+const parseResult = computed(() => parseMatchRuleDraft(jsonDraft.value))
+const parseError = computed(() => formatMatchRuleError(parseResult.value.error))
 
 function switchMode(mode: MatchRuleEditorMode) {
   emit('update:editorMode', mode)
@@ -67,14 +73,13 @@ function updateJsonDraft(value: string) {
   emit('update:draft', value)
   emit('update:editorMode', 'JSON')
   emit('change')
-  const parsed = parseMatchRuleDraft(value)
-  if (parsed) {
-    emit('update:modelValue', parsed)
+  if (parseResult.value.rule) {
+    emit('update:modelValue', parseResult.value.rule)
   }
 }
 
 function formatJson() {
-  const parsed = parseMatchRuleDraft(jsonDraft.value) ?? normalizeMatchRule(props.modelValue)
+  const parsed = parseResult.value.rule ?? normalizeMatchRule(props.modelValue)
   const next = formatMatchRule(parsed || makeMatchRuleGroup())
   jsonDraft.value = next
   emit('update:modelValue', parsed || makeMatchRuleGroup())
@@ -127,7 +132,12 @@ function formatJson() {
     <div v-else class=":uno: space-y-2">
       <textarea
         :value="jsonDraft"
-        class=":uno: min-h-72 w-full rounded-md border border-gray-200 px-3 py-2 text-sm font-mono focus:border-primary focus:outline-none"
+        :class="
+          parseError
+            ? ':uno: border-red-300 focus:border-red-500'
+            : ':uno: border-gray-200 focus:border-primary'
+        "
+        class=":uno: min-h-72 w-full rounded-md border px-3 py-2 text-sm font-mono focus:outline-none"
         spellcheck="false"
         @input="updateJsonDraft(($event.target as HTMLTextAreaElement).value)"
       />

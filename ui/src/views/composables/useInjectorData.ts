@@ -4,6 +4,7 @@ import { ruleApi, snippetApi } from '@/apis'
 import type { CodeSnippet, InjectionRule, ItemList } from '@/types'
 import { uniqueStrings } from './util'
 import {
+  formatMatchRuleError,
   hydrateRuleForEditor,
   isValidMatchRule,
   makeRulePayload,
@@ -62,9 +63,9 @@ export function useInjectorData() {
   function _validateRule(rule: InjectionRule): string | null {
     if ((rule.mode === 'SELECTOR' || rule.mode === 'ID') && !rule.match.trim())
       return '请填写匹配内容'
-    const matchRule = resolveRuleMatchRule(rule)
-    if (!matchRule) return '匹配规则 JSON 无效'
-    if (!isValidMatchRule(matchRule)) return '请完善匹配规则'
+    const result = resolveRuleMatchRule(rule)
+    if (result.error) return `匹配规则有误：${formatMatchRuleError(result.error)}`
+    if (!isValidMatchRule(result.rule)) return '请完善匹配规则'
     return null
   }
 
@@ -81,7 +82,9 @@ export function useInjectorData() {
         const updatedIds = shouldHave
           ? uniqueStrings([...(rule.snippetIds ?? []), snippetId])
           : (rule.snippetIds ?? []).filter((id) => id !== snippetId)
-        await ruleApi.update(rule.id, makeRulePayload(rule, updatedIds))
+        const payload = makeRulePayload(rule, updatedIds)
+        if (!payload) throw new Error('匹配规则有误')
+        await ruleApi.update(rule.id, payload)
       }),
     )
   }
@@ -184,7 +187,12 @@ export function useInjectorData() {
     const nextSnippetIds = uniqueStrings(snippetIds)
     saving.value = true
     try {
-      const res = await ruleApi.add(makeRulePayload(rule, nextSnippetIds))
+      const payload = makeRulePayload(rule, nextSnippetIds)
+      if (!payload) {
+        Toast.error('匹配规则有误，请先修正后再保存')
+        return null
+      }
+      const res = await ruleApi.add(payload)
       const id = res.data.id
       if (nextSnippetIds.length) await _applyRuleSnippetSelection(id, nextSnippetIds)
       await fetchAll()
@@ -229,7 +237,12 @@ export function useInjectorData() {
     const nextSnippetIds = uniqueStrings(editRuleSnippetIds.value)
     saving.value = true
     try {
-      await ruleApi.update(editRule.value.id, makeRulePayload(editRule.value, nextSnippetIds))
+      const payload = makeRulePayload(editRule.value, nextSnippetIds)
+      if (!payload) {
+        Toast.error('匹配规则有误，请先修正后再保存')
+        return
+      }
+      await ruleApi.update(editRule.value.id, payload)
       await _applyRuleSnippetSelection(editRule.value.id, nextSnippetIds)
       await fetchAll()
       editDirty.value = false
@@ -254,14 +267,23 @@ export function useInjectorData() {
 
   async function toggleRuleEnabled() {
     if (!editRule.value) return
+    const validationError = _validateRule(editRule.value)
+    if (validationError) {
+      Toast.error(validationError)
+      return
+    }
     try {
       editRule.value.enabled = !editRule.value.enabled
-      await ruleApi.update(
-        editRule.value.id,
-        makeRulePayload(editRule.value, uniqueStrings(editRuleSnippetIds.value)),
-      )
+      const payload = makeRulePayload(editRule.value, uniqueStrings(editRuleSnippetIds.value))
+      if (!payload) {
+        Toast.error('匹配规则有误，请先修正后再操作')
+        editRule.value.enabled = !editRule.value.enabled
+        return
+      }
+      await ruleApi.update(editRule.value.id, payload)
       await fetchAll()
     } catch {
+      editRule.value.enabled = !editRule.value.enabled
       Toast.error('操作失败')
     }
   }
