@@ -20,6 +20,7 @@ defineOptions({
 const props = defineProps<{
   modelValue: MatchRule
   root?: boolean
+  canRemove?: boolean
   canMoveUp?: boolean
   canMoveDown?: boolean
 }>()
@@ -83,11 +84,27 @@ function addGroupRule() {
   updateRule(next)
 }
 
+function resolveNextMatcher(type: 'PATH' | 'TEMPLATE_ID'): MatchRule['matcher'] {
+  if (type === 'PATH') {
+    return rule.value.matcher === 'EXACT' || rule.value.matcher === 'REGEX' ? rule.value.matcher : 'ANT'
+  }
+  return rule.value.matcher === 'REGEX' ? 'REGEX' : 'EXACT'
+}
+
 function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
+  if (rule.value.type === type) {
+    return
+  }
+
+  const sharedFields: Partial<MatchRule> = {
+    negate: rule.value.negate,
+    matcher: resolveNextMatcher(type),
+    value: rule.value.value ?? '',
+  }
   const next =
     type === 'PATH'
-      ? makePathMatchRule({ negate: rule.value.negate })
-      : makeTemplateMatchRule({ negate: rule.value.negate })
+      ? makePathMatchRule(sharedFields)
+      : makeTemplateMatchRule(sharedFields)
   updateRule(next)
 }
 </script>
@@ -134,7 +151,14 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
             ↓
           </VButton>
         </div>
-        <VButton v-if="!root" size="sm" type="danger" @click="emit('remove')">移除此组</VButton>
+        <VButton
+          v-if="!root && canRemove !== false"
+          size="sm"
+          type="danger"
+          @click="emit('remove')"
+        >
+          移除此组
+        </VButton>
       </div>
 
       <div class=":uno: space-y-2 pl-3 border-l border-gray-200">
@@ -143,6 +167,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
           :key="index"
           :can-move-down="index < (rule.children?.length ?? 0) - 1"
           :can-move-up="index > 0"
+          :can-remove="(rule.children?.length ?? 0) > 1"
           :model-value="child"
           @change="emit('change')"
           @move-down="moveChild(index, 1)"
@@ -206,7 +231,9 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
           </VButton>
         </div>
 
-        <VButton size="sm" type="danger" @click="emit('remove')">移除此条件</VButton>
+        <VButton v-if="canRemove !== false" size="sm" type="danger" @click="emit('remove')">
+          移除此条件
+        </VButton>
       </div>
 
       <input
