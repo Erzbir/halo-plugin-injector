@@ -44,6 +44,34 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     public boolean isValid() {
         boolean targetValid = !Mode.ID.equals(getMode()) && !Mode.SELECTOR.equals(getMode())
                 || !getMatch().isBlank();
-        return targetValid && matchRule != null && matchRule.isValid();
+        boolean domModePathPrecheckValid = !Mode.ID.equals(getMode()) && !Mode.SELECTOR.equals(getMode())
+                || MatchRule.supportsDomPathPrecheck(matchRule);
+        return targetValid && domModePathPrecheckValid && matchRule != null && matchRule.isValid();
+    }
+
+    public void setMode(Mode mode) {
+        this.mode = mode;
+        validateDomModeMatchRule();
+    }
+
+    public void setMatchRule(MatchRule matchRule) {
+        MatchRule.validateForWrite(matchRule);
+        this.matchRule = matchRule;
+        validateDomModeMatchRule();
+    }
+
+    /**
+     * why: ID/SELECTOR 依赖 WebFilter 在真正读取模板上下文前做路径预筛；
+     * 如果规则能在“不看路径、只看模板 ID”的分支上命中，就会迫使所有 HTML 响应都进入整页缓冲。
+     */
+    private void validateDomModeMatchRule() {
+        if ((Mode.ID.equals(mode) || Mode.SELECTOR.equals(mode))
+                && matchRule != null
+                && !MatchRule.supportsDomPathPrecheck(matchRule)) {
+            throw new IllegalArgumentException(
+                    "matchRule：ID/SELECTOR 模式下必须可按路径预筛；"
+                            + "模板 ID 条件仅可作为已命中路径分支上的附加约束"
+            );
+        }
     }
 }

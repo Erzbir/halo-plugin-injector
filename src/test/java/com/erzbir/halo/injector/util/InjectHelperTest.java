@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -98,20 +99,18 @@ class InjectHelperTest {
         assertTrue(rules.isEmpty());
     }
 
-    // why: OR 分支里只要存在未知模板条件，就不能在预筛阶段武断淘汰整条规则。
+    // why: 对 DOM 注入来说，“路径 OR 模板”会破坏路径预筛并拖成全站缓冲，因此应在模型层直接视为无效。
     @Test
-    void shouldKeepRuleDuringPrecheckWhenOrContainsUnknownTemplateBranch() {
-        InjectionRule rule = createRule(group(MatchRule.Operator.OR,
+    void shouldTreatUnsupportedDomRuleAsInvalid() {
+        InjectionRule rule = new InjectionRule();
+        rule.setEnabled(true);
+        rule.setMode(InjectionRule.Mode.SELECTOR);
+        rule.setMatch("main");
+        setMatchRuleDirectly(rule, group(MatchRule.Operator.OR,
                 MatchRule.pathRule(MatchRule.Matcher.ANT, "/posts/**"),
                 MatchRule.templateRule(MatchRule.Matcher.EXACT, "post")));
-        when(ruleManager.list()).thenReturn(Flux.just(rule));
 
-        List<InjectionRule> rules = injectHelper
-                .getPathMatchedRules("/archives/demo", InjectionRule.Mode.SELECTOR)
-                .collectList()
-                .block();
-
-        assertEquals(List.of(rule), rules);
+        assertFalse(rule.isValid());
     }
 
     // why: 同一 regex 在运行期应复用已编译结果，避免每次请求重复 Pattern.compile 带来额外开销。
@@ -140,16 +139,19 @@ class InjectHelperTest {
     @Test
     void shouldCacheInvalidRegexFailureToAvoidRepeatedCompile() {
         CountingInjectHelper helper = new CountingInjectHelper(ruleManager, snippetManager);
-        InjectionRule rule = createRule(group(MatchRule.Operator.AND,
+        InjectionRule rule = new InjectionRule();
+        rule.setEnabled(true);
+        rule.setMode(InjectionRule.Mode.FOOTER);
+        setMatchRuleDirectly(rule, group(MatchRule.Operator.AND,
                 MatchRule.pathRule(MatchRule.Matcher.REGEX, "[")));
         when(ruleManager.list()).thenReturn(Flux.just(rule));
 
         List<InjectionRule> first = helper
-                .getMatchedRules("/posts/1", InjectionRule.Mode.SELECTOR)
+                .getMatchedRules("/posts/1", InjectionRule.Mode.FOOTER)
                 .collectList()
                 .block();
         List<InjectionRule> second = helper
-                .getMatchedRules("/posts/2", InjectionRule.Mode.SELECTOR)
+                .getMatchedRules("/posts/2", InjectionRule.Mode.FOOTER)
                 .collectList()
                 .block();
 
@@ -173,6 +175,16 @@ class InjectHelperTest {
         rule.setOperator(operator);
         rule.setChildren(List.of(children));
         return rule;
+    }
+
+    private void setMatchRuleDirectly(InjectionRule rule, MatchRule matchRule) {
+        try {
+            var field = InjectionRule.class.getDeclaredField("matchRule");
+            field.setAccessible(true);
+            field.set(rule, matchRule);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static class CountingInjectHelper extends InjectHelper {

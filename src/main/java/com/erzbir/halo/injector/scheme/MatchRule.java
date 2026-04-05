@@ -5,13 +5,15 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 @Data
 public class MatchRule {
     private Type type = Type.GROUP;
     private Boolean negate = false;
-    private Operator operator = Operator.AND;
-    private Matcher matcher = Matcher.ANT;
+    private Operator operator;
+    private Matcher matcher;
     private String value = "";
     private List<MatchRule> children = new ArrayList<>();
 
@@ -48,9 +50,187 @@ public class MatchRule {
         return switch (type) {
             case GROUP -> children != null
                     && !children.isEmpty()
+                    && (operator == Operator.AND || operator == Operator.OR)
                     && children.stream().allMatch(child -> child != null && child.isValid());
             case PATH -> supportsPathMatcher(matcher) && StringUtils.hasText(value);
             case TEMPLATE_ID -> supportsTemplateMatcher(matcher) && StringUtils.hasText(value);
+        };
+    }
+
+    public static void validateForWrite(MatchRule rule) {
+        validateForWrite(rule, "matchRule", true);
+    }
+
+    public static boolean supportsDomPathPrecheck(MatchRule rule) {
+        return pathPrecheckKind(rule) == PathPrecheckKind.PATH_SCOPED;
+    }
+
+    private static void validateForWrite(MatchRule rule, String path, boolean requireGroupRoot) {
+        if (rule == null) {
+            throw new IllegalArgumentException(path + "：不能为空");
+        }
+        if (rule.getType() == null) {
+            throw new IllegalArgumentException(path + ".type：不能为空");
+        }
+        if (requireGroupRoot && rule.getType() != Type.GROUP) {
+            throw new IllegalArgumentException(path + ".type：根节点必须是 GROUP");
+        }
+
+        switch (rule.getType()) {
+            case GROUP -> validateGroupRule(rule, path);
+            case PATH -> validatePathRule(rule, path);
+            case TEMPLATE_ID -> validateTemplateRule(rule, path);
+        }
+    }
+
+    private static void validateGroupRule(MatchRule rule, String path) {
+        if (rule.getMatcher() != null) {
+            throw new IllegalArgumentException(path + ".matcher：仅叶子条件可使用 matcher");
+        }
+        if (rule.getValue() != null && StringUtils.hasText(rule.getValue())) {
+            throw new IllegalArgumentException(path + ".value：仅叶子条件可使用 value");
+        }
+        List<MatchRule> children = rule.getChildren();
+        if (children == null || children.isEmpty()) {
+            throw new IllegalArgumentException(path + ".children：至少需要一个子条件");
+        }
+        if (rule.getOperator() != Operator.AND && rule.getOperator() != Operator.OR) {
+            throw new IllegalArgumentException(path + ".operator：仅支持 AND 或 OR");
+        }
+        for (int index = 0; index < children.size(); index++) {
+            validateForWrite(children.get(index), path + ".children[" + index + "]", false);
+        }
+    }
+
+    private static void validatePathRule(MatchRule rule, String path) {
+        if (rule.getOperator() != null) {
+            throw new IllegalArgumentException(path + ".operator：仅条件组可使用 operator");
+        }
+        if (rule.getChildren() != null && !rule.getChildren().isEmpty()) {
+            throw new IllegalArgumentException(path + ".children：仅条件组可使用 children");
+        }
+        if (!rule.supportsPathMatcher(rule.getMatcher())) {
+            throw new IllegalArgumentException(path + ".matcher：路径规则仅支持 ANT、REGEX、EXACT");
+        }
+        if (!StringUtils.hasText(rule.getValue())) {
+            throw new IllegalArgumentException(path + ".value：必须是非空字符串");
+        }
+        validateRegexIfNeeded(rule.getMatcher(), rule.getValue(), path + ".value");
+    }
+
+    private static void validateTemplateRule(MatchRule rule, String path) {
+        if (rule.getOperator() != null) {
+            throw new IllegalArgumentException(path + ".operator：仅条件组可使用 operator");
+        }
+        if (rule.getChildren() != null && !rule.getChildren().isEmpty()) {
+            throw new IllegalArgumentException(path + ".children：仅条件组可使用 children");
+        }
+        if (!rule.supportsTemplateMatcher(rule.getMatcher())) {
+            throw new IllegalArgumentException(path + ".matcher：模板 ID 仅支持 REGEX 或 EXACT");
+        }
+        if (!StringUtils.hasText(rule.getValue())) {
+            throw new IllegalArgumentException(path + ".value：必须是非空字符串");
+        }
+        validateRegexIfNeeded(rule.getMatcher(), rule.getValue(), path + ".value");
+    }
+
+    private static void validateRegexIfNeeded(Matcher matcher, String value, String path) {
+        if (matcher != Matcher.REGEX) {
+            return;
+        }
+        try {
+            Pattern.compile(value);
+        } catch (PatternSyntaxException e) {
+            throw new IllegalArgumentException(path + "：正则表达式无效，" + e.getDescription(), e);
+        }
+    }
+
+    private static PathPrecheckKind pathPrecheckKind(MatchRule rule) {
+        if (rule == null || rule.getType() == null) {
+            return PathPrecheckKind.UNSUPPORTED;
+        }
+        if (Boolean.TRUE.equals(rule.getNegate())) {
+            return pathPrecheckKindForNegated(rule);
+        }
+        return switch (rule.getType()) {
+            case PATH -> PathPrecheckKind.PATH_SCOPED;
+            case TEMPLATE_ID -> PathPrecheckKind.TEMPLATE_ONLY;
+            case GROUP -> pathPrecheckKindForGroup(rule);
+        };
+    }
+
+    private static PathPrecheckKind pathPrecheckKindForNegated(MatchRule rule) {
+        return switch (rule.getType()) {
+            case PATH -> PathPrecheckKind.PATH_SCOPED;
+            case TEMPLATE_ID -> PathPrecheckKind.UNSUPPORTED;
+            case GROUP -> containsTemplateRule(rule)
+                    ? PathPrecheckKind.UNSUPPORTED
+                    : pathPrecheckKindForGroupWithoutNegate(rule);
+        };
+    }
+
+    private static PathPrecheckKind pathPrecheckKindForGroup(MatchRule rule) {
+        return pathPrecheckKindForGroupWithoutNegate(rule);
+    }
+
+    private static PathPrecheckKind pathPrecheckKindForGroupWithoutNegate(MatchRule rule) {
+        List<MatchRule> children = rule.getChildren();
+        if (children == null || children.isEmpty()) {
+            return PathPrecheckKind.UNSUPPORTED;
+        }
+        return switch (rule.getOperator() == null ? Operator.AND : rule.getOperator()) {
+            case AND -> pathPrecheckKindForAnd(children);
+            case OR -> pathPrecheckKindForOr(children);
+        };
+    }
+
+    private static PathPrecheckKind pathPrecheckKindForAnd(List<MatchRule> children) {
+        boolean hasPathScoped = false;
+        for (MatchRule child : children) {
+            PathPrecheckKind kind = pathPrecheckKind(child);
+            if (kind == PathPrecheckKind.UNSUPPORTED) {
+                return PathPrecheckKind.UNSUPPORTED;
+            }
+            if (kind == PathPrecheckKind.PATH_SCOPED) {
+                hasPathScoped = true;
+            }
+        }
+        return hasPathScoped ? PathPrecheckKind.PATH_SCOPED : PathPrecheckKind.TEMPLATE_ONLY;
+    }
+
+    private static PathPrecheckKind pathPrecheckKindForOr(List<MatchRule> children) {
+        boolean hasPathScoped = false;
+        boolean hasTemplateOnly = false;
+        for (MatchRule child : children) {
+            PathPrecheckKind kind = pathPrecheckKind(child);
+            if (kind == PathPrecheckKind.UNSUPPORTED) {
+                return PathPrecheckKind.UNSUPPORTED;
+            }
+            if (kind == PathPrecheckKind.PATH_SCOPED) {
+                hasPathScoped = true;
+            }
+            if (kind == PathPrecheckKind.TEMPLATE_ONLY) {
+                hasTemplateOnly = true;
+            }
+        }
+        if (hasPathScoped && hasTemplateOnly) {
+            return PathPrecheckKind.UNSUPPORTED;
+        }
+        if (hasPathScoped) {
+            return PathPrecheckKind.PATH_SCOPED;
+        }
+        return PathPrecheckKind.TEMPLATE_ONLY;
+    }
+
+    private static boolean containsTemplateRule(MatchRule rule) {
+        if (rule == null || rule.getType() == null) {
+            return false;
+        }
+        return switch (rule.getType()) {
+            case TEMPLATE_ID -> true;
+            case PATH -> false;
+            case GROUP -> rule.getChildren() != null
+                    && rule.getChildren().stream().anyMatch(MatchRule::containsTemplateRule);
         };
     }
 
@@ -72,5 +252,11 @@ public class MatchRule {
 
     public enum Matcher {
         ANT, REGEX, EXACT
+    }
+
+    private enum PathPrecheckKind {
+        PATH_SCOPED,
+        TEMPLATE_ONLY,
+        UNSUPPORTED
     }
 }

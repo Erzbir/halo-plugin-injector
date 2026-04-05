@@ -111,6 +111,10 @@ export function isValidMatchRule(rule: MatchRule | null): boolean {
   return !!rule.value?.trim()
 }
 
+export function supportsDomPathPrecheck(rule: MatchRule | null): boolean {
+  return analyzePathPrecheckKind(rule) === 'PATH_SCOPED'
+}
+
 export function makeRulePayload(rule: InjectionRule, snippetIds: string[]) {
   const result = resolveRuleMatchRule(rule)
   if (!result.rule) {
@@ -157,6 +161,8 @@ function describeMatchRule(rule: MatchRule): string {
   const matcherLabel = rule.matcher === 'REGEX' ? '正则表达式' : '精确匹配'
   return `${prefix}${matcherLabel}: ${rule.value ?? ''}`
 }
+
+type PathPrecheckKind = 'PATH_SCOPED' | 'TEMPLATE_ONLY' | 'UNSUPPORTED'
 
 export function formatMatchRuleError(error: MatchRuleValidationError | null): string {
   if (!error) return ''
@@ -273,6 +279,79 @@ function validateMatchRuleInput(
     }),
     error: null,
   }
+}
+
+function analyzePathPrecheckKind(rule: MatchRule | null): PathPrecheckKind {
+  if (!rule) return 'UNSUPPORTED'
+
+  if (rule.negate) {
+    return analyzeNegatedPathPrecheckKind(rule)
+  }
+
+  if (rule.type === 'PATH') {
+    return 'PATH_SCOPED'
+  }
+
+  if (rule.type === 'TEMPLATE_ID') {
+    return 'TEMPLATE_ONLY'
+  }
+
+  const children = rule.children ?? []
+  if (!children.length) return 'UNSUPPORTED'
+
+  if (rule.operator === 'OR') {
+    return analyzeOrPathPrecheckKind(children)
+  }
+
+  return analyzeAndPathPrecheckKind(children)
+}
+
+function analyzeNegatedPathPrecheckKind(rule: MatchRule): PathPrecheckKind {
+  if (rule.type === 'PATH') {
+    return 'PATH_SCOPED'
+  }
+  if (rule.type === 'TEMPLATE_ID') {
+    return 'UNSUPPORTED'
+  }
+  return containsTemplateRule(rule) ? 'UNSUPPORTED' : analyzeGroupPathPrecheckKind(rule)
+}
+
+function analyzeGroupPathPrecheckKind(rule: MatchRule): PathPrecheckKind {
+  const children = rule.children ?? []
+  if (!children.length) return 'UNSUPPORTED'
+  return rule.operator === 'OR'
+    ? analyzeOrPathPrecheckKind(children)
+    : analyzeAndPathPrecheckKind(children)
+}
+
+function analyzeAndPathPrecheckKind(children: MatchRule[]): PathPrecheckKind {
+  let hasPathScoped = false
+  for (const child of children) {
+    const kind = analyzePathPrecheckKind(child)
+    if (kind === 'UNSUPPORTED') return 'UNSUPPORTED'
+    if (kind === 'PATH_SCOPED') hasPathScoped = true
+  }
+  return hasPathScoped ? 'PATH_SCOPED' : 'TEMPLATE_ONLY'
+}
+
+function analyzeOrPathPrecheckKind(children: MatchRule[]): PathPrecheckKind {
+  let hasPathScoped = false
+  let hasTemplateOnly = false
+  for (const child of children) {
+    const kind = analyzePathPrecheckKind(child)
+    if (kind === 'UNSUPPORTED') return 'UNSUPPORTED'
+    if (kind === 'PATH_SCOPED') hasPathScoped = true
+    if (kind === 'TEMPLATE_ONLY') hasTemplateOnly = true
+  }
+  if (hasPathScoped && hasTemplateOnly) return 'UNSUPPORTED'
+  if (hasPathScoped) return 'PATH_SCOPED'
+  return 'TEMPLATE_ONLY'
+}
+
+function containsTemplateRule(rule: MatchRule): boolean {
+  if (rule.type === 'TEMPLATE_ID') return true
+  if (rule.type !== 'GROUP') return false
+  return (rule.children ?? []).some((child) => containsTemplateRule(child))
 }
 
 function invalid(path: string, message: string): MatchRuleParseResult {

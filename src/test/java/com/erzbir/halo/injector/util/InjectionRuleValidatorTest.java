@@ -24,7 +24,7 @@ class InjectionRuleValidatorTest {
     @Test
     void shouldRejectInvalidRegexDuringWriteValidation() {
         InjectionRule rule = makeRule();
-        rule.setMatchRule(makeGroup(MatchRule.pathRule(MatchRule.Matcher.REGEX, "[")));
+        setMatchRuleDirectly(rule, makeGroup(MatchRule.pathRule(MatchRule.Matcher.REGEX, "[")));
 
         InjectionRuleValidationException error = assertThrows(
                 InjectionRuleValidationException.class,
@@ -40,7 +40,7 @@ class InjectionRuleValidatorTest {
         InjectionRule rule = makeRule();
         MatchRule child = MatchRule.templateRule(MatchRule.Matcher.EXACT, "post");
         child.setMatcher(MatchRule.Matcher.ANT);
-        rule.setMatchRule(makeGroup(child));
+        setMatchRuleDirectly(rule, makeGroup(child));
 
         InjectionRuleValidationException error = assertThrows(
                 InjectionRuleValidationException.class,
@@ -54,7 +54,7 @@ class InjectionRuleValidatorTest {
     @Test
     void shouldRequireGroupAsRootNode() {
         InjectionRule rule = makeRule();
-        rule.setMatchRule(MatchRule.pathRule(MatchRule.Matcher.ANT, "/**"));
+        setMatchRuleDirectly(rule, MatchRule.pathRule(MatchRule.Matcher.ANT, "/**"));
 
         InjectionRuleValidationException error = assertThrows(
                 InjectionRuleValidationException.class,
@@ -62,6 +62,48 @@ class InjectionRuleValidatorTest {
         );
 
         assertEquals("matchRule.type：根节点必须是 GROUP", error.getReason());
+    }
+
+    // why: 后端也要拒绝“叶子节点带条件组字段”这类语义错误，避免只靠前端校验。
+    @Test
+    void shouldRejectChildrenOnLeafRule() {
+        InjectionRule rule = makeRule();
+        MatchRule child = MatchRule.pathRule(MatchRule.Matcher.ANT, "/posts/**");
+        child.setChildren(java.util.List.of(MatchRule.pathRule(MatchRule.Matcher.ANT, "/ignored")));
+        setMatchRuleDirectly(rule, makeGroup(child));
+
+        InjectionRuleValidationException error = assertThrows(
+                InjectionRuleValidationException.class,
+                () -> validator.validateForWrite(rule).block()
+        );
+
+        assertEquals("matchRule.children[0].children：仅条件组可使用 children", error.getReason());
+    }
+
+    // why: ID/SELECTOR 依赖路径预筛来决定是否包裹整页 HTML，不能接受“路径 OR 模板”这种会拖成全站缓冲的规则。
+    @Test
+    void shouldRejectUnsupportedDomPathPrecheckRule() {
+        InjectionRule rule = makeRule();
+        rule.setMode(InjectionRule.Mode.SELECTOR);
+        rule.setMatch("main");
+
+        MatchRule templateBranch = MatchRule.templateRule(MatchRule.Matcher.EXACT, "post");
+        MatchRule pathBranch = MatchRule.pathRule(MatchRule.Matcher.ANT, "/posts/**");
+        MatchRule orGroup = new MatchRule();
+        orGroup.setType(MatchRule.Type.GROUP);
+        orGroup.setOperator(MatchRule.Operator.OR);
+        orGroup.setChildren(java.util.List.of(pathBranch, templateBranch));
+        setMatchRuleDirectly(rule, makeGroup(orGroup));
+
+        InjectionRuleValidationException error = assertThrows(
+                InjectionRuleValidationException.class,
+                () -> validator.validateForWrite(rule).block()
+        );
+
+        assertEquals(
+                "matchRule：ID/SELECTOR 模式下必须可按路径预筛；模板 ID 条件仅可作为已命中路径分支上的附加约束",
+                error.getReason()
+        );
     }
 
     private InjectionRule makeRule() {
@@ -73,7 +115,18 @@ class InjectionRuleValidatorTest {
     private MatchRule makeGroup(MatchRule child) {
         MatchRule group = new MatchRule();
         group.setType(MatchRule.Type.GROUP);
+        group.setOperator(MatchRule.Operator.AND);
         group.setChildren(java.util.List.of(child));
         return group;
+    }
+
+    private void setMatchRuleDirectly(InjectionRule rule, MatchRule matchRule) {
+        try {
+            var field = InjectionRule.class.getDeclaredField("matchRule");
+            field.setAccessible(true);
+            field.set(rule, matchRule);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

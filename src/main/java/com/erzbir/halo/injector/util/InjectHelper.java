@@ -65,8 +65,7 @@ public class InjectHelper {
 
         return getRulesByMode(mode)
                 .filter(rule -> rule.isEnabled() && rule.isValid())
-                .filter(rule -> evaluate(rule.getMatchRule(), new MatchContext(targetPath, null))
-                        != MatchState.NO_MATCH)
+                .filter(rule -> pathPrecheckMatches(rule.getMatchRule(), targetPath))
                 .onErrorResume(e -> {
                     log.error("Failed to get matched rules for mode: {}", mode, e);
                     return Flux.empty();
@@ -201,6 +200,33 @@ public class InjectHelper {
 
     protected Pattern compileRegexPattern(String pattern) {
         return Pattern.compile(pattern);
+    }
+
+    /**
+     * why: WebFilter 阶段还拿不到最终模板上下文，只能根据路径先判断“是否值得包裹响应体”。
+     * DOM 注入规则因此被限制为可按路径预筛的子集，这里只做路径维度判断，模板 ID 条件视为附加约束。
+     */
+    private boolean pathPrecheckMatches(MatchRule rule, String currentPath) {
+        if (rule == null || rule.getType() == null) {
+            return false;
+        }
+        boolean matched = switch (rule.getType()) {
+            case GROUP -> pathPrecheckGroupMatches(rule, currentPath);
+            case PATH -> evaluatePath(rule, currentPath) == MatchState.MATCH;
+            case TEMPLATE_ID -> true;
+        };
+        return Boolean.TRUE.equals(rule.getNegate()) ? !matched : matched;
+    }
+
+    private boolean pathPrecheckGroupMatches(MatchRule rule, String currentPath) {
+        if (rule.getChildren() == null || rule.getChildren().isEmpty()) {
+            return false;
+        }
+        MatchRule.Operator operator = rule.getOperator() == null ? MatchRule.Operator.AND : rule.getOperator();
+        return switch (operator) {
+            case AND -> rule.getChildren().stream().allMatch(child -> pathPrecheckMatches(child, currentPath));
+            case OR -> rule.getChildren().stream().anyMatch(child -> pathPrecheckMatches(child, currentPath));
+        };
     }
 
     private MatchState negate(MatchState state) {
