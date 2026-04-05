@@ -34,6 +34,7 @@ class InjectHelperTest {
         injectHelper = new InjectHelper(ruleManager, snippetManager);
     }
 
+    // why: 基础命中链路必须同时满足路径和模板 ID，保证组合条件按 AND 正常工作。
     @Test
     void shouldMatchRuleWhenPathAndTemplateMatch() {
         InjectionRule rule = createRule(group(MatchRule.Operator.AND,
@@ -49,6 +50,7 @@ class InjectHelperTest {
         assertEquals(List.of(rule), rules);
     }
 
+    // why: 模板 ID 不匹配时必须淘汰规则，避免把仅路径命中的规则错误放行。
     @Test
     void shouldSkipRuleWhenTemplateDoesNotMatch() {
         InjectionRule rule = createRule(group(MatchRule.Operator.AND,
@@ -64,6 +66,7 @@ class InjectHelperTest {
         assertTrue(rules.isEmpty());
     }
 
+    // why: 预筛阶段拿不到模板 ID 时，应保留“路径已命中但模板待定”的规则，避免误删候选规则。
     @Test
     void shouldKeepRuleDuringPathPrecheckWhenTemplateIsUnknown() {
         InjectionRule rule = createRule(group(MatchRule.Operator.AND,
@@ -79,6 +82,7 @@ class InjectHelperTest {
         assertEquals(List.of(rule), rules);
     }
 
+    // why: 路径已明确不命中时应尽早淘汰规则，减少后续无意义处理。
     @Test
     void shouldSkipRuleDuringPathPrecheckWhenPathDefinitelyMisses() {
         InjectionRule rule = createRule(group(MatchRule.Operator.AND,
@@ -94,6 +98,7 @@ class InjectHelperTest {
         assertTrue(rules.isEmpty());
     }
 
+    // why: OR 分支里只要存在未知模板条件，就不能在预筛阶段武断淘汰整条规则。
     @Test
     void shouldKeepRuleDuringPrecheckWhenOrContainsUnknownTemplateBranch() {
         InjectionRule rule = createRule(group(MatchRule.Operator.OR,
@@ -109,6 +114,7 @@ class InjectHelperTest {
         assertEquals(List.of(rule), rules);
     }
 
+    // why: 同一 regex 在运行期应复用已编译结果，避免每次请求重复 Pattern.compile 带来额外开销。
     @Test
     void shouldCompileSameRegexOnlyOnceAtRuntime() {
         CountingInjectHelper helper = new CountingInjectHelper(ruleManager, snippetManager);
@@ -130,6 +136,7 @@ class InjectHelperTest {
         assertEquals(1, helper.compileCount.get());
     }
 
+    // why: 历史脏数据里的非法 regex 也要缓存失败结果，避免请求期反复抛异常和重复编译。
     @Test
     void shouldCacheInvalidRegexFailureToAvoidRepeatedCompile() {
         CountingInjectHelper helper = new CountingInjectHelper(ruleManager, snippetManager);

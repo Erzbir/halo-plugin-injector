@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class InjectUtilTest {
+    // why: REMOVE 语义必须是“整节点移除”，避免实现成清空内容或隐藏元素。
     @Test
     void shouldRemoveElementWhenPositionIsRemove() {
         Document document = Jsoup.parse("<div><span id='target'>hello</span><p>world</p></div>");
