@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import type { CodeSnippet, InjectionRule } from '@/types'
 import { MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
+import { getDomRulePerformanceWarning } from '@/views/composables/matchRule'
 import ItemPicker from './ItemPicker.vue'
 import EditorToolbar from './EditorToolbar.vue'
 import EditorFooter from './EditorFooter.vue'
@@ -34,6 +35,9 @@ const needsTarget = computed(
   () => currentRule.value?.mode === 'ID' || currentRule.value?.mode === 'SELECTOR',
 )
 const needsSnippets = computed(() => currentRule.value?.position !== 'REMOVE')
+const performanceWarning = computed(() =>
+  currentRule.value ? getDomRulePerformanceWarning(currentRule.value) : null,
+)
 
 watch(
   () => props.rule,
@@ -157,6 +161,12 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
           @update:editor-mode="updateField('matchRuleEditorMode', $event)"
           @update:model-value="updateField('matchRule', $event)"
         />
+        <div
+          v-if="performanceWarning"
+          class=":uno: mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800"
+        >
+          {{ performanceWarning }}
+        </div>
       </FormField>
 
       <FormField v-if="needsSnippets" label="关联代码块">

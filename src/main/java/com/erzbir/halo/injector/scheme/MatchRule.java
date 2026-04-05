@@ -66,8 +66,8 @@ public class MatchRule {
     }
 
     /**
-     * why: DOM 注入要先在 WebFilter 阶段决定是否包裹整页 HTML，
-     * 因此规则必须能仅凭路径做出“值得继续处理”的判断，模板 ID 只能作为后续附加约束。
+     * why: DOM 注入在 WebFilter 阶段只能先看到页面路径；
+     * 这里用于判断规则能否先按路径缩小范围，从而避免退化成“所有 HTML 页面都先进入处理链路”。
      */
     public static boolean supportsDomPathPrecheck(MatchRule rule) {
         return pathPrecheckKind(rule) == PathPrecheckKind.PATH_SCOPED;

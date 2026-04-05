@@ -16,7 +16,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -99,9 +98,9 @@ class InjectHelperTest {
         assertTrue(rules.isEmpty());
     }
 
-    // why: 对 DOM 注入来说，“路径 OR 模板”会破坏路径预筛并拖成全站缓冲，因此应在模型层直接视为无效。
+    // why: 对 DOM 注入来说，“路径 OR 模板”虽然允许保存，但会退化成全站 HTML 处理；运行时不能把它当坏规则丢掉。
     @Test
-    void shouldTreatUnsupportedDomRuleAsInvalid() {
+    void shouldTreatUnsupportedDomRuleAsRuntimeValid() {
         InjectionRule rule = new InjectionRule();
         rule.setEnabled(true);
         rule.setMode(InjectionRule.Mode.SELECTOR);
@@ -110,7 +109,26 @@ class InjectHelperTest {
                 MatchRule.pathRule(MatchRule.Matcher.ANT, "/posts/**"),
                 MatchRule.templateRule(MatchRule.Matcher.EXACT, "post")));
 
-        assertFalse(rule.isValid());
+        assertTrue(rule.isValid());
+    }
+
+    // why: 无法先按路径缩小范围的 DOM 规则会迫使 WebFilter 对所有 HTML 页面先进入处理链路。
+    @Test
+    void shouldTreatUnsupportedDomRuleAsGlobalProcessCandidate() {
+        InjectionRule rule = new InjectionRule();
+        rule.setEnabled(true);
+        rule.setMode(InjectionRule.Mode.SELECTOR);
+        rule.setMatch("main");
+        setMatchRuleDirectly(rule, group(MatchRule.Operator.OR,
+                MatchRule.pathRule(MatchRule.Matcher.ANT, "/posts/**"),
+                MatchRule.templateRule(MatchRule.Matcher.EXACT, "post")));
+        when(ruleManager.list()).thenReturn(Flux.just(rule));
+
+        Boolean shouldProcess = injectHelper
+                .hasDomProcessCandidate("/archives/demo", InjectionRule.Mode.SELECTOR)
+                .block();
+
+        assertTrue(Boolean.TRUE.equals(shouldProcess));
     }
 
     // why: 同一 regex 在运行期应复用已编译结果，避免每次请求重复 Pattern.compile 带来额外开销。

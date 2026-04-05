@@ -6,8 +6,9 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InjectionRuleTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -39,11 +40,10 @@ class InjectionRuleTest {
         assertTrue(error.getMessage().contains("Unclosed character class"));
     }
 
-    // why: DOM 注入规则若不能按路径预筛，就会迫使所有 HTML 响应进入整页缓冲，模型层也必须拒绝。
+    // why: DOM 注入规则即使会退化成全站 HTML 处理，也应允许保存，由 UI 给出性能警告即可。
     @Test
-    void shouldRejectUnsupportedDomRuleWhenConvertedToInjectionRule() {
-        IllegalArgumentException error = assertThrows(
-                IllegalArgumentException.class,
+    void shouldAllowUnsupportedDomRuleWhenConvertedToInjectionRule() {
+        InjectionRule rule = assertDoesNotThrow(
                 () -> objectMapper.convertValue(
                         Map.of(
                                 "mode", "SELECTOR",
@@ -69,7 +69,7 @@ class InjectionRuleTest {
                 )
         );
 
-        assertTrue(error.getMessage().contains("元素 ID / CSS 选择器模式下，匹配规则里必须先有页面路径条件"));
+        assertTrue(rule.isValid());
     }
 
     // why: REMOVE 不消费代码块内容；模型层也必须拒绝仍携带 snippetIds 的脏数据。

@@ -54,14 +54,11 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     public boolean isValid() {
         boolean targetValid = !Mode.ID.equals(getMode()) && !Mode.SELECTOR.equals(getMode())
                 || !getMatch().isBlank();
-        boolean domModePathPrecheckValid = !Mode.ID.equals(getMode()) && !Mode.SELECTOR.equals(getMode())
-                || MatchRule.supportsDomPathPrecheck(matchRule);
-        return targetValid && domModePathPrecheckValid && matchRule != null && matchRule.isValid();
+        return targetValid && matchRule != null && matchRule.isValid();
     }
 
     public void setMode(Mode mode) {
         this.mode = mode;
-        validateDomModeMatchRule();
     }
 
     /**
@@ -76,7 +73,6 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     public void setMatchRule(MatchRule matchRule) {
         MatchRule.validateForWrite(matchRule);
         this.matchRule = matchRule;
-        validateDomModeMatchRule();
     }
 
     /**
@@ -86,21 +82,6 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     public void setSnippetIds(Set<String> snippetIds) {
         this.snippetIds = snippetIds == null ? new LinkedHashSet<>() : new LinkedHashSet<>(snippetIds);
         validateRemoveSnippetRelation();
-    }
-
-    /**
-     * why: ID/SELECTOR 依赖 WebFilter 在真正读取模板上下文前做路径预筛；
-     * 如果规则能在“不看路径、只看模板 ID”的分支上命中，就会迫使所有 HTML 响应都进入整页缓冲。
-     */
-    private void validateDomModeMatchRule() {
-        if ((Mode.ID.equals(mode) || Mode.SELECTOR.equals(mode))
-                && matchRule != null
-                && !MatchRule.supportsDomPathPrecheck(matchRule)) {
-            throw new IllegalArgumentException(
-                    "matchRule：元素 ID / CSS 选择器模式下，匹配规则里必须先有页面路径条件；"
-                            + "模板 ID 只能在路径命中后继续缩小范围"
-            );
-        }
     }
 
     /**

@@ -73,11 +73,29 @@ public class InjectHelper {
 
         return getRulesByMode(mode)
                 .filter(rule -> rule.isEnabled() && rule.isValid())
+                .filter(rule -> MatchRule.supportsDomPathPrecheck(rule.getMatchRule()))
                 .filter(rule -> pathPrecheckMatches(rule.getMatchRule(), targetPath))
                 .onErrorResume(e -> {
                     log.error("Failed to get matched rules for mode: {}", mode, e);
                     return Flux.empty();
                 });
+    }
+
+    /**
+     * why: 一旦 DOM 规则无法先靠页面路径缩小范围，WebFilter 就只能保守地包裹所有 HTML 页面，
+     * 再等模板上下文就绪后做完整匹配；这里返回“当前请求是否需要进入这条慢路径”。
+     */
+    public Mono<Boolean> hasDomProcessCandidate(String targetPath,
+                                                InjectionRule.Mode mode) {
+        if (targetPath.isEmpty()) {
+            return Mono.just(false);
+        }
+
+        return getRulesByMode(mode)
+                .filter(rule -> rule.isEnabled() && rule.isValid())
+                .any(rule -> !MatchRule.supportsDomPathPrecheck(rule.getMatchRule())
+                        || pathPrecheckMatches(rule.getMatchRule(), targetPath))
+                .defaultIfEmpty(false);
     }
 
     /**
@@ -216,7 +234,8 @@ public class InjectHelper {
 
     /**
      * why: WebFilter 阶段还拿不到最终模板上下文，只能根据路径先判断“是否值得包裹响应体”。
-     * DOM 注入规则因此被限制为可按路径预筛的子集，这里只做路径维度判断，模板 ID 条件视为附加约束。
+     * 对能先按路径缩小范围的规则，这里可提前跳过大部分页面；
+     * 对不能缩小范围的规则，则会退化成“所有 HTML 页面都先进入处理，再在后面看模板 ID”等完整条件。
      */
     private boolean pathPrecheckMatches(MatchRule rule, String currentPath) {
         if (rule == null || rule.getType() == null) {

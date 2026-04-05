@@ -134,6 +134,13 @@ export function supportsDomPathPrecheck(rule: MatchRule | null): boolean {
   return analyzePathPrecheckKind(rule) === 'PATH_SCOPED'
 }
 
+export function getDomRulePerformanceWarning(rule: Pick<InjectionRule, 'mode' | 'matchRule'>): string | null {
+  if ((rule.mode !== 'SELECTOR' && rule.mode !== 'ID') || supportsDomPathPrecheck(rule.matchRule)) {
+    return null
+  }
+  return '⚠ 当前匹配规则不能先用页面路径缩小范围。启用后，元素 ID / CSS 选择器注入会对所有 HTML 页面先做处理，再判断是否命中，可能明显增加页面处理开销。'
+}
+
 /**
  * why: 发送到后端前统一收敛编辑态字段，避免 JSON 草稿、REMOVE 的空代码块关联等 UI 细节污染持久化模型。
  */

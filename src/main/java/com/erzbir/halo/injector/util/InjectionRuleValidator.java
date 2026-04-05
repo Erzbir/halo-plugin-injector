@@ -12,8 +12,10 @@ public class InjectionRuleValidator {
      * 写入期兜底校验。
      * <p>
      * 前端负责给出更友好的编辑态提示；后端这里负责拦住会污染持久化数据的非法规则，
-     * 尤其是非法正则、REMOVE 脏关联、以及会破坏 DOM 路径预筛的规则树，
-     * 避免它们落库后等到运行时才以“规则不生效”或“整页被迫缓冲”的形式暴露出来。
+     * 尤其是非法正则和 REMOVE 脏关联。
+     * <p>
+     * 对于会让 DOM 注入退化成“全站 HTML 处理”的规则，当前策略是不拦截写入：
+     * 用户可能明确接受这笔性能成本，因此只在配置页给出警告，不在后端拒绝保存。
      */
     public Mono<InjectionRule> validateForWrite(InjectionRule rule) {
         if (rule == null) {
@@ -29,13 +31,6 @@ public class InjectionRuleValidator {
                     && rule.getSnippetIds() != null
                     && !rule.getSnippetIds().isEmpty()) {
                 return Mono.error(new InjectionRuleValidationException("snippetIds：REMOVE 模式下无需关联代码块"));
-            }
-            if ((InjectionRule.Mode.ID.equals(rule.getMode()) || InjectionRule.Mode.SELECTOR.equals(rule.getMode()))
-                    && !MatchRule.supportsDomPathPrecheck(rule.getMatchRule())) {
-                return Mono.error(new InjectionRuleValidationException(
-                        "matchRule：元素 ID / CSS 选择器模式下，匹配规则里必须先有页面路径条件；"
-                                + "模板 ID 只能在路径命中后继续缩小范围"
-                ));
             }
             return Mono.just(rule);
         } catch (IllegalArgumentException e) {

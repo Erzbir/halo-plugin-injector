@@ -7,6 +7,7 @@ import {
   MODE_OPTIONS,
   POSITION_OPTIONS,
 } from '@/types'
+import { getDomRulePerformanceWarning } from '@/views/composables/matchRule'
 import BaseFormModal from './BaseFormModal.vue'
 import ItemPicker from './ItemPicker.vue'
 import FormField from './FormField.vue'
@@ -34,6 +35,7 @@ function reset() {
 
 const needsTarget = computed(() => rule.value.mode === 'ID' || rule.value.mode === 'SELECTOR')
 const needsSnippets = computed(() => rule.value.position !== 'REMOVE')
+const performanceWarning = computed(() => getDomRulePerformanceWarning(rule.value))
 
 function toggleSnippet(id: string) {
   const idx = selectedSnippetIds.value.indexOf(id)
@@ -118,6 +120,12 @@ function handleSubmit() {
           @update:editor-mode="rule.matchRuleEditorMode = $event"
           @update:model-value="rule.matchRule = $event"
         />
+        <div
+          v-if="performanceWarning"
+          class=":uno: mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800"
+        >
+          {{ performanceWarning }}
+        </div>
       </FormField>
     </template>
 

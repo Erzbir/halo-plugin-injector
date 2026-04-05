@@ -63,13 +63,13 @@ public class InjectorWebFilter implements AdditionalWebFilter {
     }
 
     /**
-     * why: 这里不是判断“最终一定会注入”，而是判断“是否值得为了 DOM 注入去缓冲整页 HTML”；
-     * 因此只看支持路径预筛的 SELECTOR / ID 规则，尽量把无关请求放过。
+     * why: 这里不是判断“最终一定会注入”，而是判断“这次请求是否需要进入 DOM 注入链路”；
+     * 规则若能先按路径缩小范围，就只命中少量页面；规则若不能缩小范围，就会退化成所有 HTML 页面都先缓冲。
      */
     private Mono<Boolean> hasMatchingRules(String path) {
         return Mono.zip(
-                        injectHelper.getPathMatchedRules(path, InjectionRule.Mode.SELECTOR).hasElements(),
-                        injectHelper.getPathMatchedRules(path, InjectionRule.Mode.ID).hasElements()
+                        injectHelper.hasDomProcessCandidate(path, InjectionRule.Mode.SELECTOR),
+                        injectHelper.hasDomProcessCandidate(path, InjectionRule.Mode.ID)
                 ).map(tuple -> tuple.getT1() || tuple.getT2())
                 .defaultIfEmpty(false);
     }

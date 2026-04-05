@@ -10,7 +10,6 @@ import {
   isValidMatchRule,
   makeRulePayload,
   resolveRuleMatchRule,
-  supportsDomPathPrecheck,
 } from './matchRule'
 
 function emptyList<T>(): ItemList<T> {
@@ -97,9 +96,6 @@ export function useInjectorData() {
     const result = resolveRuleMatchRule(rule)
     if (result.error) return `匹配规则有误：${formatMatchRuleError(result.error)}`
     if (!isValidMatchRule(result.rule)) return '请完善匹配规则'
-    if ((rule.mode === 'SELECTOR' || rule.mode === 'ID') && !supportsDomPathPrecheck(result.rule)) {
-      return '元素 ID / CSS 选择器模式下，匹配规则里必须先有页面路径条件；模板 ID 只能在路径命中后继续缩小范围'
-    }
     return null
   }
 

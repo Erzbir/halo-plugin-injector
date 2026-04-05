@@ -80,9 +80,9 @@ class InjectionRuleValidatorTest {
         assertEquals("matchRule.children[0].children：仅条件组可使用 children", error.getReason());
     }
 
-    // why: ID/SELECTOR 依赖路径预筛来决定是否包裹整页 HTML，不能接受“路径 OR 模板”这种会拖成全站缓冲的规则。
+    // why: 对愿意接受性能退化的用户，“路径 OR 模板”这类规则仍应允许保存，由配置页给出警告即可。
     @Test
-    void shouldRejectUnsupportedDomPathPrecheckRule() {
+    void shouldAllowUnsupportedDomPathPrecheckRule() {
         InjectionRule rule = makeRule();
         rule.setMode(InjectionRule.Mode.SELECTOR);
         rule.setMatch("main");
@@ -95,15 +95,7 @@ class InjectionRuleValidatorTest {
         orGroup.setChildren(java.util.List.of(pathBranch, templateBranch));
         setMatchRuleDirectly(rule, makeGroup(orGroup));
 
-        InjectionRuleValidationException error = assertThrows(
-                InjectionRuleValidationException.class,
-                () -> validator.validateForWrite(rule).block()
-        );
-
-        assertEquals(
-                "matchRule：元素 ID / CSS 选择器模式下，匹配规则里必须先有页面路径条件；模板 ID 只能在路径命中后继续缩小范围",
-                error.getReason()
-        );
+        assertDoesNotThrow(() -> validator.validateForWrite(rule).block());
     }
 
     // why: REMOVE 不会消费代码内容；写入期必须拒绝仍携带 snippetIds 的规则，避免产生误导性脏数据。
