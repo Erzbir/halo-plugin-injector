@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { CodeSnippet, InjectionRule } from '@/types'
 import { MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
 import ItemPicker from './ItemPicker.vue'
@@ -27,12 +27,25 @@ const emit = defineEmits<{
 }>()
 
 const sortedSnippets = computed(() => sortSelectedFirst(props.snippets, props.selectedSnippetIds))
+const pendingRule = ref<InjectionRule | null>(null)
+const currentRule = computed(() => pendingRule.value ?? props.rule)
 
-const needsTarget = computed(() => props.rule?.mode === 'ID' || props.rule?.mode === 'SELECTOR')
+const needsTarget = computed(
+  () => currentRule.value?.mode === 'ID' || currentRule.value?.mode === 'SELECTOR',
+)
+
+watch(
+  () => props.rule,
+  () => {
+    pendingRule.value = null
+  },
+)
 
 function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule[K]) {
-  if (!props.rule) return
-  emit('update:rule', { ...props.rule, [key]: value })
+  if (!currentRule.value) return
+  const next = { ...currentRule.value, [key]: value }
+  pendingRule.value = next
+  emit('update:rule', next)
   emit('field-change')
 }
 </script>
@@ -40,14 +53,14 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
 <template>
   <div class=":uno: h-full flex flex-col injector-editor-container">
     <EditorToolbar
-      :enabled="rule?.enabled"
-      :show-actions="!!rule"
-      :title="rule ? '编辑规则' : '注入规则'"
+      :enabled="currentRule?.enabled"
+      :show-actions="!!currentRule"
+      :title="currentRule ? '编辑规则' : '注入规则'"
       @delete="emit('delete')"
       @toggle-enabled="emit('toggle-enabled')"
     />
 
-    <div v-if="!rule" class=":uno: flex flex-1 items-center justify-center">
+    <div v-if="!currentRule" class=":uno: flex flex-1 items-center justify-center">
       <span class=":uno: text-sm text-gray-500">从左侧选择规则进行编辑</span>
     </div>
 
@@ -58,7 +71,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
     >
       <FormField label="ID">
         <input
-          :value="rule.id"
+          :value="currentRule.id"
           class=":uno: w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-mono text-gray-400 cursor-default"
           readonly
         />
@@ -66,7 +79,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
 
       <FormField label="名称">
         <input
-          :value="rule.name"
+          :value="currentRule.name"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
           placeholder="不填默认为 ID"
           @change="updateField('name', ($event.target as HTMLInputElement).value)"
@@ -75,7 +88,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
 
       <FormField label="描述">
         <input
-          :value="rule.description"
+          :value="currentRule.description"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
           placeholder="说明此规则的用途"
           @change="updateField('description', ($event.target as HTMLInputElement).value)"
@@ -84,7 +97,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
 
       <FormField label="注入模式" required>
         <select
-          :value="rule.mode"
+          :value="currentRule.mode"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
           @change="
             updateField('mode', ($event.target as HTMLSelectElement).value as InjectionRule['mode'])
@@ -95,10 +108,10 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
       </FormField>
 
       <template v-if="needsTarget">
-        <FormField :label="rule.mode === 'SELECTOR' ? 'CSS 选择器' : '元素 ID'" required>
+        <FormField :label="currentRule.mode === 'SELECTOR' ? 'CSS 选择器' : '元素 ID'" required>
           <input
-            :placeholder="rule.mode === 'SELECTOR' ? 'div[class=content]' : 'main-content'"
-            :value="rule.match"
+            :placeholder="currentRule.mode === 'SELECTOR' ? 'div[class=content]' : 'main-content'"
+            :value="currentRule.match"
             class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm font-mono focus:border-primary focus:outline-none"
             @change="updateField('match', ($event.target as HTMLInputElement).value)"
           />
@@ -106,7 +119,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
 
         <FormField label="插入位置">
           <select
-            :value="rule.position"
+            :value="currentRule.position"
             class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
             @change="
               updateField(
@@ -124,9 +137,9 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
 
       <FormField label="匹配规则" required>
         <MatchRuleEditor
-          :draft="rule.matchRuleDraft"
-          :editor-mode="rule.matchRuleEditorMode"
-          :model-value="rule.matchRule"
+          :draft="currentRule.matchRuleDraft"
+          :editor-mode="currentRule.matchRuleEditorMode"
+          :model-value="currentRule.matchRule"
           @change="emit('field-change')"
           @update:draft="updateField('matchRuleDraft', $event)"
           @update:editor-mode="updateField('matchRuleEditorMode', $event)"
