@@ -146,7 +146,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
             switchLeafType(($event.target as HTMLSelectElement).value as 'PATH' | 'TEMPLATE_ID')
           "
         >
-          <option value="PATH">路径匹配</option>
+          <option value="PATH">页面路径匹配</option>
           <option value="TEMPLATE_ID">模板 ID 匹配</option>
         </select>
 

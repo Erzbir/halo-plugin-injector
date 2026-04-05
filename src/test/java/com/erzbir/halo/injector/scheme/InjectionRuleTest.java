@@ -69,7 +69,7 @@ class InjectionRuleTest {
                 )
         );
 
-        assertTrue(error.getMessage().contains("ID/SELECTOR 模式下必须可按路径预筛"));
+        assertTrue(error.getMessage().contains("元素 ID / CSS 选择器模式下，匹配规则里必须先有页面路径条件"));
     }
 
     // why: REMOVE 不消费代码块内容；模型层也必须拒绝仍携带 snippetIds 的脏数据。

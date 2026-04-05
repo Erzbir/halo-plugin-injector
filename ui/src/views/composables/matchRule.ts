@@ -180,10 +180,10 @@ function describeMatchRule(rule: MatchRule): string {
   if (rule.type === 'PATH') {
     const matcherLabel =
       rule.matcher === 'REGEX' ? '正则表达式' : rule.matcher === 'EXACT' ? '精确匹配' : 'Ant 风格'
-    return `${prefix}${matcherLabel}: ${rule.value ?? ''}`
+    return `${prefix}页面路径 · ${matcherLabel}: ${rule.value ?? ''}`
   }
   const matcherLabel = rule.matcher === 'REGEX' ? '正则表达式' : '精确匹配'
-  return `${prefix}${matcherLabel}: ${rule.value ?? ''}`
+  return `${prefix}模板 ID · ${matcherLabel}: ${rule.value ?? ''}`
 }
 
 type PathPrecheckKind = 'PATH_SCOPED' | 'TEMPLATE_ONLY' | 'UNSUPPORTED'

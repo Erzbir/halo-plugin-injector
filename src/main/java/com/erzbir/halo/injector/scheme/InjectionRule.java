@@ -97,8 +97,8 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
                 && matchRule != null
                 && !MatchRule.supportsDomPathPrecheck(matchRule)) {
             throw new IllegalArgumentException(
-                    "matchRule：ID/SELECTOR 模式下必须可按路径预筛；"
-                            + "模板 ID 条件仅可作为已命中路径分支上的附加约束"
+                    "matchRule：元素 ID / CSS 选择器模式下，匹配规则里必须先有页面路径条件；"
+                            + "模板 ID 只能在路径命中后继续缩小范围"
             );
         }
     }
