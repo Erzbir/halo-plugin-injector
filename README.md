@@ -19,7 +19,7 @@ Halo 自带的代码注入更偏向全局场景；这个插件更适合：
     - 页面路径匹配
     - 模板 ID 匹配
     - `AND` / `OR`
-    - 不满足本组（`NOT`） / 不满足本项（`NOT`）
+    - 不满足本组/项（`NOT`）
     - 条件组嵌套
 - 支持两种规则编辑方式：
     - 简单模式
@@ -115,41 +115,6 @@ Halo 自带的代码注入更偏向全局场景；这个插件更适合：
 
 编辑时，如果某个条件组暂时没有子条件，编辑器下方会直接提示错误；空组不能保存。
 
-### 常见模板 ID
-
-配置“模板 ID 匹配”时，可直接填写下面这些常见值。
-
-#### Halo 内置页面
-
-| 模板 ID      | 说明         |
-| ------------ | ------------ |
-| `index`      | 首页         |
-| `categories` | 分类列表页   |
-| `category`   | 单个分类页   |
-| `archives`   | 归档页       |
-| `post`       | 文章详情页   |
-| `tag`        | 单个标签页   |
-| `tags`       | 标签列表页   |
-| `page`       | 单个独立页面 |
-| `author`     | 作者页       |
-
-#### 常见插件页面
-
-| 模板 ID   | 来源                                                                      | 说明                                     |
-| --------- | ------------------------------------------------------------------------- | ---------------------------------------- |
-| `moments` | [瞬间插件](https://github.com/halo-sigs/plugin-moments)                   | 瞬间列表页，常见路径为 `/moments`        |
-| `moment`  | [瞬间插件](https://github.com/halo-sigs/plugin-moments)                   | 瞬间详情页，常见路径为 `/moments/{slug}` |
-| `photos`  | [图库管理插件](https://github.com/halo-sigs/plugin-photos)                | 图库页，常见路径为 `/photos`             |
-| `friends` | [朋友圈插件](https://github.com/chengzhongxue/plugin-friends-new)         | 朋友圈页，常见路径为 `/friends`          |
-| `douban`  | [豆瓣插件](https://github.com/chengzhongxue/plugin-douban)                | 豆瓣页，常见路径为 `/douban`             |
-| `bangumi` | [BangumiData 插件](https://github.com/ShiinaKin/halo-plugin-bangumi-data) | 番剧页，常见路径为 `/bangumi`            |
-
-> 说明：
->
-> - 上面这些字符串本身就是要填写的模板 ID。
-> - 第三方插件是否能用于“模板 ID 匹配”，取决于它有没有正确提供 `_templateId`。
-> - 有些插件页面即使能访问，也可能拿不到模板 ID，这种情况下就无法用“模板 ID 匹配”限制范围。
-
 ### 高级模式（JSON）
 
 适合复杂场景，可直接编辑规则树 JSON。
@@ -229,16 +194,38 @@ Halo 自带的代码注入更偏向全局场景；这个插件更适合：
 
 ### 写入期校验
 
-创建 / 更新规则时，后端会兜底校验：
+为了减少“填了半天，结果保存才发现不合法”的情况，这套校验分两层：
 
+- 编辑时：前端会尽量即时提示错误，方便边改边修
+- 保存时：后端会再次兜底校验，避免坏数据落库
+
+#### 编辑时校验
+
+在配置页里，下面这些情况会直接提示：
+
+- `ID` / `CSS 选择器` 模式下，匹配内容不能为空
+- 匹配规则根节点必须是条件组
+- 条件组不能是空组
+- 匹配方式必须和规则类型对应
+- 匹配内容不能为空
+- 正则表达式必须合法
+
+简单模式下，错误会尽量直接显示在对应条件组或字段附近；高级模式（JSON）下，会显示具体的 JSON / 字段错误信息。
+
+#### 保存时校验
+
+创建 / 更新规则时，后端还会再次校验：
+
+- `ID` / `CSS 选择器` 模式下，匹配内容不能为空
 - 根节点是否为 `GROUP`
+- 条件组是否为空组
 - 匹配方式（`matcher`）是否与节点类型匹配
 - 匹配内容（`value`）是否为空
 - `REGEX` 是否可正常编译
 - `REMOVE` 是否错误关联了代码块（内部字段名为 `snippetIds`）
 - `REMOVE` 是否错误开启了注释标记（内部字段名为 `wrapMarker`）
 
-这样做的目的，是避免非法规则落库，最后在运行时只表现为“没有生效”。
+这样做的目的，是既让编辑体验更直接，也避免非法规则落库，最后在运行时只表现为“没有生效”。
 
 ### 运行时性能
 
@@ -266,6 +253,41 @@ pnpm dev
 ```
 
 构建完成后，可在 `build/libs` 目录找到插件 jar。
+
+## 附录：常见模板 ID
+
+配置“模板 ID 匹配”时，可直接填写下面这些常见值。
+
+### Halo 内置页面
+
+| 模板 ID      | 说明         |
+| ------------ | ------------ |
+| `index`      | 首页         |
+| `categories` | 分类列表页   |
+| `category`   | 单个分类页   |
+| `archives`   | 归档页       |
+| `post`       | 文章详情页   |
+| `tag`        | 单个标签页   |
+| `tags`       | 标签列表页   |
+| `page`       | 单个独立页面 |
+| `author`     | 作者页       |
+
+### 常见插件页面
+
+| 模板 ID   | 来源                                                                      | 说明                                     |
+| --------- | ------------------------------------------------------------------------- | ---------------------------------------- |
+| `moments` | [瞬间插件](https://github.com/halo-sigs/plugin-moments)                   | 瞬间列表页，常见路径为 `/moments`        |
+| `moment`  | [瞬间插件](https://github.com/halo-sigs/plugin-moments)                   | 瞬间详情页，常见路径为 `/moments/{slug}` |
+| `photos`  | [图库管理插件](https://github.com/halo-sigs/plugin-photos)                | 图库页，常见路径为 `/photos`             |
+| `friends` | [朋友圈插件](https://github.com/chengzhongxue/plugin-friends-new)         | 朋友圈页，常见路径为 `/friends`          |
+| `douban`  | [豆瓣插件](https://github.com/chengzhongxue/plugin-douban)                | 豆瓣页，常见路径为 `/douban`             |
+| `bangumi` | [BangumiData 插件](https://github.com/ShiinaKin/halo-plugin-bangumi-data) | 番剧页，常见路径为 `/bangumi`            |
+
+> 说明：
+>
+> - 上面这些字符串本身就是要填写的模板 ID。
+> - 第三方插件是否能用于“模板 ID 匹配”，取决于它有没有正确提供 `_templateId`。
+> - 有些插件页面即使能访问，也可能拿不到模板 ID，这种情况下就无法用“模板 ID 匹配”限制范围。
 
 ## 许可证
 
