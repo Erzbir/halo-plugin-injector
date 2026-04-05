@@ -159,7 +159,7 @@ function jumpToSnippet(id: string) {
                   activeTab === 'snippets' ? (showSnippetModal = true) : (showRuleModal = true)
                 "
               >
-                {{ activeTab === 'snippets' ? '新建代码块' : '新建规则' }}
+                {{ activeTab === 'snippets' ? '新建代码块' : '新建注入规则' }}
               </VButton>
             </div>
           </div>

@@ -48,11 +48,19 @@ watch(
 const currentMode = computed(() => props.editorMode ?? 'SIMPLE')
 const parseResult = computed(() => parseMatchRuleDraft(jsonDraft.value))
 const parseError = computed(() => formatMatchRuleError(parseResult.value.error))
+const jsonActionLabel = computed(() =>
+  parseResult.value.error ? '重建 JSON' : '格式化 JSON',
+)
+const jsonActionTitle = computed(() =>
+  parseResult.value.error
+    ? '当前 JSON 有误，将按当前生效规则重新生成 JSON'
+    : '整理当前 JSON 的缩进与格式',
+)
 
 function switchMode(mode: MatchRuleEditorMode) {
   if (shouldConfirmModeSwitch(mode)) {
     Dialog.warning({
-      title: '切换模式',
+      title: '切换到简单模式',
       description:
         '当前 JSON 仍有错误。若继续切换到可视化简单模式，这份未保存的 JSON 内容将被覆盖。确认继续吗？',
       confirmType: 'danger',
@@ -113,6 +121,7 @@ function formatJson() {
     <div class=":uno: flex flex-wrap items-center justify-between gap-2">
       <div class=":uno: inline-flex rounded-md border border-gray-200 bg-gray-50 p-0.5">
         <button
+          :aria-pressed="currentMode === 'SIMPLE'"
           :class="
             currentMode === 'SIMPLE'
               ? ':uno: bg-white text-primary shadow-sm'
@@ -122,9 +131,10 @@ function formatJson() {
           type="button"
           @click="switchMode('SIMPLE')"
         >
-          可视化简单模式
+          简单模式
         </button>
         <button
+          :aria-pressed="currentMode === 'JSON'"
           :class="
             currentMode === 'JSON' ? ':uno: bg-white text-primary shadow-sm' : ':uno: text-gray-500'
           "
@@ -132,12 +142,18 @@ function formatJson() {
           type="button"
           @click="switchMode('JSON')"
         >
-          JSON 高级模式
+          高级模式（JSON）
         </button>
       </div>
 
-      <VButton v-if="currentMode === 'JSON'" size="sm" type="secondary" @click="formatJson">
-        格式化 JSON
+      <VButton
+        v-if="currentMode === 'JSON'"
+        :title="jsonActionTitle"
+        size="sm"
+        type="secondary"
+        @click="formatJson"
+      >
+        {{ jsonActionLabel }}
       </VButton>
     </div>
 

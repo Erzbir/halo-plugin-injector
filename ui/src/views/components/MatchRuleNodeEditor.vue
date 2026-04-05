@@ -112,7 +112,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
           />
           取反
         </label>
-        <VButton v-if="!root" size="sm" type="danger" @click="emit('remove')">删除组</VButton>
+        <VButton v-if="!root" size="sm" type="danger" @click="emit('remove')">移除此组</VButton>
       </div>
 
       <div class=":uno: space-y-2 pl-3 border-l border-gray-200">
@@ -126,9 +126,9 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
         />
 
         <div class=":uno: flex flex-wrap gap-2">
-          <VButton size="sm" @click="addPathRule">添加路径条件</VButton>
-          <VButton size="sm" @click="addTemplateRule">添加模板条件</VButton>
-          <VButton size="sm" type="secondary" @click="addGroupRule">添加子条件组</VButton>
+          <VButton size="sm" @click="addPathRule">添加路径规则</VButton>
+          <VButton size="sm" @click="addTemplateRule">添加模板 ID 规则</VButton>
+          <VButton size="sm" type="secondary" @click="addGroupRule">添加条件组</VButton>
         </div>
       </div>
     </template>
@@ -170,7 +170,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
           取反
         </label>
 
-        <VButton size="sm" type="danger" @click="emit('remove')">删除</VButton>
+        <VButton size="sm" type="danger" @click="emit('remove')">移除此条件</VButton>
       </div>
 
       <input
