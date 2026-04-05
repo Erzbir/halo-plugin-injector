@@ -144,10 +144,22 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
           不满足本组（NOT）
         </label>
         <div v-if="!root" class=":uno: inline-flex items-center gap-1">
-          <VButton :disabled="!canMoveUp" size="sm" title="上移" @click="emit('move-up')"
-            >↑</VButton
+          <VButton
+            v-if="canMoveUp"
+            class=":uno: min-w-0 px-2"
+            size="sm"
+            title="上移"
+            @click="emit('move-up')"
           >
-          <VButton :disabled="!canMoveDown" size="sm" title="下移" @click="emit('move-down')">
+            ↑
+          </VButton>
+          <VButton
+            v-if="canMoveDown"
+            class=":uno: min-w-0 px-2"
+            size="sm"
+            title="下移"
+            @click="emit('move-down')"
+          >
             ↓
           </VButton>
         </div>
@@ -223,10 +235,22 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
         </label>
 
         <div v-if="!root" class=":uno: inline-flex items-center gap-1">
-          <VButton :disabled="!canMoveUp" size="sm" title="上移" @click="emit('move-up')"
-            >↑</VButton
+          <VButton
+            v-if="canMoveUp"
+            class=":uno: min-w-0 px-2"
+            size="sm"
+            title="上移"
+            @click="emit('move-up')"
           >
-          <VButton :disabled="!canMoveDown" size="sm" title="下移" @click="emit('move-down')">
+            ↑
+          </VButton>
+          <VButton
+            v-if="canMoveDown"
+            class=":uno: min-w-0 px-2"
+            size="sm"
+            title="下移"
+            @click="emit('move-down')"
+          >
             ↓
           </VButton>
         </div>

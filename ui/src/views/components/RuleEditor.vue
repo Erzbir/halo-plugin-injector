@@ -10,6 +10,8 @@ import FormField from './FormField.vue'
 import MatchRuleEditor from './MatchRuleEditor.vue'
 import { sortSelectedFirst } from '@/views/composables/util.ts'
 import { updateSelectByWheel } from '@/views/composables/selectWheel.ts'
+import FieldUndoButton from './FieldUndoButton.vue'
+import { useFieldUndo } from '@/views/composables/useFieldUndo.ts'
 
 const props = defineProps<{
   rule: InjectionRule | null
@@ -23,6 +25,7 @@ const emit = defineEmits<{
   (e: 'save'): void
   (e: 'delete'): void
   (e: 'toggle-enabled'): void
+  (e: 'replace-snippet-ids', snippetIds: string[]): void
   (e: 'toggle-snippet', snippetId: string): void
   (e: 'field-change'): void
   (e: 'update:rule', rule: InjectionRule): void
@@ -40,6 +43,7 @@ const needsWrapMarker = computed(() => currentRule.value?.position !== 'REMOVE')
 const performanceWarning = computed(() =>
   currentRule.value ? getDomRulePerformanceWarning(currentRule.value) : null,
 )
+const undo = useFieldUndo()
 
 watch(
   () => props.rule,
@@ -48,15 +52,241 @@ watch(
   },
 )
 
+watch(
+  () => [currentRule.value?.id, props.dirty],
+  () => {
+    if (!currentRule.value || props.dirty) {
+      return
+    }
+    undo.resetBaseline({
+      name: currentRule.value.name,
+      description: currentRule.value.description,
+      mode: currentRule.value.mode,
+      match: currentRule.value.match,
+      position: {
+        position: currentRule.value.position,
+        wrapMarker: currentRule.value.wrapMarker,
+      },
+      wrapMarker: currentRule.value.wrapMarker,
+      matchRule: {
+        matchRule: currentRule.value.matchRule,
+        matchRuleDraft: currentRule.value.matchRuleDraft ?? '',
+        matchRuleEditorMode: currentRule.value.matchRuleEditorMode ?? 'SIMPLE',
+      },
+      snippetIds: props.selectedSnippetIds,
+    })
+  },
+  { immediate: true },
+)
+
 function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule[K]) {
   if (!currentRule.value) return
   const next = { ...currentRule.value, [key]: value }
   if (key === 'position' && value === 'REMOVE') {
     next.wrapMarker = false
   }
+  if (key !== 'matchRule' && key !== 'matchRuleDraft' && key !== 'matchRuleEditorMode') {
+    undo.trackChange(
+      key === 'position' ? 'position' : String(key),
+      key === 'position'
+        ? {
+            position: currentRule.value.position,
+            wrapMarker: currentRule.value.wrapMarker,
+          }
+        : currentRule.value[key],
+      key === 'position'
+        ? {
+            position: next.position,
+            wrapMarker: next.wrapMarker,
+          }
+        : next[key],
+    )
+  }
   pendingRule.value = next
   emit('update:rule', next)
   emit('field-change')
+}
+
+function updateRuleSnapshot(next: InjectionRule) {
+  pendingRule.value = next
+  emit('update:rule', next)
+  emit('field-change')
+}
+
+function currentMatchRuleSnapshot() {
+  return {
+    matchRule: currentRule.value?.matchRule,
+    matchRuleDraft: currentRule.value?.matchRuleDraft ?? '',
+    matchRuleEditorMode: currentRule.value?.matchRuleEditorMode ?? 'SIMPLE',
+  }
+}
+
+function updateMatchRuleField(patch: Partial<InjectionRule>) {
+  if (!currentRule.value) return
+  const previous = currentMatchRuleSnapshot()
+  const next = {
+    ...currentRule.value,
+    ...patch,
+  }
+  const after = {
+    matchRule: next.matchRule,
+    matchRuleDraft: next.matchRuleDraft ?? '',
+    matchRuleEditorMode: next.matchRuleEditorMode ?? 'SIMPLE',
+  }
+  undo.trackChange('matchRule', previous, after)
+  updateRuleSnapshot(next)
+}
+
+function handleToggleSnippet(snippetId: string) {
+  const previous = props.selectedSnippetIds
+  const next = previous.includes(snippetId)
+    ? previous.filter((id) => id !== snippetId)
+    : [...previous, snippetId]
+  undo.trackChange('snippetIds', previous, next)
+  emit('toggle-snippet', snippetId)
+}
+
+function canUndo(
+  field:
+    | 'name'
+    | 'description'
+    | 'mode'
+    | 'match'
+    | 'position'
+    | 'wrapMarker'
+    | 'matchRule'
+    | 'snippetIds',
+) {
+  if (!currentRule.value) return false
+  const current =
+    field === 'position'
+      ? {
+          position: currentRule.value.position,
+          wrapMarker: currentRule.value.wrapMarker,
+        }
+      : field === 'matchRule'
+        ? {
+            matchRule: currentRule.value.matchRule,
+            matchRuleDraft: currentRule.value.matchRuleDraft ?? '',
+            matchRuleEditorMode: currentRule.value.matchRuleEditorMode ?? 'SIMPLE',
+          }
+        : field === 'snippetIds'
+          ? props.selectedSnippetIds
+          : currentRule.value[field]
+  return undo.isModified(field, current)
+}
+
+function undoField(
+  field:
+    | 'name'
+    | 'description'
+    | 'mode'
+    | 'match'
+    | 'position'
+    | 'wrapMarker'
+    | 'matchRule'
+    | 'snippetIds',
+) {
+  if (!currentRule.value) return
+  const current =
+    field === 'position'
+      ? {
+          position: currentRule.value.position,
+          wrapMarker: currentRule.value.wrapMarker,
+        }
+      : field === 'matchRule'
+        ? {
+            matchRule: currentRule.value.matchRule,
+            matchRuleDraft: currentRule.value.matchRuleDraft ?? '',
+            matchRuleEditorMode: currentRule.value.matchRuleEditorMode ?? 'SIMPLE',
+          }
+        : field === 'snippetIds'
+          ? props.selectedSnippetIds
+          : currentRule.value[field]
+  const previous = undo.undo(field, current)
+  if (previous === undefined) return
+
+  if (field === 'position') {
+    const snapshot = previous as { position: InjectionRule['position']; wrapMarker: boolean }
+    updateRuleSnapshot({
+      ...currentRule.value,
+      position: snapshot.position,
+      wrapMarker: snapshot.wrapMarker,
+    })
+    return
+  }
+
+  if (field === 'matchRule') {
+    const snapshot = previous as {
+      matchRule: InjectionRule['matchRule']
+      matchRuleDraft: string
+      matchRuleEditorMode: InjectionRule['matchRuleEditorMode']
+    }
+    updateRuleSnapshot({
+      ...currentRule.value,
+      matchRule: snapshot.matchRule,
+      matchRuleDraft: snapshot.matchRuleDraft,
+      matchRuleEditorMode: snapshot.matchRuleEditorMode,
+    })
+    return
+  }
+
+  if (field === 'snippetIds') {
+    emit('replace-snippet-ids', previous as string[])
+    emit('field-change')
+    return
+  }
+
+  updateField(field, previous as InjectionRule[typeof field])
+}
+
+function resetField(
+  field:
+    | 'name'
+    | 'description'
+    | 'mode'
+    | 'match'
+    | 'position'
+    | 'wrapMarker'
+    | 'matchRule'
+    | 'snippetIds',
+) {
+  if (!currentRule.value) return
+  const baseline = undo.reset(field)
+  if (baseline === undefined) return
+
+  if (field === 'position') {
+    const snapshot = baseline as { position: InjectionRule['position']; wrapMarker: boolean }
+    updateRuleSnapshot({
+      ...currentRule.value,
+      position: snapshot.position,
+      wrapMarker: snapshot.wrapMarker,
+    })
+    return
+  }
+
+  if (field === 'matchRule') {
+    const snapshot = baseline as {
+      matchRule: InjectionRule['matchRule']
+      matchRuleDraft: string
+      matchRuleEditorMode: InjectionRule['matchRuleEditorMode']
+    }
+    updateRuleSnapshot({
+      ...currentRule.value,
+      matchRule: snapshot.matchRule,
+      matchRuleDraft: snapshot.matchRuleDraft,
+      matchRuleEditorMode: snapshot.matchRuleEditorMode,
+    })
+    return
+  }
+
+  if (field === 'snippetIds') {
+    emit('replace-snippet-ids', baseline as string[])
+    emit('field-change')
+    return
+  }
+
+  updateField(field, baseline as InjectionRule[typeof field])
 }
 </script>
 
@@ -88,6 +318,9 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
       </FormField>
 
       <FormField label="名称">
+        <template v-if="canUndo('name')" #actions>
+          <FieldUndoButton @reset="resetField('name')" @undo="undoField('name')" />
+        </template>
         <input
           :value="currentRule.name"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
@@ -97,6 +330,9 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
       </FormField>
 
       <FormField label="描述">
+        <template v-if="canUndo('description')" #actions>
+          <FieldUndoButton @reset="resetField('description')" @undo="undoField('description')" />
+        </template>
         <input
           :value="currentRule.description"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
@@ -106,6 +342,9 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
       </FormField>
 
       <FormField label="注入模式" required>
+        <template v-if="canUndo('mode')" #actions>
+          <FieldUndoButton @reset="resetField('mode')" @undo="undoField('mode')" />
+        </template>
         <select
           :value="currentRule.mode"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
@@ -120,6 +359,9 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
 
       <template v-if="needsTarget">
         <FormField :label="currentRule.mode === 'SELECTOR' ? 'CSS 选择器' : '元素 ID'" required>
+          <template v-if="canUndo('match')" #actions>
+            <FieldUndoButton @reset="resetField('match')" @undo="undoField('match')" />
+          </template>
           <input
             :placeholder="currentRule.mode === 'SELECTOR' ? 'div[class=content]' : 'main-content'"
             :value="currentRule.match"
@@ -129,6 +371,9 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
         </FormField>
 
         <FormField label="插入位置">
+          <template v-if="canUndo('position')" #actions>
+            <FieldUndoButton @reset="resetField('position')" @undo="undoField('position')" />
+          </template>
           <select
             :value="currentRule.position"
             class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
@@ -148,6 +393,9 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
       </template>
 
       <FormField v-if="needsWrapMarker">
+        <template v-if="canUndo('wrapMarker')" #actions>
+          <FieldUndoButton @reset="resetField('wrapMarker')" @undo="undoField('wrapMarker')" />
+        </template>
         <label class=":uno: inline-flex items-center gap-2 text-sm text-gray-700">
           <input
             :checked="currentRule.wrapMarker"
@@ -159,14 +407,17 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
       </FormField>
 
       <FormField label="匹配规则" required>
+        <template v-if="canUndo('matchRule')" #actions>
+          <FieldUndoButton @reset="resetField('matchRule')" @undo="undoField('matchRule')" />
+        </template>
         <MatchRuleEditor
           :draft="currentRule.matchRuleDraft"
           :editor-mode="currentRule.matchRuleEditorMode"
           :model-value="currentRule.matchRule"
           @change="emit('field-change')"
-          @update:draft="updateField('matchRuleDraft', $event)"
-          @update:editor-mode="updateField('matchRuleEditorMode', $event)"
-          @update:model-value="updateField('matchRule', $event)"
+          @update:draft="updateMatchRuleField({ matchRuleDraft: $event })"
+          @update:editor-mode="updateMatchRuleField({ matchRuleEditorMode: $event })"
+          @update:model-value="updateMatchRuleField({ matchRule: $event })"
         />
         <div
           v-if="performanceWarning"
@@ -177,6 +428,9 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
       </FormField>
 
       <FormField v-if="needsSnippets" label="关联代码块">
+        <template v-if="canUndo('snippetIds')" #actions>
+          <FieldUndoButton @reset="resetField('snippetIds')" @undo="undoField('snippetIds')" />
+        </template>
         <template #default>
           <div class=":uno: flex items-center justify-between mb-1">
             <span />
@@ -188,7 +442,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
             :items="sortedSnippets"
             :selected-ids="selectedSnippetIds"
             empty-text="暂无代码块, 请先创建"
-            @toggle="(id) => emit('toggle-snippet', id)"
+            @toggle="handleToggleSnippet"
           />
         </template>
       </FormField>

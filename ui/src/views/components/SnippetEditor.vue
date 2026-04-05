@@ -5,7 +5,9 @@ import EditorToolbar from './EditorToolbar.vue'
 import EditorFooter from './EditorFooter.vue'
 import FormField from './FormField.vue'
 import { rulePreview, sortSelectedFirst } from '@/views/composables/util'
-import { computed } from 'vue'
+import FieldUndoButton from './FieldUndoButton.vue'
+import { useFieldUndo } from '@/views/composables/useFieldUndo'
+import { computed, watch } from 'vue'
 
 const props = defineProps<{
   snippet: CodeSnippet | null
@@ -19,6 +21,7 @@ const emit = defineEmits<{
   (e: 'save'): void
   (e: 'delete'): void
   (e: 'toggle-enabled'): void
+  (e: 'replace-rule-ids', ruleIds: string[]): void
   (e: 'toggle-rule', ruleId: string): void
   (e: 'field-change'): void
   (e: 'update:snippet', snippet: CodeSnippet): void
@@ -33,11 +36,86 @@ const visibleSelectedRuleIds = computed(() =>
 const sortedRules = computed(() =>
   sortSelectedFirst(selectableRules.value, visibleSelectedRuleIds.value),
 )
+const undo = useFieldUndo()
+
+watch(
+  () => [props.snippet?.id, props.dirty],
+  () => {
+    if (!props.snippet || props.dirty) {
+      return
+    }
+    undo.resetBaseline({
+      name: props.snippet.name,
+      description: props.snippet.description,
+      ruleIds: visibleSelectedRuleIds.value,
+      code: props.snippet.code,
+    })
+  },
+  { immediate: true },
+)
 
 function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K]) {
   if (!props.snippet) return
+  undo.trackChange(String(key), props.snippet[key], value)
   emit('update:snippet', { ...props.snippet, [key]: value })
   emit('field-change')
+}
+
+function handleToggleRule(ruleId: string) {
+  const previous = visibleSelectedRuleIds.value
+  const next = previous.includes(ruleId)
+    ? previous.filter((id) => id !== ruleId)
+    : [...previous, ruleId]
+  undo.trackChange('ruleIds', previous, next)
+  emit('toggle-rule', ruleId)
+}
+
+function canUndo(field: 'name' | 'description' | 'ruleIds' | 'code') {
+  if (!props.snippet) return false
+  const current =
+    field === 'ruleIds'
+      ? visibleSelectedRuleIds.value
+      : field === 'name'
+        ? props.snippet.name
+        : field === 'description'
+          ? props.snippet.description
+          : props.snippet.code
+  return undo.isModified(field, current)
+}
+
+function undoField(field: 'name' | 'description' | 'ruleIds' | 'code') {
+  if (!props.snippet) return
+  const current =
+    field === 'ruleIds'
+      ? visibleSelectedRuleIds.value
+      : field === 'name'
+        ? props.snippet.name
+        : field === 'description'
+          ? props.snippet.description
+          : props.snippet.code
+  const previous = undo.undo(field, current)
+  if (previous === undefined) return
+
+  if (field === 'ruleIds') {
+    emit('replace-rule-ids', previous as string[])
+    return
+  }
+
+  updateField(field, previous as CodeSnippet[typeof field])
+}
+
+function resetField(field: 'name' | 'description' | 'ruleIds' | 'code') {
+  if (!props.snippet) return
+  const baseline = undo.reset(field)
+  if (baseline === undefined) return
+
+  if (field === 'ruleIds') {
+    emit('replace-rule-ids', baseline as string[])
+    emit('field-change')
+    return
+  }
+
+  updateField(field, baseline as CodeSnippet[typeof field])
 }
 </script>
 
@@ -69,6 +147,9 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
       </FormField>
 
       <FormField label="名称">
+        <template v-if="canUndo('name')" #actions>
+          <FieldUndoButton @reset="resetField('name')" @undo="undoField('name')" />
+        </template>
         <input
           :value="snippet.name"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
@@ -78,6 +159,9 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
       </FormField>
 
       <FormField label="描述">
+        <template v-if="canUndo('description')" #actions>
+          <FieldUndoButton @reset="resetField('description')" @undo="undoField('description')" />
+        </template>
         <input
           :value="snippet.description"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
@@ -87,6 +171,9 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
       </FormField>
 
       <FormField label="关联规则">
+        <template v-if="canUndo('ruleIds')" #actions>
+          <FieldUndoButton @reset="resetField('ruleIds')" @undo="undoField('ruleIds')" />
+        </template>
         <template #default>
           <div class=":uno: flex items-center justify-between mb-1">
             <span />
@@ -99,12 +186,15 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
             :preview-fn="rulePreview"
             :selected-ids="visibleSelectedRuleIds"
             empty-text="暂无规则, 请先创建"
-            @toggle="(id) => emit('toggle-rule', id)"
+            @toggle="handleToggleRule"
           />
         </template>
       </FormField>
 
       <FormField label="代码内容" required>
+        <template v-if="canUndo('code')" #actions>
+          <FieldUndoButton @reset="resetField('code')" @undo="undoField('code')" />
+        </template>
         <textarea
           :value="snippet.code"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-2 text-xs font-mono focus:border-primary focus:outline-none resize-none"
