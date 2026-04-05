@@ -32,3 +32,10 @@ $main-width: 60%;
   height: 100% !important;
   padding: 0 !important;
 }
+
+// why: @halo-dev/components 的 Dialog.description 按纯文本渲染，
+// 默认 white-space 会把 \n 折叠成空格；这里统一改成 pre-line，
+// 让多行确认文案按用户看到的换行正常展示。
+.dialog-container .break-all.text-sm.text-gray-700 {
+  white-space: pre-line;
+}
