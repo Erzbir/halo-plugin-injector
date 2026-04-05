@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   type CodeSnippet,
   type InjectionRule,
@@ -38,15 +38,6 @@ const needsTarget = computed(() => rule.value.mode === 'ID' || rule.value.mode =
 const needsSnippets = computed(() => rule.value.position !== 'REMOVE')
 const needsWrapMarker = computed(() => rule.value.position !== 'REMOVE')
 const performanceWarning = computed(() => getDomRulePerformanceWarning(rule.value))
-
-watch(
-  () => rule.value.position,
-  (position) => {
-    if (position === 'REMOVE') {
-      rule.value.wrapMarker = false
-    }
-  },
-)
 
 function toggleSnippet(id: string) {
   const idx = selectedSnippetIds.value.indexOf(id)

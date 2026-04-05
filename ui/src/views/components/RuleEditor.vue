@@ -95,9 +95,6 @@ function updateField<K extends keyof InjectionRule>(
   if (!currentRule.value) return
   const trackHistory = options?.trackHistory ?? true
   const next = { ...currentRule.value, [key]: value }
-  if (key === 'position' && value === 'REMOVE') {
-    next.wrapMarker = false
-  }
   if (
     trackHistory &&
     key !== 'matchRule' &&
