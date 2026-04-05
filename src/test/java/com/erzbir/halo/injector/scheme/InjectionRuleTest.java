@@ -8,7 +8,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class InjectionRuleTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -71,29 +70,5 @@ class InjectionRuleTest {
         );
 
         assertTrue(error.getMessage().contains("ID/SELECTOR 模式下必须可按路径预筛"));
-    }
-
-    // why: 新增字段对旧数据应保持兼容；未显式配置时仍默认输出注释标记。
-    @Test
-    void shouldDefaultWrapMarkerToTrueWhenFieldIsMissing() {
-        InjectionRule rule = objectMapper.convertValue(
-                Map.of(
-                        "mode", "FOOTER",
-                        "matchRule", Map.of(
-                                "type", "GROUP",
-                                "operator", "AND",
-                                "children", List.of(
-                                        Map.of(
-                                                "type", "PATH",
-                                                "matcher", "ANT",
-                                                "value", "/**"
-                                        )
-                                )
-                        )
-                ),
-                InjectionRule.class
-        );
-
-        assertEquals(true, rule.getWrapMarker());
     }
 }

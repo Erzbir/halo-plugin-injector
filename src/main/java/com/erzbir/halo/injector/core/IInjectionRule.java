@@ -23,7 +23,7 @@ public interface IInjectionRule {
 
     Set<String> getSnippetIds();
 
-    Boolean getWrapMarker();
+    boolean getWrapMarker();
 
     enum Mode {
         HEAD, FOOTER, ID, SELECTOR

@@ -145,7 +145,7 @@ export function makeRulePayload(rule: InjectionRule, snippetIds: string[]) {
     match: rule.match.trim(),
     matchRule: result.rule,
     position: rule.position,
-    wrapMarker: rule.wrapMarker !== false,
+    wrapMarker: rule.wrapMarker,
     snippetIds,
   }
 }
