@@ -59,14 +59,14 @@ const jsonActionTitle = computed(() =>
 )
 
 function switchMode(mode: MatchRuleEditorMode) {
-  if (shouldConfirmModeSwitch(mode)) {
+  const warningConfig = getModeSwitchWarning(mode)
+  if (warningConfig) {
     Dialog.warning({
-      title: '切换到简单模式',
-      description:
-        '当前 JSON 仍有错误。若继续切换到可视化简单模式，这份未保存的 JSON 内容将被覆盖。确认继续吗？',
-      confirmType: 'danger',
+      title: warningConfig.title,
+      description: warningConfig.description,
+      confirmType: warningConfig.confirmType,
       onConfirm() {
-        applyModeSwitch(mode, true)
+        applyModeSwitch(mode, warningConfig.overwriteDraft)
       },
     })
     return
@@ -74,8 +74,28 @@ function switchMode(mode: MatchRuleEditorMode) {
   applyModeSwitch(mode, false)
 }
 
-function shouldConfirmModeSwitch(mode: MatchRuleEditorMode) {
-  return currentMode.value === 'JSON' && mode !== 'JSON' && !!parseResult.value.error
+function getModeSwitchWarning(mode: MatchRuleEditorMode) {
+  if (currentMode.value === 'JSON' && mode === 'SIMPLE' && parseResult.value.error) {
+    return {
+      title: '切换到简单模式',
+      description:
+        '当前 JSON 仍有错误。若继续切换到可视化简单模式，这份未保存的 JSON 内容将被覆盖。确认继续吗？',
+      confirmType: 'danger' as const,
+      overwriteDraft: true,
+    }
+  }
+
+  if (currentMode.value === 'SIMPLE' && mode === 'JSON' && simpleValidateResult.value.error) {
+    return {
+      title: '切换到高级模式（JSON）',
+      description:
+        '当前简单模式仍有错误。若继续切换，会按当前内容生成 JSON，并保留这些错误。建议先修正后再切换。确认继续吗？',
+      confirmType: 'danger' as const,
+      overwriteDraft: false,
+    }
+  }
+
+  return null
 }
 
 function applyModeSwitch(mode: MatchRuleEditorMode, overwriteDraft: boolean) {
