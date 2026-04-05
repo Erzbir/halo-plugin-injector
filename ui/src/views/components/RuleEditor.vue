@@ -9,6 +9,7 @@ import EditorFooter from './EditorFooter.vue'
 import FormField from './FormField.vue'
 import MatchRuleEditor from './MatchRuleEditor.vue'
 import { sortSelectedFirst } from '@/views/composables/util.ts'
+import { updateSelectByWheel } from '@/views/composables/selectWheel.ts'
 
 const props = defineProps<{
   rule: InjectionRule | null
@@ -108,6 +109,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
         <select
           :value="currentRule.mode"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
+          @wheel.prevent="updateSelectByWheel"
           @change="
             updateField('mode', ($event.target as HTMLSelectElement).value as InjectionRule['mode'])
           "
@@ -130,6 +132,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
           <select
             :value="currentRule.position"
             class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
+            @wheel.prevent="updateSelectByWheel"
             @change="
               updateField(
                 'position',

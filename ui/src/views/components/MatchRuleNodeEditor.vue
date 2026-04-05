@@ -11,6 +11,7 @@ import {
   makeTemplateMatchRule,
 } from '@/types'
 import { cloneMatchRule, normalizeMatchRule } from '@/views/composables/matchRule'
+import { updateSelectByWheel } from '@/views/composables/selectWheel.ts'
 
 defineOptions({
   name: 'MatchRuleNodeEditor',
@@ -76,12 +77,6 @@ function addPathRule() {
   updateRule(next)
 }
 
-function addTemplateRule() {
-  const next = cloneMatchRule(rule.value)
-  next.children = [...(next.children ?? []), makeTemplateMatchRule()]
-  updateRule(next)
-}
-
 function addGroupRule() {
   const next = cloneMatchRule(rule.value)
   next.children = [...(next.children ?? []), makeMatchRuleGroup()]
@@ -107,6 +102,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
         <select
           :value="rule.operator"
           class=":uno: min-w-[7rem] shrink-0 rounded-md border border-gray-200 bg-white px-2 py-1 pr-8 text-sm focus:border-primary focus:outline-none"
+          @wheel.prevent="updateSelectByWheel"
           @change="
             updateGroupField(
               'operator',
@@ -156,8 +152,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
         />
 
         <div class=":uno: flex flex-wrap gap-2">
-          <VButton size="sm" @click="addPathRule">添加路径规则</VButton>
-          <VButton size="sm" @click="addTemplateRule">添加模板 ID 规则</VButton>
+          <VButton size="sm" @click="addPathRule">添加匹配规则</VButton>
           <VButton size="sm" type="secondary" @click="addGroupRule">添加条件组</VButton>
         </div>
       </div>
@@ -168,6 +163,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
         <select
           :value="rule.type"
           class=":uno: min-w-[8rem] shrink-0 rounded-md border border-gray-200 bg-white px-2 py-1 pr-8 text-sm focus:border-primary focus:outline-none"
+          @wheel.prevent="updateSelectByWheel"
           @change="
             switchLeafType(($event.target as HTMLSelectElement).value as 'PATH' | 'TEMPLATE_ID')
           "
@@ -179,6 +175,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
         <select
           :value="rule.matcher"
           class=":uno: min-w-[8rem] shrink-0 rounded-md border border-gray-200 bg-white px-2 py-1 pr-8 text-sm focus:border-primary focus:outline-none"
+          @wheel.prevent="updateSelectByWheel"
           @change="
             updateGroupField(
               'matcher',
