@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
-import { VButton } from '@halo-dev/components'
+import { Dialog, VButton } from '@halo-dev/components'
 import type { MatchRule, MatchRuleEditorMode } from '@/types'
 import { makeMatchRuleGroup } from '@/types'
 import {
@@ -50,8 +50,28 @@ const parseResult = computed(() => parseMatchRuleDraft(jsonDraft.value))
 const parseError = computed(() => formatMatchRuleError(parseResult.value.error))
 
 function switchMode(mode: MatchRuleEditorMode) {
+  if (shouldConfirmModeSwitch(mode)) {
+    Dialog.warning({
+      title: '切换模式',
+      description:
+        '当前 JSON 仍有错误。若继续切换到可视化简单模式，这份未保存的 JSON 内容将被覆盖。确认继续吗？',
+      confirmType: 'danger',
+      onConfirm() {
+        applyModeSwitch(mode, true)
+      },
+    })
+    return
+  }
+  applyModeSwitch(mode, false)
+}
+
+function shouldConfirmModeSwitch(mode: MatchRuleEditorMode) {
+  return currentMode.value === 'JSON' && mode !== 'JSON' && !!parseResult.value.error
+}
+
+function applyModeSwitch(mode: MatchRuleEditorMode, overwriteDraft: boolean) {
   emit('update:editorMode', mode)
-  if (mode === 'JSON') {
+  if (mode === 'JSON' || overwriteDraft) {
     const text = formatMatchRule(props.modelValue)
     jsonDraft.value = text
     emit('update:draft', text)
