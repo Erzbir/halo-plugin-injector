@@ -85,6 +85,19 @@ export function parseMatchRuleDraft(draft?: string | null): MatchRuleParseResult
   }
 }
 
+export function validateMatchRuleTree(rule: MatchRule | null | undefined): MatchRuleParseResult {
+  if (!rule) {
+    return {
+      rule: null,
+      error: {
+        path: '$',
+        message: '请完善匹配规则',
+      },
+    }
+  }
+  return validateMatchRuleInput(JSON.parse(JSON.stringify(rule)) as unknown, '$', true)
+}
+
 export function hydrateRuleForEditor(rule: InjectionRule): InjectionRule {
   const matchRule = normalizeMatchRule(rule.matchRule)
   return {

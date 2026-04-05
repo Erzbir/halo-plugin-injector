@@ -8,6 +8,7 @@ import {
   formatMatchRuleError,
   normalizeMatchRule,
   parseMatchRuleDraft,
+  validateMatchRuleTree,
 } from '@/views/composables/matchRule'
 import MatchRuleNodeEditor from './MatchRuleNodeEditor.vue'
 
@@ -48,6 +49,8 @@ watch(
 const currentMode = computed(() => props.editorMode ?? 'SIMPLE')
 const parseResult = computed(() => parseMatchRuleDraft(jsonDraft.value))
 const parseError = computed(() => formatMatchRuleError(parseResult.value.error))
+const simpleValidateResult = computed(() => validateMatchRuleTree(normalizeMatchRule(props.modelValue)))
+const simpleError = computed(() => formatMatchRuleError(simpleValidateResult.value.error))
 const jsonActionLabel = computed(() => (parseResult.value.error ? '重建 JSON' : '格式化 JSON'))
 const jsonActionTitle = computed(() =>
   parseResult.value.error
@@ -162,6 +165,9 @@ function formatJson() {
       @change="emit('change')"
       @update:model-value="updateSimple"
     />
+    <p v-if="currentMode === 'SIMPLE' && simpleError" class=":uno: text-xs text-red-500">
+      {{ simpleError }}
+    </p>
 
     <div v-else class=":uno: space-y-2">
       <textarea
