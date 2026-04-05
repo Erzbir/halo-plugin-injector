@@ -4,7 +4,7 @@ import com.erzbir.halo.injector.manager.CodeSnippetManager;
 import com.erzbir.halo.injector.manager.InjectionRuleManager;
 import com.erzbir.halo.injector.scheme.CodeSnippet;
 import com.erzbir.halo.injector.scheme.InjectionRule;
-import com.erzbir.halo.injector.scheme.MatchRule;
+import com.erzbir.halo.injector.core.MatchRule;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.PathContainer;

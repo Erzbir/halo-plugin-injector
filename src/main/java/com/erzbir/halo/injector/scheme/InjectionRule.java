@@ -1,6 +1,7 @@
 package com.erzbir.halo.injector.scheme;
 
 import com.erzbir.halo.injector.core.IInjectionRule;
+import com.erzbir.halo.injector.core.MatchRule;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import run.halo.app.extension.AbstractExtension;

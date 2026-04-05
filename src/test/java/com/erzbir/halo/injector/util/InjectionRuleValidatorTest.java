@@ -1,7 +1,7 @@
 package com.erzbir.halo.injector.util;
 
 import com.erzbir.halo.injector.scheme.InjectionRule;
-import com.erzbir.halo.injector.scheme.MatchRule;
+import com.erzbir.halo.injector.core.MatchRule;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;

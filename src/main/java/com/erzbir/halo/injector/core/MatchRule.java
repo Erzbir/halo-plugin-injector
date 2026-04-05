@@ -1,4 +1,4 @@
-package com.erzbir.halo.injector.scheme;
+package com.erzbir.halo.injector.core;
 
 import lombok.Data;
 import org.springframework.util.StringUtils;

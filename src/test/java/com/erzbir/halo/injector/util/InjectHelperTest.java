@@ -3,7 +3,7 @@ package com.erzbir.halo.injector.util;
 import com.erzbir.halo.injector.manager.CodeSnippetManager;
 import com.erzbir.halo.injector.manager.InjectionRuleManager;
 import com.erzbir.halo.injector.scheme.InjectionRule;
-import com.erzbir.halo.injector.scheme.MatchRule;
+import com.erzbir.halo.injector.core.MatchRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

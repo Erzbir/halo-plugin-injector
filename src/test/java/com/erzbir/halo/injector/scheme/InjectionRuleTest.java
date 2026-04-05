@@ -1,5 +1,6 @@
 package com.erzbir.halo.injector.scheme;
 
+import com.erzbir.halo.injector.core.MatchRule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 

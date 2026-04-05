@@ -1,7 +1,5 @@
 package com.erzbir.halo.injector.core;
 
-import com.erzbir.halo.injector.scheme.MatchRule;
-
 import java.util.Set;
 
 public interface IInjectionRule {
