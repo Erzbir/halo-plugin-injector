@@ -79,7 +79,7 @@ Halo 自带的代码注入更偏向全局场景；这个插件更适合：
 ## 规则级附加选项
 
 - 每条规则都可单独配置“注释标记”
-- 开启时，会包裹 `<!-- PluginInjector start -->` 与 `<!-- PluginInjector end -->`
+- 开启时，会输出 `<!-- PluginInjector start -->` 与 `<!-- PluginInjector end -->`
 - 关闭后，注入内容原样输出，不额外添加注释
 - 默认开启，便于排查页面中的注入来源
 
