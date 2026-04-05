@@ -58,7 +58,15 @@ function updateChild(index: number, child: MatchRule) {
 
 function removeChild(index: number) {
   const next = cloneMatchRule(rule.value)
-  next.children = (next.children ?? []).filter((_, idx) => idx !== index)
+  const children = (next.children ?? []).filter((_, idx) => idx !== index)
+  if (!children.length) {
+    if (props.root) {
+      return
+    }
+    emit('remove')
+    return
+  }
+  next.children = children
   updateRule(next)
 }
 
@@ -179,7 +187,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
           :key="index"
           :can-move-down="index < (rule.children?.length ?? 0) - 1"
           :can-move-up="index > 0"
-          :can-remove="(rule.children?.length ?? 0) > 1"
+          :can-remove="!root || (rule.children?.length ?? 0) > 1"
           :model-value="child"
           @change="emit('change')"
           @move-down="moveChild(index, 1)"
