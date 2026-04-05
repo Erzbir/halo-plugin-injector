@@ -3,6 +3,12 @@ import { Dialog, Toast } from '@halo-dev/components'
 import { ruleApi, snippetApi } from '@/apis'
 import type { CodeSnippet, InjectionRule, ItemList } from '@/types'
 import { uniqueStrings } from './util'
+import {
+  hydrateRuleForEditor,
+  isValidMatchRule,
+  makeRulePayload,
+  resolveRuleMatchRule,
+} from './matchRule'
 
 function emptyList<T>(): ItemList<T> {
   return {
@@ -54,10 +60,11 @@ export function useInjectorData() {
   })
 
   function _validateRule(rule: InjectionRule): string | null {
-    const pats = uniqueStrings(rule.pathPatterns.map((p) => p.pathPattern))
-    if (!pats.length) return '至少需要一条路径规则'
     if ((rule.mode === 'SELECTOR' || rule.mode === 'ID') && !rule.match.trim())
       return '请填写匹配内容'
+    const matchRule = resolveRuleMatchRule(rule)
+    if (!matchRule) return '匹配规则 JSON 无效'
+    if (!isValidMatchRule(matchRule)) return '请完善匹配规则'
     return null
   }
 
@@ -74,7 +81,7 @@ export function useInjectorData() {
         const updatedIds = shouldHave
           ? uniqueStrings([...(rule.snippetIds ?? []), snippetId])
           : (rule.snippetIds ?? []).filter((id) => id !== snippetId)
-        await ruleApi.update(rule.id, { ...rule, snippetIds: updatedIds })
+        await ruleApi.update(rule.id, makeRulePayload(rule, updatedIds))
       }),
     )
   }
@@ -135,7 +142,7 @@ export function useInjectorData() {
       return
     }
     const found = rules.value.find((r) => r.id === selectedRuleId.value)
-    editRule.value = found ? found : null
+    editRule.value = found ? hydrateRuleForEditor(found) : null
     editRuleSnippetIds.value = snippets.value
       .filter((s) => s.ruleIds?.includes(selectedRuleId.value!))
       .map((s) => s.id)
@@ -175,16 +182,9 @@ export function useInjectorData() {
       return null
     }
     const nextSnippetIds = uniqueStrings(snippetIds)
-    const nextRule = {
-      ...rule,
-      snippetIds: nextSnippetIds,
-      pathPatterns: uniqueStrings(rule.pathPatterns.map((p) => p.pathPattern)).map((p) => ({
-        pathPattern: p,
-      })),
-    }
     saving.value = true
     try {
-      const res = await ruleApi.add(nextRule)
+      const res = await ruleApi.add(makeRulePayload(rule, nextSnippetIds))
       const id = res.data.id
       if (nextSnippetIds.length) await _applyRuleSnippetSelection(id, nextSnippetIds)
       await fetchAll()
@@ -227,16 +227,9 @@ export function useInjectorData() {
       return
     }
     const nextSnippetIds = uniqueStrings(editRuleSnippetIds.value)
-    const nextRule = {
-      ...editRule.value,
-      snippetIds: nextSnippetIds,
-      pathPatterns: uniqueStrings(editRule.value.pathPatterns.map((p) => p.pathPattern)).map(
-        (p) => ({ pathPattern: p }),
-      ),
-    }
     saving.value = true
     try {
-      await ruleApi.update(editRule.value.id, nextRule)
+      await ruleApi.update(editRule.value.id, makeRulePayload(editRule.value, nextSnippetIds))
       await _applyRuleSnippetSelection(editRule.value.id, nextSnippetIds)
       await fetchAll()
       editDirty.value = false
@@ -263,7 +256,10 @@ export function useInjectorData() {
     if (!editRule.value) return
     try {
       editRule.value.enabled = !editRule.value.enabled
-      await ruleApi.update(editRule.value.id, editRule.value)
+      await ruleApi.update(
+        editRule.value.id,
+        makeRulePayload(editRule.value, uniqueStrings(editRuleSnippetIds.value)),
+      )
       await fetchAll()
     } catch {
       Toast.error('操作失败')

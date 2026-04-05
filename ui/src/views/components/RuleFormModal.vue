@@ -9,8 +9,8 @@ import {
 } from '@/types'
 import BaseFormModal from './BaseFormModal.vue'
 import ItemPicker from './ItemPicker.vue'
-import PathPatternEditor from './PathPatternEditor.vue'
 import FormField from './FormField.vue'
+import MatchRuleEditor from './MatchRuleEditor.vue'
 
 defineProps<{
   snippets: CodeSnippet[]
@@ -99,8 +99,16 @@ function handleSubmit() {
         </FormField>
       </template>
 
-      <FormField label="路径规则" required>
-        <PathPatternEditor v-model="rule.pathPatterns" />
+      <FormField label="匹配规则" required>
+        <MatchRuleEditor
+          :draft="rule.matchRuleDraft"
+          :editor-mode="rule.matchRuleEditorMode"
+          :model-value="rule.matchRule"
+          @change="void 0"
+          @update:draft="rule.matchRuleDraft = $event"
+          @update:editor-mode="rule.matchRuleEditorMode = $event"
+          @update:model-value="rule.matchRule = $event"
+        />
       </FormField>
     </template>
 

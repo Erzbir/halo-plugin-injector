@@ -3,10 +3,10 @@ import { computed } from 'vue'
 import type { CodeSnippet, InjectionRule } from '@/types'
 import { MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
 import ItemPicker from './ItemPicker.vue'
-import PathPatternEditor from './PathPatternEditor.vue'
 import EditorToolbar from './EditorToolbar.vue'
 import EditorFooter from './EditorFooter.vue'
 import FormField from './FormField.vue'
+import MatchRuleEditor from './MatchRuleEditor.vue'
 import { sortSelectedFirst } from '@/views/composables/util.ts'
 
 const props = defineProps<{
@@ -122,11 +122,15 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
         </FormField>
       </template>
 
-      <FormField label="路径规则" required>
-        <PathPatternEditor
-          :model-value="rule.pathPatterns"
+      <FormField label="匹配规则" required>
+        <MatchRuleEditor
+          :draft="rule.matchRuleDraft"
+          :editor-mode="rule.matchRuleEditorMode"
+          :model-value="rule.matchRule"
           @change="emit('field-change')"
-          @update:model-value="updateField('pathPatterns', $event)"
+          @update:draft="updateField('matchRuleDraft', $event)"
+          @update:editor-mode="updateField('matchRuleEditorMode', $event)"
+          @update:model-value="updateField('matchRule', $event)"
         />
       </FormField>
 

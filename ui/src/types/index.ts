@@ -14,9 +14,18 @@ export interface CodeSnippet {
 
 export type InjectionMode = 'HEAD' | 'FOOTER' | 'ID' | 'SELECTOR'
 export type InjectionPosition = 'APPEND' | 'PREPEND' | 'BEFORE' | 'AFTER' | 'REPLACE'
+export type MatchRuleType = 'GROUP' | 'PATH' | 'TEMPLATE_ID'
+export type MatchRuleOperator = 'AND' | 'OR'
+export type MatchRuleMatcher = 'ANT' | 'REGEX' | 'EXACT'
+export type MatchRuleEditorMode = 'SIMPLE' | 'JSON'
 
-export interface PathMatchRule {
-  pathPattern: string
+export interface MatchRule {
+  type: MatchRuleType
+  negate: boolean
+  operator?: MatchRuleOperator
+  matcher?: MatchRuleMatcher
+  value?: string
+  children?: MatchRule[]
 }
 
 export interface InjectionRule {
@@ -29,9 +38,11 @@ export interface InjectionRule {
   enabled: boolean
   mode: InjectionMode
   match: string
+  matchRule: MatchRule
   position: InjectionPosition
-  pathPatterns: PathMatchRule[]
   snippetIds: string[]
+  matchRuleDraft?: string
+  matchRuleEditorMode?: MatchRuleEditorMode
 }
 
 export interface ItemList<T> {
@@ -63,6 +74,52 @@ export const POSITION_OPTIONS: { value: InjectionPosition; label: string }[] = [
   { value: 'REPLACE', label: '替换元素 (replace)' },
 ]
 
+export const MATCH_RULE_GROUP_OPTIONS: { value: MatchRuleOperator; label: string }[] = [
+  { value: 'AND', label: '全部满足 (AND)' },
+  { value: 'OR', label: '任一满足 (OR)' },
+]
+
+export const PATH_MATCHER_OPTIONS: { value: MatchRuleMatcher; label: string }[] = [
+  { value: 'ANT', label: 'Ant 风格' },
+  { value: 'REGEX', label: '正则表达式' },
+  { value: 'EXACT', label: '精确匹配' },
+]
+
+export const TEMPLATE_MATCHER_OPTIONS: { value: MatchRuleMatcher; label: string }[] = [
+  { value: 'EXACT', label: '精确匹配' },
+  { value: 'REGEX', label: '正则表达式' },
+]
+
+export function makePathMatchRule(override: Partial<MatchRule> = {}): MatchRule {
+  return {
+    type: 'PATH',
+    negate: false,
+    matcher: 'ANT',
+    value: '/**',
+    ...override,
+  }
+}
+
+export function makeTemplateMatchRule(override: Partial<MatchRule> = {}): MatchRule {
+  return {
+    type: 'TEMPLATE_ID',
+    negate: false,
+    matcher: 'EXACT',
+    value: 'post',
+    ...override,
+  }
+}
+
+export function makeMatchRuleGroup(override: Partial<MatchRule> = {}): MatchRule {
+  return {
+    type: 'GROUP',
+    negate: false,
+    operator: 'AND',
+    children: [makePathMatchRule()],
+    ...override,
+  }
+}
+
 export function makeSnippet(override: Partial<CodeSnippet> = {}): CodeSnippet {
   return {
     apiVersion: 'injector.erzbir.com/v1alpha1',
@@ -89,8 +146,8 @@ export function makeRule(override: Partial<InjectionRule> = {}): InjectionRule {
     enabled: true,
     mode: 'FOOTER',
     match: '',
+    matchRule: makeMatchRuleGroup(),
     position: 'APPEND',
-    pathPatterns: [{ pathPattern: '/**' }],
     snippetIds: [],
     ...override,
   }

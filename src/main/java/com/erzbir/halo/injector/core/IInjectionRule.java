@@ -1,6 +1,6 @@
 package com.erzbir.halo.injector.core;
 
-import lombok.Data;
+import com.erzbir.halo.injector.scheme.MatchRule;
 
 import java.util.Set;
 
@@ -17,11 +17,11 @@ public interface IInjectionRule {
 
     String getMatch();
 
+    MatchRule getMatchRule();
+
     Position getPosition();
 
     Set<String> getSnippetIds();
-
-    Set<PathMatchRule> getPathPatterns();
 
     enum Mode {
         HEAD, FOOTER, ID, SELECTOR
@@ -31,11 +31,4 @@ public interface IInjectionRule {
     enum Position {
         APPEND, PREPEND, BEFORE, AFTER, REPLACE
     }
-
-
-    @Data
-    class PathMatchRule {
-        private String pathPattern = "";
-    }
-
 }

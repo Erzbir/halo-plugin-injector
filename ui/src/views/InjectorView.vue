@@ -5,6 +5,7 @@ import { IconPlug, VButton, VCard, VLoading, VPageHeader } from '@halo-dev/compo
 import type { ActiveTab } from '@/types'
 import { useInjectorData } from './composables/useInjectorData.ts'
 import { rulePreview } from './composables/util.ts'
+import { matchRuleChips } from './composables/matchRule.ts'
 
 import ItemListV from './components/ItemListV.vue'
 import SnippetEditor from './components/SnippetEditor.vue'
@@ -140,11 +141,11 @@ function jumpToSnippet(id: string) {
                 <span class=":uno: text-xs text-gray-500">{{ rulePreview(r) }}</span>
                 <div class=":uno: flex flex-wrap gap-1 mt-0.5">
                   <span
-                    v-for="p in r.pathPatterns ?? []"
-                    :key="p.pathPattern"
+                    v-for="chip in matchRuleChips(r.matchRule)"
+                    :key="chip"
                     class=":uno: text-xs text-gray-500 px-1 py-0.5 rounded border"
                   >
-                    {{ p.pathPattern }}
+                    {{ chip }}
                   </span>
                 </div>
               </template>

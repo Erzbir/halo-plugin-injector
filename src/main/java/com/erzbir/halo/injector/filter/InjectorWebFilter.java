@@ -4,6 +4,7 @@ import com.erzbir.halo.injector.core.ElementIDInjector;
 import com.erzbir.halo.injector.core.HTMLInjector;
 import com.erzbir.halo.injector.core.SelectorInjector;
 import com.erzbir.halo.injector.scheme.InjectionRule;
+import com.erzbir.halo.injector.util.ContextUtil;
 import com.erzbir.halo.injector.util.InjectHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,8 +64,8 @@ public class InjectorWebFilter implements AdditionalWebFilter {
 
     private Mono<Boolean> hasMatchingRules(String path) {
         return Mono.zip(
-                        injectHelper.getMatchedRules(path, InjectionRule.Mode.SELECTOR).hasElements(),
-                        injectHelper.getMatchedRules(path, InjectionRule.Mode.ID).hasElements()
+                        injectHelper.getPathMatchedRules(path, InjectionRule.Mode.SELECTOR).hasElements(),
+                        injectHelper.getPathMatchedRules(path, InjectionRule.Mode.ID).hasElements()
                 ).map(tuple -> tuple.getT1() || tuple.getT2())
                 .defaultIfEmpty(false);
     }
@@ -95,10 +96,10 @@ public class InjectorWebFilter implements AdditionalWebFilter {
         );
     }
 
-    public Mono<String> inject(String html, String permalink) {
-        return dispatchInject(html, permalink, InjectionRule.Mode.SELECTOR)
+    public Mono<String> inject(String html, String permalink, String templateId) {
+        return dispatchInject(html, permalink, templateId, InjectionRule.Mode.SELECTOR)
                 .flatMap(
-                        ctx -> dispatchInject(ctx, permalink, InjectionRule.Mode.ID)).onErrorResume(e -> {
+                        ctx -> dispatchInject(ctx, permalink, templateId, InjectionRule.Mode.ID)).onErrorResume(e -> {
                     log.warn("Failed to inject HTML response", e);
                     return Mono.just(html);
                 });
@@ -107,6 +108,7 @@ public class InjectorWebFilter implements AdditionalWebFilter {
     private Mono<String> dispatchInject(
             String html,
             String path,
+            String templateId,
             InjectionRule.Mode mode) {
 
         HTMLInjector injector = switch (mode) {
@@ -120,7 +122,7 @@ public class InjectorWebFilter implements AdditionalWebFilter {
             return Mono.just(html);
         }
 
-        return injectHelper.getMatchedRules(path, mode)
+        return injectHelper.getMatchedRules(path, templateId, mode)
                 .concatMap(rule ->
                         injectHelper.getConcatCode(rule)
                                 .map(code -> new Object[]{rule, code})
@@ -172,7 +174,8 @@ public class InjectorWebFilter implements AdditionalWebFilter {
                     if (html.isBlank()) {
                         return Mono.just(dataBuffer);
                     }
-                    return inject(html, path).onErrorResume(e -> Mono.just(html))
+                    String templateId = ContextUtil.getTemplateId(exchange);
+                    return inject(html, path, templateId).onErrorResume(e -> Mono.just(html))
                             .map(processedHtml -> {
                                 byte[] resultBytes = processedHtml.getBytes(StandardCharsets.UTF_8);
                                 return response.bufferFactory().wrap(resultBytes);

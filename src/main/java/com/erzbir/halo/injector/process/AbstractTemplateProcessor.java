@@ -28,8 +28,9 @@ public abstract class AbstractTemplateProcessor {
 
     protected Mono<Void> processInternal(ITemplateContext context, IModel model) {
         String path = ContextUtil.getPath(context);
+        String templateId = ContextUtil.exposeTemplateId(context);
 
-        return injectHelper.getMatchedRules(path, mode())
+        return injectHelper.getMatchedRules(path, templateId, mode())
                 .flatMap(rule ->
                         injectHelper.getConcatCode(rule)
                                 .doOnNext(code -> {

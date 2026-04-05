@@ -19,8 +19,8 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     private Boolean enabled = true;
     private Mode mode = Mode.FOOTER;
     private String match = "";
+    private MatchRule matchRule = MatchRule.defaultRule();
     private Position position = Position.APPEND;
-    private Set<PathMatchRule> pathPatterns = new LinkedHashSet<>();
     private Set<String> snippetIds = new LinkedHashSet<>();
 
     @Override
@@ -42,13 +42,8 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     }
 
     public boolean isValid() {
-        if (Mode.ID.equals(getMode()) || Mode.SELECTOR.equals(getMode())) {
-            return !getMatch().isBlank();
-        }
-        Set<InjectionRule.PathMatchRule> pathPatterns = getPathPatterns();
-        return pathPatterns != null
-                && !pathPatterns.isEmpty()
-                && pathPatterns.stream()
-                .anyMatch(p -> p.getPathPattern() != null && !p.getPathPattern().isBlank());
+        boolean targetValid = !Mode.ID.equals(getMode()) && !Mode.SELECTOR.equals(getMode())
+                || !getMatch().isBlank();
+        return targetValid && matchRule != null && matchRule.isValid();
     }
 }

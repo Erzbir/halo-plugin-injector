@@ -4,6 +4,7 @@ import com.erzbir.halo.injector.manager.CodeSnippetManager;
 import com.erzbir.halo.injector.manager.InjectionRuleManager;
 import com.erzbir.halo.injector.scheme.CodeSnippet;
 import com.erzbir.halo.injector.scheme.InjectionRule;
+import com.erzbir.halo.injector.scheme.MatchRule;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.PathContainer;
@@ -15,7 +16,8 @@ import org.springframework.web.util.pattern.PatternParseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Set;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * @author Erzbir
@@ -36,13 +38,32 @@ public class InjectHelper {
 
     public Flux<InjectionRule> getMatchedRules(String targetPath,
                                                InjectionRule.Mode mode) {
+        return getMatchedRules(targetPath, "", mode);
+    }
+
+    public Flux<InjectionRule> getMatchedRules(String targetPath,
+                                               String templateId,
+                                               InjectionRule.Mode mode) {
+        MatchContext context = new MatchContext(targetPath, templateId);
+        return getRulesByMode(mode)
+                .filter(rule -> rule.isEnabled() && rule.isValid())
+                .filter(rule -> evaluate(rule.getMatchRule(), context) == MatchState.MATCH)
+                .onErrorResume(e -> {
+                    log.error("Failed to get matched rules for mode: {}", mode, e);
+                    return Flux.empty();
+                });
+    }
+
+    public Flux<InjectionRule> getPathMatchedRules(String targetPath,
+                                                   InjectionRule.Mode mode) {
         if (targetPath.isEmpty()) {
             return Flux.empty();
         }
 
         return getRulesByMode(mode)
                 .filter(rule -> rule.isEnabled() && rule.isValid())
-                .filter(rule -> matchesPath(rule.getPathPatterns(), targetPath, routeMatcher))
+                .filter(rule -> evaluate(rule.getMatchRule(), new MatchContext(targetPath, null))
+                        != MatchState.NO_MATCH)
                 .onErrorResume(e -> {
                     log.error("Failed to get matched rules for mode: {}", mode, e);
                     return Flux.empty();
@@ -58,31 +79,131 @@ public class InjectHelper {
                 .reduce("", String::concat);
     }
 
-    private boolean matchesPath(Set<InjectionRule.PathMatchRule> pathPatterns,
-                                String currentPath,
-                                RouteMatcher routeMatcher) {
-        if (currentPath == null || pathPatterns == null || pathPatterns.isEmpty()) {
+    private MatchState evaluate(MatchRule rule, MatchContext context) {
+        if (rule == null || rule.getType() == null) {
+            return MatchState.NO_MATCH;
+        }
+        MatchState state = switch (rule.getType()) {
+            case GROUP -> evaluateGroup(rule, context);
+            case PATH -> evaluatePath(rule, context.path());
+            case TEMPLATE_ID -> evaluateTemplateId(rule, context.templateId());
+        };
+        if (Boolean.TRUE.equals(rule.getNegate())) {
+            return negate(state);
+        }
+        return state;
+    }
+
+    private MatchState evaluateGroup(MatchRule rule, MatchContext context) {
+        if (rule.getChildren() == null || rule.getChildren().isEmpty()) {
+            return MatchState.NO_MATCH;
+        }
+        MatchRule.Operator operator = rule.getOperator() == null ? MatchRule.Operator.AND : rule.getOperator();
+        return switch (operator) {
+            case AND -> evaluateAnd(rule, context);
+            case OR -> evaluateOr(rule, context);
+        };
+    }
+
+    private MatchState evaluateAnd(MatchRule rule, MatchContext context) {
+        boolean hasUnknown = false;
+        for (MatchRule child : rule.getChildren()) {
+            MatchState state = evaluate(child, context);
+            if (state == MatchState.NO_MATCH) {
+                return MatchState.NO_MATCH;
+            }
+            if (state == MatchState.UNKNOWN) {
+                hasUnknown = true;
+            }
+        }
+        return hasUnknown ? MatchState.UNKNOWN : MatchState.MATCH;
+    }
+
+    private MatchState evaluateOr(MatchRule rule, MatchContext context) {
+        boolean hasUnknown = false;
+        for (MatchRule child : rule.getChildren()) {
+            MatchState state = evaluate(child, context);
+            if (state == MatchState.MATCH) {
+                return MatchState.MATCH;
+            }
+            if (state == MatchState.UNKNOWN) {
+                hasUnknown = true;
+            }
+        }
+        return hasUnknown ? MatchState.UNKNOWN : MatchState.NO_MATCH;
+    }
+
+    private MatchState evaluatePath(MatchRule rule, String currentPath) {
+        if (currentPath == null || currentPath.isBlank()) {
+            return MatchState.NO_MATCH;
+        }
+        String value = rule.getValue() == null ? "" : rule.getValue().trim();
+        if (value.isBlank()) {
+            return MatchState.NO_MATCH;
+        }
+        MatchRule.Matcher matcher = rule.getMatcher() == null ? MatchRule.Matcher.ANT : rule.getMatcher();
+        boolean matched = switch (matcher) {
+            case EXACT -> value.equals(currentPath);
+            case REGEX -> matchesRegex(value, currentPath);
+            case ANT -> matchesAntPath(value, currentPath);
+        };
+        return matched ? MatchState.MATCH : MatchState.NO_MATCH;
+    }
+
+    private MatchState evaluateTemplateId(MatchRule rule, String templateId) {
+        if (templateId == null || templateId.isBlank()) {
+            return MatchState.UNKNOWN;
+        }
+        String value = rule.getValue() == null ? "" : rule.getValue().trim();
+        if (value.isBlank()) {
+            return MatchState.NO_MATCH;
+        }
+        MatchRule.Matcher matcher = rule.getMatcher() == null ? MatchRule.Matcher.EXACT : rule.getMatcher();
+        boolean matched = switch (matcher) {
+            case EXACT -> value.equals(templateId.trim());
+            case REGEX -> matchesRegex(value, templateId.trim());
+            case ANT -> false;
+        };
+        return matched ? MatchState.MATCH : MatchState.NO_MATCH;
+    }
+
+    private boolean matchesAntPath(String pattern, String currentPath) {
+        try {
+            RouteMatcher.Route requestRoute = routeMatcher.parseRoute(currentPath);
+            return routeMatcher.match(pattern, requestRoute);
+        } catch (PatternParseException e) {
+            log.warn("Parse route pattern [{}] failed for path [{}]", pattern, currentPath, e);
             return false;
         }
+    }
 
-        RouteMatcher.Route requestRoute = routeMatcher.parseRoute(currentPath);
+    private boolean matchesRegex(String pattern, String value) {
+        try {
+            return Pattern.compile(pattern).matcher(value).matches();
+        } catch (PatternSyntaxException e) {
+            log.warn("Parse regex [{}] failed for value [{}]", pattern, value, e);
+            return false;
+        }
+    }
 
-        return pathPatterns.stream()
-                .filter(pattern -> pattern != null && !pattern.getPathPattern().trim().isEmpty())
-                .anyMatch(pattern -> {
-                    try {
-                        return routeMatcher.match(pattern.getPathPattern(), requestRoute);
-                    } catch (PatternParseException e) {
-                        log.warn("Parse route pattern [{}] failed for path [{}]", pattern, currentPath,
-                                e);
-                        return false;
-                    }
-                });
+    private MatchState negate(MatchState state) {
+        return switch (state) {
+            case MATCH -> MatchState.NO_MATCH;
+            case NO_MATCH -> MatchState.MATCH;
+            case UNKNOWN -> MatchState.UNKNOWN;
+        };
     }
 
     private RouteMatcher createRouteMatcher() {
         var parser = new PathPatternParser();
         parser.setPathOptions(PathContainer.Options.HTTP_PATH);
         return new PathPatternRouteMatcher(parser);
+    }
+
+    private record MatchContext(String path, String templateId) {
+    }
+
+    private enum MatchState {
+        MATCH, NO_MATCH, UNKNOWN
     }
 }

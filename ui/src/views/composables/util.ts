@@ -1,4 +1,5 @@
 import { type InjectionRule, MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
+import { matchRuleChips } from './matchRule'
 
 export function modeLabel(mode: string) {
   return MODE_OPTIONS.find((o) => o.value === mode)?.label ?? mode
@@ -9,7 +10,9 @@ export function positionLabel(pos?: string) {
   return POSITION_OPTIONS.find((o) => o.value === pos)?.label ?? pos
 }
 export function rulePreview(rule: InjectionRule) {
-  return `${modeLabel(rule.mode)} · ${positionLabel(rule.position)}`
+  const chips = matchRuleChips(rule.matchRule, 2)
+  const matchSummary = chips.length ? ` · ${chips.join(' · ')}` : ''
+  return `${modeLabel(rule.mode)} · ${positionLabel(rule.position)}${matchSummary}`
 }
 
 export function codePreview(code: string) {
