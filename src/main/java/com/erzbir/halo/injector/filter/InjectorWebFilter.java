@@ -62,6 +62,10 @@ public class InjectorWebFilter implements AdditionalWebFilter {
                 });
     }
 
+    /**
+     * why: 这里不是判断“最终一定会注入”，而是判断“是否值得为了 DOM 注入去缓冲整页 HTML”；
+     * 因此只看支持路径预筛的 SELECTOR / ID 规则，尽量把无关请求放过。
+     */
     private Mono<Boolean> hasMatchingRules(String path) {
         return Mono.zip(
                         injectHelper.getPathMatchedRules(path, InjectionRule.Mode.SELECTOR).hasElements(),
@@ -105,6 +109,10 @@ public class InjectorWebFilter implements AdditionalWebFilter {
                 });
     }
 
+    /**
+     * why: 两类 DOM 注入器共享同一条调度链，避免“先选规则、再取代码、再执行注入”的流程复制两份；
+     * 同时保留按规则顺序串行 reduce，确保最终 HTML 与用户配置顺序一致。
+     */
     private Mono<String> dispatchInject(
             String html,
             String path,

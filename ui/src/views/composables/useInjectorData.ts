@@ -87,6 +87,10 @@ export function useInjectorData() {
     return uniqueStrings(ruleIds).filter((ruleId) => allowedRuleIds.has(ruleId))
   }
 
+  /**
+   * why: 前端先做一轮用户可读的快速校验，
+   * 把大多数结构问题拦在保存前；后端仍会复核，防止绕过 UI 直接写入坏数据。
+   */
   function _validateRule(rule: InjectionRule): string | null {
     if ((rule.mode === 'SELECTOR' || rule.mode === 'ID') && !rule.match.trim())
       return '请填写匹配内容'

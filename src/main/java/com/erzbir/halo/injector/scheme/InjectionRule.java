@@ -47,6 +47,10 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
         return wrapMarker;
     }
 
+    /**
+     * why: 运行时这里只保留轻量级健康检查，
+     * 真正昂贵或需要精确报错的位置放在写入期校验里，避免每次请求重复做同样工作。
+     */
     public boolean isValid() {
         boolean targetValid = !Mode.ID.equals(getMode()) && !Mode.SELECTOR.equals(getMode())
                 || !getMatch().isBlank();
@@ -60,6 +64,10 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
         validateDomModeMatchRule();
     }
 
+    /**
+     * why: REMOVE 的语义会改变“是否还需要代码块”这一数据约束，
+     * 因此在位置变更时立即收紧校验，避免对象进入短暂但可持久化的脏状态。
+     */
     public void setPosition(Position position) {
         this.position = position;
         validateRemoveSnippetRelation();
@@ -71,6 +79,10 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
         validateDomModeMatchRule();
     }
 
+    /**
+     * why: 代码块关联是集合语义，复制一份可隔离外部可变集合；
+     * 同时在赋值点就卡住 REMOVE + snippetIds 的非法组合，避免后续链路继续传播。
+     */
     public void setSnippetIds(Set<String> snippetIds) {
         this.snippetIds = snippetIds == null ? new LinkedHashSet<>() : new LinkedHashSet<>(snippetIds);
         validateRemoveSnippetRelation();

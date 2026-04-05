@@ -22,10 +22,16 @@ export interface MatchRuleParseResult {
   error: MatchRuleValidationError | null
 }
 
+/**
+ * why: 编辑器需要“可随意修改的草稿副本”，避免直接改动响应式源对象时把未保存状态提前污染到列表数据。
+ */
 export function cloneMatchRule(rule: MatchRule): MatchRule {
   return JSON.parse(JSON.stringify(rule)) as MatchRule
 }
 
+/**
+ * why: 只对“形状正确”的对象做归一化，保证简单模式、JSON 模式和后端入参围绕同一份稳定结构工作。
+ */
 export function normalizeMatchRule(input: unknown): MatchRule {
   if (!isObject(input)) {
     return makeMatchRuleGroup()
@@ -128,6 +134,9 @@ export function supportsDomPathPrecheck(rule: MatchRule | null): boolean {
   return analyzePathPrecheckKind(rule) === 'PATH_SCOPED'
 }
 
+/**
+ * why: 发送到后端前统一收敛编辑态字段，避免 JSON 草稿、REMOVE 的空代码块关联等 UI 细节污染持久化模型。
+ */
 export function makeRulePayload(rule: InjectionRule, snippetIds: string[]) {
   const result = resolveRuleMatchRule(rule)
   if (!result.rule) {
@@ -296,6 +305,10 @@ function validateMatchRuleInput(
   }
 }
 
+/**
+ * why: 前端与后端共用同一套“路径预筛能力”判定思路，
+ * 让简单模式能尽早阻止会把 DOM 注入拖成全站缓冲的规则结构。
+ */
 function analyzePathPrecheckKind(rule: MatchRule | null): PathPrecheckKind {
   if (!rule) return 'UNSUPPORTED'
 

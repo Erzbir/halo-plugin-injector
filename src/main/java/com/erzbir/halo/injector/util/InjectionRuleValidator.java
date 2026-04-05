@@ -12,7 +12,8 @@ public class InjectionRuleValidator {
      * 写入期兜底校验。
      * <p>
      * 前端负责给出更友好的编辑态提示；后端这里负责拦住会污染持久化数据的非法规则，
-     * 尤其是非法正则，避免它们落库后等到运行时才以“规则不生效”的形式暴露出来。
+     * 尤其是非法正则、REMOVE 脏关联、以及会破坏 DOM 路径预筛的规则树，
+     * 避免它们落库后等到运行时才以“规则不生效”或“整页被迫缓冲”的形式暴露出来。
      */
     public Mono<InjectionRule> validateForWrite(InjectionRule rule) {
         if (rule == null) {

@@ -44,6 +44,10 @@ public class InjectHelper {
         return getMatchedRules(targetPath, "", mode);
     }
 
+    /**
+     * why: 模板注入和 DOM 注入最终都走同一套规则求值，
+     * 这样路径、模板 ID、取反与分组语义只维护一份，避免前后两条链路出现行为漂移。
+     */
     public Flux<InjectionRule> getMatchedRules(String targetPath,
                                                String templateId,
                                                InjectionRule.Mode mode) {
@@ -57,6 +61,10 @@ public class InjectHelper {
                 });
     }
 
+    /**
+     * why: WebFilter 还拿不到模板上下文，先做一次“仅按路径”的低成本预筛，
+     * 只有可能命中的 DOM 规则才值得进入整页 HTML 缓冲链路。
+     */
     public Flux<InjectionRule> getPathMatchedRules(String targetPath,
                                                    InjectionRule.Mode mode) {
         if (targetPath.isEmpty()) {
@@ -72,6 +80,10 @@ public class InjectHelper {
                 });
     }
 
+    /**
+     * why: 代码块在规则维度按关联顺序拼接，保持用户配置的组合结果稳定；
+     * REMOVE 规则会在更上游被清空 snippetIds，这里无需再分叉特殊逻辑。
+     */
     public Mono<String> getConcatCode(InjectionRule rule) {
         return Flux.fromIterable(rule.getSnippetIds())
                 .flatMap(snippetManager::get)

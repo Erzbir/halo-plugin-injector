@@ -37,6 +37,10 @@ public class InjectionRuleEndpoint implements CustomEndpoint {
                 .andRoute(PUT("/injectionRules/{name}"), this::updateRule);
     }
 
+    /**
+     * why: 创建入口统一走插件自定义写入校验，
+     * 保证控制台表单、脚本调用、以及未来其他写入方都不会绕过规则树与 REMOVE 约束。
+     */
     private Mono<ServerResponse> createRule(ServerRequest request) {
         return request.bodyToMono(InjectionRule.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空")))
@@ -48,6 +52,10 @@ public class InjectionRuleEndpoint implements CustomEndpoint {
                         .bodyValue(created));
     }
 
+    /**
+     * why: 更新时除了复用写入校验，还要强制 metadata.name 与路径参数一致，
+     * 防止客户端借更新接口“改名写入”到另一条资源上，破坏资源定位语义。
+     */
     private Mono<ServerResponse> updateRule(ServerRequest request) {
         String name = request.pathVariable("name");
         return request.bodyToMono(InjectionRule.class)

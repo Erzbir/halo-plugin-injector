@@ -57,10 +57,18 @@ public class MatchRule {
         };
     }
 
+    /**
+     * why: 写接口只接受“结构完整且语义明确”的规则树，
+     * 这样前后端都能围绕同一份模型约束工作，避免半合法对象进入存储层后再在运行时兜底。
+     */
     public static void validateForWrite(MatchRule rule) {
         validateForWrite(rule, "matchRule", true);
     }
 
+    /**
+     * why: DOM 注入要先在 WebFilter 阶段决定是否包裹整页 HTML，
+     * 因此规则必须能仅凭路径做出“值得继续处理”的判断，模板 ID 只能作为后续附加约束。
+     */
     public static boolean supportsDomPathPrecheck(MatchRule rule) {
         return pathPrecheckKind(rule) == PathPrecheckKind.PATH_SCOPED;
     }
@@ -145,6 +153,10 @@ public class MatchRule {
         }
     }
 
+    /**
+     * why: 这里不是在做完整匹配，而是在做“这棵树能否仅依赖路径预筛”的静态分类，
+     * 供 DOM 注入在写入期和启动后快速拒绝会导致全站缓冲的规则结构。
+     */
     private static PathPrecheckKind pathPrecheckKind(MatchRule rule) {
         if (rule == null || rule.getType() == null) {
             return PathPrecheckKind.UNSUPPORTED;
@@ -159,6 +171,10 @@ public class MatchRule {
         };
     }
 
+    /**
+     * why: 否定模板条件无法在未知模板 ID 的 WebFilter 阶段安全下结论，
+     * 一旦放开就会把“是否需要缓冲 HTML”拖成全站兜底，因此直接判为不支持。
+     */
     private static PathPrecheckKind pathPrecheckKindForNegated(MatchRule rule) {
         return switch (rule.getType()) {
             case PATH -> PathPrecheckKind.PATH_SCOPED;
@@ -173,6 +189,10 @@ public class MatchRule {
         return pathPrecheckKindForGroupWithoutNegate(rule);
     }
 
+    /**
+     * why: 组节点的预筛能力取决于子节点组合方式：
+     * AND 可把模板约束挂在路径命中之后，OR 则必须避免“路径分支 / 模板分支”混合短路。
+     */
     private static PathPrecheckKind pathPrecheckKindForGroupWithoutNegate(MatchRule rule) {
         List<MatchRule> children = rule.getChildren();
         if (children == null || children.isEmpty()) {
@@ -184,6 +204,10 @@ public class MatchRule {
         };
     }
 
+    /**
+     * why: AND 中只要存在一个路径条件，模板条件就只是附加收窄；
+     * 但若任何子节点本身已无法安全预筛，整棵树也必须一并拒绝。
+     */
     private static PathPrecheckKind pathPrecheckKindForAnd(List<MatchRule> children) {
         boolean hasPathScoped = false;
         for (MatchRule child : children) {
@@ -198,6 +222,10 @@ public class MatchRule {
         return hasPathScoped ? PathPrecheckKind.PATH_SCOPED : PathPrecheckKind.TEMPLATE_ONLY;
     }
 
+    /**
+     * why: OR 只要混入“纯模板分支”和“路径分支”，就无法仅凭路径判断是否需要缓冲响应体；
+     * 这种结构对 DOM 注入来说会退化成全站处理，因此标记为不支持。
+     */
     private static PathPrecheckKind pathPrecheckKindForOr(List<MatchRule> children) {
         boolean hasPathScoped = false;
         boolean hasTemplateOnly = false;
