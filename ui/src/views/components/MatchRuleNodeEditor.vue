@@ -215,10 +215,7 @@ function hasFieldError(field: 'children' | 'operator' | 'negate' | 'type' | 'mat
         </VButton>
       </div>
 
-      <div
-        :class="hasFieldError('children') ? ':uno: border-red-300' : ':uno: border-gray-200'"
-        class=":uno: space-y-2 pl-3 border-l"
-      >
+      <div class=":uno: space-y-2">
         <MatchRuleNodeEditor
           v-for="(child, index) in rule.children ?? []"
           :key="index"
