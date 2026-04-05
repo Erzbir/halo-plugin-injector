@@ -2,7 +2,10 @@
 import { computed, ref, watch } from 'vue'
 import type { CodeSnippet, InjectionRule } from '@/types'
 import { MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
-import { getDomRulePerformanceWarning } from '@/views/composables/matchRule'
+import {
+  getDomRulePerformanceWarning,
+  persistMatchRuleEditorState,
+} from '@/views/composables/matchRule'
 import ItemPicker from './ItemPicker.vue'
 import EditorToolbar from './EditorToolbar.vue'
 import EditorFooter from './EditorFooter.vue'
@@ -134,6 +137,11 @@ function updateMatchRuleField(patch: Partial<InjectionRule>) {
     matchRuleEditorMode: next.matchRuleEditorMode ?? 'SIMPLE',
   }
   undo.trackChange('matchRule', previous, after)
+  persistMatchRuleEditorState({
+    id: next.id,
+    matchRuleDraft: next.matchRuleDraft,
+    matchRuleEditorMode: next.matchRuleEditorMode,
+  })
   updateRuleSnapshot(next)
 }
 

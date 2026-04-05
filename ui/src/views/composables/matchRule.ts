@@ -22,6 +22,13 @@ export interface MatchRuleParseResult {
   error: MatchRuleValidationError | null
 }
 
+const MATCH_RULE_EDITOR_STATE_KEY = 'plugin-injector:match-rule-editor-state'
+
+interface StoredMatchRuleEditorState {
+  draft?: string
+  editorMode?: InjectionRule['matchRuleEditorMode']
+}
+
 /**
  * why: 编辑器需要“可随意修改的草稿副本”，避免直接改动响应式源对象时把未保存状态提前污染到列表数据。
  */
@@ -106,12 +113,36 @@ export function validateMatchRuleTree(rule: MatchRule | null | undefined): Match
 
 export function hydrateRuleForEditor(rule: InjectionRule): InjectionRule {
   const matchRule = normalizeMatchRule(rule.matchRule)
+  const storedState = readStoredMatchRuleEditorState(rule.id)
+  const draft =
+    typeof storedState?.draft === 'string' && storedState.draft.trim()
+      ? storedState.draft
+      : formatMatchRule(matchRule)
   return {
     ...rule,
     matchRule,
-    matchRuleDraft: formatMatchRule(matchRule),
-    matchRuleEditorMode: rule.matchRuleEditorMode ?? 'SIMPLE',
+    matchRuleDraft: draft,
+    matchRuleEditorMode: storedState?.editorMode ?? rule.matchRuleEditorMode ?? 'SIMPLE',
   }
+}
+
+/**
+ * why: 匹配规则的简单/高级模式和 JSON 草稿是纯前端编辑态，
+ * 不应写入后端模型；这里按规则 ID 落在本地，保证刷新后仍能恢复用户刚才的编辑视图。
+ */
+export function persistMatchRuleEditorState(
+  rule: Pick<InjectionRule, 'id' | 'matchRuleDraft' | 'matchRuleEditorMode'>,
+) {
+  if (!rule.id || typeof window === 'undefined') {
+    return
+  }
+
+  const stateMap = readStoredMatchRuleEditorStateMap()
+  stateMap[rule.id] = {
+    draft: rule.matchRuleDraft,
+    editorMode: rule.matchRuleEditorMode ?? 'SIMPLE',
+  }
+  window.localStorage.setItem(MATCH_RULE_EDITOR_STATE_KEY, JSON.stringify(stateMap))
 }
 
 export function resolveRuleMatchRule(rule: InjectionRule): MatchRuleParseResult {
@@ -445,5 +476,30 @@ function buildJsonSyntaxError(draft: string, error: unknown): MatchRuleValidatio
     message,
     line: lines.length,
     column: lines[lines.length - 1].length + 1,
+  }
+}
+
+function readStoredMatchRuleEditorState(ruleId: string): StoredMatchRuleEditorState | null {
+  if (!ruleId) {
+    return null
+  }
+  const stateMap = readStoredMatchRuleEditorStateMap()
+  return stateMap[ruleId] ?? null
+}
+
+function readStoredMatchRuleEditorStateMap(): Record<string, StoredMatchRuleEditorState> {
+  if (typeof window === 'undefined') {
+    return {}
+  }
+
+  try {
+    const raw = window.localStorage.getItem(MATCH_RULE_EDITOR_STATE_KEY)
+    if (!raw) {
+      return {}
+    }
+    const parsed = JSON.parse(raw)
+    return isObject(parsed) ? (parsed as Record<string, StoredMatchRuleEditorState>) : {}
+  } catch {
+    return {}
   }
 }
