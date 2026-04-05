@@ -113,7 +113,7 @@ function handleSubmit() {
         </FormField>
       </template>
 
-      <FormField v-if="needsWrapMarker" label="注释标记">
+      <FormField v-if="needsWrapMarker">
         <label class=":uno: inline-flex items-center gap-2 text-sm text-gray-700">
           <input v-model="rule.wrapMarker" type="checkbox" />
           输出注释标记

@@ -144,7 +144,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
         </FormField>
       </template>
 
-      <FormField v-if="needsWrapMarker" label="注释标记">
+      <FormField v-if="needsWrapMarker">
         <label class=":uno: inline-flex items-center gap-2 text-sm text-gray-700">
           <input
             :checked="currentRule.wrapMarker"
