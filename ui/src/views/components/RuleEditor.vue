@@ -1,6 +1,11 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
-import type { CodeSnippet, InjectionRule } from '@/types'
+import type {
+  CodeSnippet,
+  EditableInjectionRule,
+  InjectionRule,
+  MatchRuleEditorMode,
+} from '@/types'
 import { MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
 import {
   formatMatchRule,
@@ -18,7 +23,7 @@ import FieldUndoButton from './FieldUndoButton.vue'
 import { useFieldUndo } from '@/views/composables/useFieldUndo.ts'
 
 const props = defineProps<{
-  rule: InjectionRule | null
+  rule: EditableInjectionRule | null
   snippets: CodeSnippet[]
   selectedSnippetIds: string[]
   saving: boolean
@@ -32,11 +37,11 @@ const emit = defineEmits<{
   (e: 'replace-snippet-ids', snippetIds: string[]): void
   (e: 'toggle-snippet', snippetId: string): void
   (e: 'field-change'): void
-  (e: 'update:rule', rule: InjectionRule): void
+  (e: 'update:rule', rule: EditableInjectionRule): void
 }>()
 
 const sortedSnippets = computed(() => sortSelectedFirst(props.snippets, props.selectedSnippetIds))
-const pendingRule = ref<InjectionRule | null>(null)
+const pendingRule = ref<EditableInjectionRule | null>(null)
 const currentRule = computed(() => pendingRule.value ?? props.rule)
 
 const needsTarget = computed(
@@ -95,12 +100,7 @@ function updateField<K extends keyof InjectionRule>(
   if (!currentRule.value) return
   const trackHistory = options?.trackHistory ?? true
   const next = { ...currentRule.value, [key]: value }
-  if (
-    trackHistory &&
-    key !== 'matchRule' &&
-    key !== 'matchRuleDraft' &&
-    key !== 'matchRuleEditorMode'
-  ) {
+  if (trackHistory && key !== 'matchRule') {
     undo.trackChange(
       key === 'position' ? 'position' : String(key),
       key === 'position'
@@ -122,7 +122,7 @@ function updateField<K extends keyof InjectionRule>(
   emit('field-change')
 }
 
-function updateRuleSnapshot(next: InjectionRule) {
+function updateRuleSnapshot(next: EditableInjectionRule) {
   pendingRule.value = next
   emit('update:rule', next)
   emit('field-change')
@@ -140,7 +140,7 @@ function currentMatchRuleSnapshot() {
   }
 }
 
-function updateMatchRuleField(patch: Partial<InjectionRule>) {
+function updateMatchRuleField(patch: Partial<EditableInjectionRule>) {
   if (!currentRule.value) return
   const previous = currentMatchRuleSnapshot()
   const next = {
@@ -247,7 +247,7 @@ function undoField(
     const snapshot = previous as {
       matchRule: InjectionRule['matchRule']
       matchRuleDraft: string
-      matchRuleEditorMode: InjectionRule['matchRuleEditorMode'] | ''
+      matchRuleEditorMode: MatchRuleEditorMode | ''
     }
     const next = {
       ...currentRule.value,
@@ -301,7 +301,7 @@ function resetField(
     const snapshot = baseline as {
       matchRule: InjectionRule['matchRule']
       matchRuleDraft: string
-      matchRuleEditorMode: InjectionRule['matchRuleEditorMode'] | ''
+      matchRuleEditorMode: MatchRuleEditorMode | ''
     }
     const next = {
       ...currentRule.value,

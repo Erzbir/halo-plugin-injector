@@ -43,11 +43,13 @@ const {
   toggleSnippetEnabled,
   confirmDeleteSnippet,
   toggleRuleInSnippetEditor,
+  moveSnippet,
   addRule,
   saveRule,
   toggleRuleEnabled,
   confirmDeleteRule,
   toggleSnippetInRuleEditor,
+  moveRule,
 } = useInjectorData()
 
 onMounted(fetchAll)
@@ -269,6 +271,26 @@ function jumpToSnippet(id: string) {
               @create="openCreateModal('snippets')"
               @select="selectedSnippetId = $event"
             >
+              <template #actions="{ item, index }">
+                <VButton
+                  v-if="index > 0"
+                  class=":uno: min-w-0 px-2"
+                  size="sm"
+                  title="上移"
+                  @click.stop="moveSnippet(item.id, -1)"
+                >
+                  ↑
+                </VButton>
+                <VButton
+                  v-if="index < snippets.length - 1"
+                  class=":uno: min-w-0 px-2"
+                  size="sm"
+                  title="下移"
+                  @click.stop="moveSnippet(item.id, 1)"
+                >
+                  ↓
+                </VButton>
+              </template>
             </ItemListV>
 
             <ItemListV
@@ -280,6 +302,26 @@ function jumpToSnippet(id: string) {
               @create="openCreateModal('rules')"
               @select="selectedRuleId = $event"
             >
+              <template #actions="{ item, index }">
+                <VButton
+                  v-if="index > 0"
+                  class=":uno: min-w-0 px-2"
+                  size="sm"
+                  title="上移"
+                  @click.stop="moveRule(item.id, -1)"
+                >
+                  ↑
+                </VButton>
+                <VButton
+                  v-if="index < rules.length - 1"
+                  class=":uno: min-w-0 px-2"
+                  size="sm"
+                  title="下移"
+                  @click.stop="moveRule(item.id, 1)"
+                >
+                  ↓
+                </VButton>
+              </template>
               <template #meta="{ item: r }">
                 <span class=":uno: text-xs text-gray-500">{{ rulePreview(r) }}</span>
                 <span

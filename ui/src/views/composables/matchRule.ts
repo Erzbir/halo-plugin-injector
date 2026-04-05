@@ -1,5 +1,8 @@
 import {
+  type EditableInjectionRule,
   type InjectionRule,
+  type InjectionRuleEditorState,
+  type MatchRuleEditorMode,
   type MatchRule,
   makeMatchRuleGroup,
   makePathMatchRule,
@@ -26,7 +29,7 @@ const MATCH_RULE_EDITOR_STATE_KEY = 'plugin-injector:match-rule-editor-state'
 
 interface StoredMatchRuleEditorState {
   draft?: string
-  editorMode?: InjectionRule['matchRuleEditorMode']
+  editorMode?: MatchRuleEditorMode
 }
 
 /**
@@ -114,7 +117,7 @@ export function validateMatchRuleTree(rule: MatchRule | null | undefined): Match
   return validateMatchRuleInput(JSON.parse(JSON.stringify(rule)) as unknown, '$', true)
 }
 
-export function hydrateRuleForEditor(rule: InjectionRule): InjectionRule {
+export function hydrateRuleForEditor(rule: InjectionRule): EditableInjectionRule {
   const matchRule = normalizeMatchRule(rule.matchRule)
   const storedState = readStoredMatchRuleEditorState(rule.id)
   const draft =
@@ -125,7 +128,7 @@ export function hydrateRuleForEditor(rule: InjectionRule): InjectionRule {
     ...rule,
     matchRule,
     matchRuleDraft: draft,
-    matchRuleEditorMode: storedState?.editorMode ?? rule.matchRuleEditorMode ?? 'SIMPLE',
+    matchRuleEditorMode: storedState?.editorMode ?? 'SIMPLE',
   }
 }
 
@@ -134,7 +137,7 @@ export function hydrateRuleForEditor(rule: InjectionRule): InjectionRule {
  * 不应写入后端模型；这里按规则 ID 落在本地，保证刷新后仍能恢复用户刚才的编辑视图。
  */
 export function persistMatchRuleEditorState(
-  rule: Pick<InjectionRule, 'id' | 'matchRuleDraft' | 'matchRuleEditorMode'>,
+  rule: Pick<InjectionRule, 'id'> & InjectionRuleEditorState,
 ) {
   if (!rule.id || typeof window === 'undefined') {
     return
@@ -148,7 +151,9 @@ export function persistMatchRuleEditorState(
   window.localStorage.setItem(MATCH_RULE_EDITOR_STATE_KEY, JSON.stringify(stateMap))
 }
 
-export function resolveRuleMatchRule(rule: InjectionRule): MatchRuleParseResult {
+export function resolveRuleMatchRule(
+  rule: InjectionRule & Partial<InjectionRuleEditorState>,
+): MatchRuleParseResult {
   if (rule.matchRuleDraft?.trim()) {
     return parseMatchRuleDraft(rule.matchRuleDraft)
   }
@@ -180,7 +185,10 @@ export function getDomRulePerformanceWarning(
 /**
  * why: 发送到后端前统一收敛编辑态字段，避免 JSON 草稿、REMOVE 的空代码块关联等 UI 细节污染持久化模型。
  */
-export function makeRulePayload(rule: InjectionRule, snippetIds: string[]) {
+export function makeRulePayload(
+  rule: InjectionRule & Partial<InjectionRuleEditorState>,
+  snippetIds: string[],
+) {
   const result = resolveRuleMatchRule(rule)
   if (!result.rule) {
     return null
@@ -195,6 +203,7 @@ export function makeRulePayload(rule: InjectionRule, snippetIds: string[]) {
     name: rule.name,
     description: rule.description,
     enabled: rule.enabled,
+    sortOrder: rule.sortOrder,
     mode: rule.mode,
     match: rule.match.trim(),
     matchRule: result.rule,

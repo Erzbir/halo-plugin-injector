@@ -12,13 +12,14 @@ import java.util.regex.PatternSyntaxException;
 public class MatchRule {
     private Type type = Type.GROUP;
     private Boolean negate = false;
-    private Operator operator = Operator.AND;
-    private Matcher matcher = Matcher.ANT;
-    private String value = "";
+    private Operator operator;
+    private Matcher matcher;
+    private String value;
     private List<MatchRule> children = new ArrayList<>();
 
     public static MatchRule defaultRule() {
         MatchRule root = new MatchRule();
+        root.setOperator(Operator.AND);
         root.getChildren().add(pathRule(Matcher.ANT, "/**"));
         return root;
     }

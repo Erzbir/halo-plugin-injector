@@ -32,7 +32,7 @@ const emit = defineEmits<{
       </li>
 
       <li
-        v-for="item in items"
+        v-for="(item, index) in items"
         :key="item.id"
         class=":uno: relative cursor-pointer group"
         @click="emit('select', item.id)"
@@ -47,7 +47,10 @@ const emit = defineEmits<{
             <span class=":uno: flex-1 min-w-0 text-sm text-gray-900 font-medium truncate">
               {{ item.name || item.id }}
             </span>
-            <StatusDot :enabled="item.enabled" />
+            <div class=":uno: flex items-center gap-1">
+              <slot :index="index" :item="item" name="actions" />
+              <StatusDot :enabled="item.enabled" />
+            </div>
           </div>
 
           <p v-if="item.description" class=":uno: text-xs text-gray-500 line-clamp-1">

@@ -1,5 +1,10 @@
 import { type InjectionRule, MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
 
+type SortableItem = {
+  id: string
+  sortOrder?: number
+}
+
 export function modeLabel(mode: string) {
   return MODE_OPTIONS.find((o) => o.value === mode)?.label ?? mode
 }
@@ -20,6 +25,24 @@ export function codePreview(code: string) {
 export function uniqueStrings(values: string[]) {
   const seen = new Set<string>()
   return values.map((v) => v.trim()).filter((v) => v && !seen.has(v) && seen.add(v))
+}
+
+export function sortBySortOrder<T extends SortableItem>(items: T[]) {
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const aOrder = Number.isFinite(a.item.sortOrder)
+        ? (a.item.sortOrder as number)
+        : Number.MAX_SAFE_INTEGER
+      const bOrder = Number.isFinite(b.item.sortOrder)
+        ? (b.item.sortOrder as number)
+        : Number.MAX_SAFE_INTEGER
+      if (aOrder !== bOrder) {
+        return aOrder - bOrder
+      }
+      return a.index - b.index
+    })
+    .map(({ item }) => item)
 }
 
 export function sortSelectedFirst<T extends { id: string }>(items: T[], selectedIds: string[]) {

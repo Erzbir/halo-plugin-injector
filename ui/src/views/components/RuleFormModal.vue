@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import {
   type CodeSnippet,
-  type InjectionRule,
+  type EditableInjectionRule,
   makeRule,
   MODE_OPTIONS,
   POSITION_OPTIONS,
@@ -21,10 +21,10 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'submit', rule: InjectionRule, snippetIds: string[]): void
+  (e: 'submit', rule: EditableInjectionRule, snippetIds: string[]): void
 }>()
 
-const rule = ref<InjectionRule>(makeRule())
+const rule = ref<EditableInjectionRule>(makeRule())
 const selectedSnippetIds = ref<string[]>([])
 
 onMounted(reset)

@@ -9,6 +9,7 @@ export interface CodeSnippet {
   code: string
   description: string
   enabled: boolean
+  sortOrder?: number
   ruleIds: string[]
 }
 
@@ -36,15 +37,21 @@ export interface InjectionRule {
   name: string
   description: string
   enabled: boolean
+  sortOrder?: number
   mode: InjectionMode
   match: string
   matchRule: MatchRule
   position: InjectionPosition
   wrapMarker: boolean
   snippetIds: string[]
+}
+
+export interface InjectionRuleEditorState {
   matchRuleDraft?: string
   matchRuleEditorMode?: MatchRuleEditorMode
 }
+
+export type EditableInjectionRule = InjectionRule & InjectionRuleEditorState
 
 export interface ItemList<T> {
   page: number
@@ -132,12 +139,13 @@ export function makeSnippet(override: Partial<CodeSnippet> = {}): CodeSnippet {
     code: '',
     description: '',
     enabled: true,
+    sortOrder: undefined,
     ruleIds: [],
     ...override,
   }
 }
 
-export function makeRule(override: Partial<InjectionRule> = {}): InjectionRule {
+export function makeRule(override: Partial<EditableInjectionRule> = {}): EditableInjectionRule {
   return {
     apiVersion: 'injector.erzbir.com/v1alpha1',
     kind: 'InjectionRule',
@@ -146,12 +154,15 @@ export function makeRule(override: Partial<InjectionRule> = {}): InjectionRule {
     name: '',
     description: '',
     enabled: true,
+    sortOrder: undefined,
     mode: 'FOOTER',
     match: '',
     matchRule: makeMatchRuleGroup(),
     position: 'APPEND',
     wrapMarker: true,
     snippetIds: [],
+    matchRuleDraft: undefined,
+    matchRuleEditorMode: undefined,
     ...override,
   }
 }

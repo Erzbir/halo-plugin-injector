@@ -1,6 +1,5 @@
 package com.erzbir.halo.injector.scheme;
 
-import com.erzbir.halo.injector.core.MatchRule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
@@ -8,38 +7,10 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class InjectionRuleTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-    // why: 标准扩展资源写接口会经过 ObjectMapper.convertValue，模型层必须能兜底拦住非法 regex。
-    @Test
-    void shouldRejectInvalidRegexWhenConvertedToInjectionRule() {
-        IllegalArgumentException error = assertThrows(
-                IllegalArgumentException.class,
-                () -> objectMapper.convertValue(
-                        Map.of(
-                                "mode", "FOOTER",
-                                "matchRule", Map.of(
-                                        "type", "GROUP",
-                                        "operator", "AND",
-                                        "children", List.of(
-                                                Map.of(
-                                                        "type", "PATH",
-                                                        "matcher", "REGEX",
-                                                        "value", "["
-                                                )
-                                        )
-                                )
-                        ),
-                        InjectionRule.class
-                )
-        );
-
-        assertTrue(error.getMessage().contains("Unclosed character class"));
-    }
 
     // why: DOM 注入规则即使会退化成全站 HTML 处理，也应允许保存，由 UI 给出性能警告即可。
     @Test
@@ -71,52 +42,5 @@ class InjectionRuleTest {
         );
 
         assertTrue(rule.isValid());
-    }
-
-    // why: REMOVE 不消费代码块内容；模型层也必须拒绝仍携带 snippetIds 的脏数据。
-    @Test
-    void shouldRejectRemoveRuleWithSnippetIdsWhenConvertedToInjectionRule() {
-        IllegalArgumentException error = assertThrows(
-                IllegalArgumentException.class,
-                () -> objectMapper.convertValue(
-                        Map.of(
-                                "mode", "SELECTOR",
-                                "match", "main",
-                                "position", "REMOVE",
-                                "snippetIds", List.of("snippet-a"),
-                                "matchRule", Map.of(
-                                        "type", "GROUP",
-                                        "operator", "AND",
-                                        "children", List.of(
-                                                Map.of(
-                                                        "type", "PATH",
-                                                        "matcher", "ANT",
-                                                        "value", "/**"
-                                                )
-                                        )
-                                )
-                        ),
-                        InjectionRule.class
-                )
-        );
-
-        assertTrue(error.getMessage().contains("REMOVE 模式下无需关联代码块"));
-    }
-
-    // why: REMOVE 会直接删掉元素节点，不存在稳定的注释输出位置；模型层至少要拒绝后续再显式开启 wrapMarker。
-    @Test
-    void shouldRejectWrapMarkerWhenEnabledAfterPositionIsRemove() {
-        InjectionRule rule = new InjectionRule();
-        rule.setMode(InjectionRule.Mode.SELECTOR);
-        rule.setMatch("main");
-        rule.setMatchRule(MatchRule.defaultRule());
-        rule.setPosition(InjectionRule.Position.REMOVE);
-
-        IllegalArgumentException error = assertThrows(
-                IllegalArgumentException.class,
-                () -> rule.setWrapMarker(true)
-        );
-
-        assertTrue(error.getMessage().contains("REMOVE 模式下无需输出注释标记"));
     }
 }

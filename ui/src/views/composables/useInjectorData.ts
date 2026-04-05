@@ -2,8 +2,8 @@ import { computed, ref, watch } from 'vue'
 import type { AxiosError } from 'axios'
 import { Dialog, Toast } from '@halo-dev/components'
 import { ruleApi, snippetApi } from '@/apis'
-import type { CodeSnippet, InjectionRule, ItemList } from '@/types'
-import { uniqueStrings } from './util'
+import type { CodeSnippet, EditableInjectionRule, InjectionRule, ItemList } from '@/types'
+import { sortBySortOrder, uniqueStrings } from './util'
 import {
   formatMatchRuleError,
   hydrateRuleForEditor,
@@ -47,8 +47,8 @@ export function useInjectorData() {
   const snippetsResp = ref<ItemList<CodeSnippet>>(emptyList())
   const rulesResp = ref<ItemList<InjectionRule>>(emptyList())
 
-  const snippets = computed(() => snippetsResp.value.items)
-  const rules = computed(() => rulesResp.value.items)
+  const snippets = computed(() => sortBySortOrder(snippetsResp.value.items))
+  const rules = computed(() => sortBySortOrder(rulesResp.value.items))
 
   const selectedSnippetId = ref<string | null>(null)
   const selectedRuleId = ref<string | null>(null)
@@ -56,7 +56,7 @@ export function useInjectorData() {
   const editSnippet = ref<CodeSnippet | null>(null)
   const editSnippetRuleIds = ref<string[]>([])
 
-  const editRule = ref<InjectionRule | null>(null)
+  const editRule = ref<EditableInjectionRule | null>(null)
   const editRuleSnippetIds = ref<string[]>([])
 
   const editDirty = ref(false)
@@ -86,11 +86,15 @@ export function useInjectorData() {
     return uniqueStrings(ruleIds).filter((ruleId) => allowedRuleIds.has(ruleId))
   }
 
+  function _nextSortOrder(items: Array<{ sortOrder?: number }>) {
+    return items.reduce((max, item) => Math.max(max, item.sortOrder ?? 0), 0) + 1
+  }
+
   /**
    * why: 前端先做一轮用户可读的快速校验，
    * 把大多数结构问题拦在保存前；后端仍会复核，防止绕过 UI 直接写入坏数据。
    */
-  function _validateRule(rule: InjectionRule): string | null {
+  function _validateRule(rule: EditableInjectionRule): string | null {
     if ((rule.mode === 'SELECTOR' || rule.mode === 'ID') && !rule.match.trim())
       return '请填写匹配内容'
     const result = resolveRuleMatchRule(rule)
@@ -191,9 +195,13 @@ export function useInjectorData() {
       return null
     }
     const nextRuleIds = _normalizeSnippetRuleIds(ruleIds)
+    const nextSnippet = {
+      ...snippet,
+      sortOrder: snippet.sortOrder ?? _nextSortOrder(snippets.value),
+    }
     saving.value = true
     try {
-      const res = await snippetApi.add({ ...snippet, ruleIds: nextRuleIds })
+      const res = await snippetApi.add({ ...nextSnippet, ruleIds: nextRuleIds })
       const id = res.data.id
       if (nextRuleIds.length) await _applySnippetRuleSelection(id, nextRuleIds)
       await fetchAll()
@@ -208,16 +216,23 @@ export function useInjectorData() {
     }
   }
 
-  async function addRule(rule: InjectionRule, snippetIds: string[]): Promise<string | null> {
+  async function addRule(
+    rule: EditableInjectionRule,
+    snippetIds: string[],
+  ): Promise<string | null> {
     const err = _validateRule(rule)
     if (err) {
       Toast.error(err)
       return null
     }
     const nextSnippetIds = _normalizeRuleSnippetIds(rule, snippetIds)
+    const nextRule = {
+      ...rule,
+      sortOrder: rule.sortOrder ?? _nextSortOrder(rules.value),
+    }
     saving.value = true
     try {
-      const payload = makeRulePayload(rule, nextSnippetIds)
+      const payload = makeRulePayload(nextRule, nextSnippetIds)
       if (!payload) {
         Toast.error('匹配规则有误，请先修正后再保存')
         return null
@@ -385,6 +400,90 @@ export function useInjectorData() {
     })
   }
 
+  /**
+   * why: 左侧资源列表的上下移动属于持久化排序，而不是临时前端排序；
+   * 这里按当前显示顺序重排并一次性回写顺序值，保证刷新后仍保持一致。
+   */
+  async function moveSnippet(snippetId: string, direction: -1 | 1) {
+    const ordered = [...snippets.value]
+    const index = ordered.findIndex((item) => item.id === snippetId)
+    const targetIndex = index + direction
+    if (index < 0 || targetIndex < 0 || targetIndex >= ordered.length) {
+      return
+    }
+    ;[ordered[index], ordered[targetIndex]] = [ordered[targetIndex], ordered[index]]
+
+    const changed = ordered
+      .map((snippet, nextIndex) => ({
+        ...snippet,
+        sortOrder: nextIndex + 1,
+      }))
+      .filter(
+        (snippet) =>
+          snippet.sortOrder !==
+          (snippets.value.find((item) => item.id === snippet.id)?.sortOrder ?? undefined),
+      )
+
+    if (!changed.length) {
+      return
+    }
+
+    saving.value = true
+    try {
+      await Promise.all(changed.map((snippet) => snippetApi.update(snippet.id, snippet)))
+      await fetchAll()
+      Toast.success('代码块顺序已更新')
+    } catch (error) {
+      Toast.error(getErrorMessage(error, '更新顺序失败'))
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function moveRule(ruleId: string, direction: -1 | 1) {
+    const ordered = [...rules.value]
+    const index = ordered.findIndex((item) => item.id === ruleId)
+    const targetIndex = index + direction
+    if (index < 0 || targetIndex < 0 || targetIndex >= ordered.length) {
+      return
+    }
+    ;[ordered[index], ordered[targetIndex]] = [ordered[targetIndex], ordered[index]]
+
+    const changed = ordered
+      .map((rule, nextIndex) => ({
+        ...rule,
+        sortOrder: nextIndex + 1,
+      }))
+      .filter(
+        (rule) =>
+          rule.sortOrder !==
+          (rules.value.find((item) => item.id === rule.id)?.sortOrder ?? undefined),
+      )
+
+    if (!changed.length) {
+      return
+    }
+
+    saving.value = true
+    try {
+      await Promise.all(
+        changed.map((rule) => {
+          const payload = makeRulePayload(rule, Array.from(rule.snippetIds ?? []))
+          if (!payload) {
+            throw new Error('匹配规则有误')
+          }
+          return ruleApi.update(rule.id, payload)
+        }),
+      )
+      await fetchAll()
+      Toast.success('注入规则顺序已更新')
+    } catch (error) {
+      Toast.error(getErrorMessage(error, '更新顺序失败'))
+    } finally {
+      saving.value = false
+    }
+  }
+
   return {
     loading,
     saving,
@@ -405,10 +504,12 @@ export function useInjectorData() {
     toggleSnippetEnabled,
     confirmDeleteSnippet,
     toggleRuleInSnippetEditor,
+    moveSnippet,
     addRule,
     saveRule,
     toggleRuleEnabled,
     confirmDeleteRule,
     toggleSnippetInRuleEditor,
+    moveRule,
   }
 }
