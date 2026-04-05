@@ -27,7 +27,11 @@ function emptyList<T>(): ItemList<T> {
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
-  const axiosError = error as AxiosError<{ message?: string; detail?: string; error?: { message?: string } }>
+  const axiosError = error as AxiosError<{
+    message?: string
+    detail?: string
+    error?: { message?: string }
+  }>
   return (
     axiosError?.response?.data?.message ||
     axiosError?.response?.data?.detail ||

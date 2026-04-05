@@ -12,6 +12,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -107,6 +109,48 @@ class InjectHelperTest {
         assertEquals(List.of(rule), rules);
     }
 
+    @Test
+    void shouldCompileSameRegexOnlyOnceAtRuntime() {
+        CountingInjectHelper helper = new CountingInjectHelper(ruleManager, snippetManager);
+        InjectionRule rule = createRule(group(MatchRule.Operator.AND,
+                MatchRule.pathRule(MatchRule.Matcher.REGEX, "^/posts/\\d+$")));
+        when(ruleManager.list()).thenReturn(Flux.just(rule));
+
+        List<InjectionRule> first = helper
+                .getMatchedRules("/posts/1", InjectionRule.Mode.SELECTOR)
+                .collectList()
+                .block();
+        List<InjectionRule> second = helper
+                .getMatchedRules("/posts/2", InjectionRule.Mode.SELECTOR)
+                .collectList()
+                .block();
+
+        assertEquals(List.of(rule), first);
+        assertEquals(List.of(rule), second);
+        assertEquals(1, helper.compileCount.get());
+    }
+
+    @Test
+    void shouldCacheInvalidRegexFailureToAvoidRepeatedCompile() {
+        CountingInjectHelper helper = new CountingInjectHelper(ruleManager, snippetManager);
+        InjectionRule rule = createRule(group(MatchRule.Operator.AND,
+                MatchRule.pathRule(MatchRule.Matcher.REGEX, "[")));
+        when(ruleManager.list()).thenReturn(Flux.just(rule));
+
+        List<InjectionRule> first = helper
+                .getMatchedRules("/posts/1", InjectionRule.Mode.SELECTOR)
+                .collectList()
+                .block();
+        List<InjectionRule> second = helper
+                .getMatchedRules("/posts/2", InjectionRule.Mode.SELECTOR)
+                .collectList()
+                .block();
+
+        assertTrue(first.isEmpty());
+        assertTrue(second.isEmpty());
+        assertEquals(1, helper.compileCount.get());
+    }
+
     private InjectionRule createRule(MatchRule matchRule) {
         InjectionRule rule = new InjectionRule();
         rule.setEnabled(true);
@@ -122,5 +166,19 @@ class InjectHelperTest {
         rule.setOperator(operator);
         rule.setChildren(List.of(children));
         return rule;
+    }
+
+    private static class CountingInjectHelper extends InjectHelper {
+        private final AtomicInteger compileCount = new AtomicInteger();
+
+        CountingInjectHelper(InjectionRuleManager ruleManager, CodeSnippetManager snippetManager) {
+            super(ruleManager, snippetManager);
+        }
+
+        @Override
+        protected Pattern compileRegexPattern(String pattern) {
+            compileCount.incrementAndGet();
+            return super.compileRegexPattern(pattern);
+        }
     }
 }

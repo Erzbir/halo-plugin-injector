@@ -48,9 +48,7 @@ watch(
 const currentMode = computed(() => props.editorMode ?? 'SIMPLE')
 const parseResult = computed(() => parseMatchRuleDraft(jsonDraft.value))
 const parseError = computed(() => formatMatchRuleError(parseResult.value.error))
-const jsonActionLabel = computed(() =>
-  parseResult.value.error ? '重建 JSON' : '格式化 JSON',
-)
+const jsonActionLabel = computed(() => (parseResult.value.error ? '重建 JSON' : '格式化 JSON'))
 const jsonActionTitle = computed(() =>
   parseResult.value.error
     ? '当前 JSON 有误，将按当前生效规则重新生成 JSON'
@@ -178,7 +176,8 @@ function formatJson() {
         @input="updateJsonDraft(($event.target as HTMLTextAreaElement).value)"
       />
       <p class=":uno: text-xs text-gray-500">
-        这里可以直接编辑匹配规则 JSON。根节点请使用条件组，支持全部满足 / 任一满足、取反、路径匹配和模板 ID 匹配。
+        这里可以直接编辑匹配规则 JSON。根节点请使用条件组，支持全部满足 /
+        任一满足、取反、路径匹配和模板 ID 匹配。
       </p>
       <p v-if="parseError" class=":uno: text-xs text-red-500">{{ parseError }}</p>
     </div>

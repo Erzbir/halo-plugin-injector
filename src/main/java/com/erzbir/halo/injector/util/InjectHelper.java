@@ -16,6 +16,8 @@ import org.springframework.web.util.pattern.PatternParseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -30,6 +32,7 @@ public class InjectHelper {
     protected final InjectionRuleManager ruleManager;
     protected final CodeSnippetManager snippetManager;
     protected final RouteMatcher routeMatcher = createRouteMatcher();
+    protected final Map<String, RegexPatternHolder> regexPatternCache = new ConcurrentHashMap<>();
 
     public Flux<InjectionRule> getRulesByMode(InjectionRule.Mode mode) {
         return ruleManager.list()
@@ -178,12 +181,26 @@ public class InjectHelper {
     }
 
     private boolean matchesRegex(String pattern, String value) {
-        try {
-            return Pattern.compile(pattern).matcher(value).matches();
-        } catch (PatternSyntaxException e) {
-            log.warn("Parse regex [{}] failed for value [{}]", pattern, value, e);
+        RegexPatternHolder holder = regexPatternCache.computeIfAbsent(pattern, this::compileRegexHolder);
+        if (holder.pattern() == null) {
+            log.warn("Parse regex [{}] failed for value [{}]: {}", pattern, value, holder.errorMessage());
             return false;
         }
+        return holder.pattern().matcher(value).matches();
+    }
+
+    private RegexPatternHolder compileRegexHolder(String pattern) {
+        try {
+            // 规则写入时已做合法性校验；这里缓存编译结果，避免请求期重复 Pattern.compile。
+            return new RegexPatternHolder(compileRegexPattern(pattern), null);
+        } catch (PatternSyntaxException e) {
+            // 仍保留兜底，兼容历史坏数据或绕过写接口的脏数据；同时把失败结果也缓存，避免重复编译。
+            return new RegexPatternHolder(null, e.getDescription());
+        }
+    }
+
+    protected Pattern compileRegexPattern(String pattern) {
+        return Pattern.compile(pattern);
     }
 
     private MatchState negate(MatchState state) {
@@ -201,6 +218,9 @@ public class InjectHelper {
     }
 
     private record MatchContext(String path, String templateId) {
+    }
+
+    private record RegexPatternHolder(Pattern pattern, String errorMessage) {
     }
 
     private enum MatchState {

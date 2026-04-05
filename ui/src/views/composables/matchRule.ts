@@ -202,7 +202,11 @@ function validateMatchRuleInput(
 
     const children: MatchRule[] = []
     for (let index = 0; index < input.children.length; index += 1) {
-      const childResult = validateMatchRuleInput(input.children[index], `${path}.children[${index}]`, false)
+      const childResult = validateMatchRuleInput(
+        input.children[index],
+        `${path}.children[${index}]`,
+        false,
+      )
       if (childResult.error) {
         return childResult
       }
@@ -231,7 +235,12 @@ function validateMatchRuleInput(
   }
 
   if (type === 'PATH') {
-    if (input.matcher !== undefined && input.matcher !== 'ANT' && input.matcher !== 'REGEX' && input.matcher !== 'EXACT') {
+    if (
+      input.matcher !== undefined &&
+      input.matcher !== 'ANT' &&
+      input.matcher !== 'REGEX' &&
+      input.matcher !== 'EXACT'
+    ) {
       return invalid(`${path}.matcher`, '仅支持 ANT、REGEX、EXACT')
     }
     if (input.matcher === 'REGEX') {
@@ -241,8 +250,7 @@ function validateMatchRuleInput(
     return {
       rule: makePathMatchRule({
         negate: input.negate === true,
-        matcher:
-          input.matcher === 'REGEX' || input.matcher === 'EXACT' ? input.matcher : 'ANT',
+        matcher: input.matcher === 'REGEX' || input.matcher === 'EXACT' ? input.matcher : 'ANT',
         value: input.value.trim(),
       }),
       error: null,

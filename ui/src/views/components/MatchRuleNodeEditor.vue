@@ -100,7 +100,11 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
             )
           "
         >
-          <option v-for="option in MATCH_RULE_GROUP_OPTIONS" :key="option.value" :value="option.value">
+          <option
+            v-for="option in MATCH_RULE_GROUP_OPTIONS"
+            :key="option.value"
+            :value="option.value"
+          >
             {{ option.label }}
           </option>
         </select>
