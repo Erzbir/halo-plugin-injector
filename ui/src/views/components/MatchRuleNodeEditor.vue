@@ -61,6 +61,8 @@ function removeChild(index: number) {
   const children = (next.children ?? []).filter((_, idx) => idx !== index)
   if (!children.length) {
     if (props.root) {
+      next.children = [makePathMatchRule()]
+      updateRule(next)
       return
     }
     emit('remove')
@@ -187,7 +189,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
           :key="index"
           :can-move-down="index < (rule.children?.length ?? 0) - 1"
           :can-move-up="index > 0"
-          :can-remove="!root || (rule.children?.length ?? 0) > 1"
+          :can-remove="!root || (rule.children?.length ?? 0) > 1 || child.type === 'GROUP'"
           :model-value="child"
           @change="emit('change')"
           @move-down="moveChild(index, 1)"
