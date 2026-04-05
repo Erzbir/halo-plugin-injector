@@ -138,7 +138,7 @@ export function getDomRulePerformanceWarning(rule: Pick<InjectionRule, 'mode' | 
   if ((rule.mode !== 'SELECTOR' && rule.mode !== 'ID') || supportsDomPathPrecheck(rule.matchRule)) {
     return null
   }
-  return '⚠ 当前规则没有先使用页面路径缩小范围。建议先加页面路径条件，再用模板 ID 继续细化。否则元素 ID / CSS 选择器模式会在更多 HTML 页面上参与处理，带来一些额外开销。因为插件需要先拿到完整 HTML，之后才能判断模板 ID 是否命中。'
+  return '⚠ 当前规则里没有包含页面路径条件。建议使用“页面路径 AND 模板 ID”这类组合继续细化。否则元素 ID / CSS 选择器模式会对所有 HTML 页面先进行处理，带来一些额外开销。因为插件需要先拿到完整 HTML，之后才能判断模板 ID 是否命中。'
 }
 
 /**
