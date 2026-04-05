@@ -385,7 +385,7 @@ function resetField(
         <select
           :value="currentRule.mode"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
-          @wheel.prevent="updateSelectByWheel"
+          @wheel="updateSelectByWheel"
           @change="
             updateField('mode', ($event.target as HTMLSelectElement).value as InjectionRule['mode'])
           "
@@ -414,7 +414,7 @@ function resetField(
           <select
             :value="currentRule.position"
             class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
-            @wheel.prevent="updateSelectByWheel"
+            @wheel="updateSelectByWheel"
             @change="
               updateField(
                 'position',

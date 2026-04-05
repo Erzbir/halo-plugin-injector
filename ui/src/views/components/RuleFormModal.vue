@@ -79,7 +79,7 @@ function handleSubmit() {
         <select
           v-model="rule.mode"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
-          @wheel.prevent="updateSelectByWheel"
+          @wheel="updateSelectByWheel"
         >
           <option v-for="o in MODE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
         </select>
@@ -98,7 +98,7 @@ function handleSubmit() {
           <select
             v-model="rule.position"
             class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
-            @wheel.prevent="updateSelectByWheel"
+            @wheel="updateSelectByWheel"
           >
             <option v-for="o in POSITION_OPTIONS" :key="o.value" :value="o.value">
               {{ o.label }}

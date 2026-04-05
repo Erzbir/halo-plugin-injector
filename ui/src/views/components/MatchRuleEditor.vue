@@ -138,7 +138,8 @@ function getModeSwitchWarning(mode: MatchRuleEditorMode) {
       description: `已检测到当前简单模式有错误。
 如果继续切换，高级模式会用当前简单模式内容重新生成 JSON。
 你会直接看到这份带错误的 JSON。
-这也会替换你之前在高级模式里未保存的 JSON 草稿。确认继续吗？`,
+这也会替换你之前在高级模式里未保存的 JSON 草稿。
+确认继续吗？`,
       confirmType: 'danger' as const,
       overwriteDraft: false,
     }

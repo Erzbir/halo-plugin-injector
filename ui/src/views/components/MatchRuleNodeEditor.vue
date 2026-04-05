@@ -158,7 +158,7 @@ function hasFieldError(field: 'children' | 'operator' | 'negate' | 'type' | 'mat
               : ':uno: border-gray-200 focus:border-primary'
           "
           class=":uno: min-w-[7rem] shrink-0 rounded-md border bg-white px-2 py-1 pr-8 text-sm focus:outline-none"
-          @wheel.prevent="updateSelectByWheel"
+          @wheel="updateSelectByWheel"
           @change="
             updateGroupField(
               'operator',
@@ -249,7 +249,7 @@ function hasFieldError(field: 'children' | 'operator' | 'negate' | 'type' | 'mat
               : ':uno: border-gray-200 focus:border-primary'
           "
           class=":uno: min-w-[8rem] shrink-0 rounded-md border bg-white px-2 py-1 pr-8 text-sm focus:outline-none"
-          @wheel.prevent="updateSelectByWheel"
+          @wheel="updateSelectByWheel"
           @change="
             switchLeafType(($event.target as HTMLSelectElement).value as 'PATH' | 'TEMPLATE_ID')
           "
@@ -266,7 +266,7 @@ function hasFieldError(field: 'children' | 'operator' | 'negate' | 'type' | 'mat
               : ':uno: border-gray-200 focus:border-primary'
           "
           class=":uno: min-w-[8rem] shrink-0 rounded-md border bg-white px-2 py-1 pr-8 text-sm focus:outline-none"
-          @wheel.prevent="updateSelectByWheel"
+          @wheel="updateSelectByWheel"
           @change="
             updateGroupField(
               'matcher',
