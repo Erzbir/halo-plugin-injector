@@ -99,7 +99,7 @@ function getModeSwitchWarning(mode: MatchRuleEditorMode) {
     return {
       title: '切换到高级模式（JSON）',
       description:
-        '当前简单模式仍有错误。若继续切换，会按当前内容生成 JSON，并保留这些错误。建议先修正后再切换。确认继续吗？',
+        '切换后，高级模式会用当前简单模式内容重新生成 JSON。如果当前简单模式有错误，高级模式里也会直接看到这份带错误的 JSON。这会替换你之前在高级模式里未保存的 JSON 草稿。确认继续吗？',
       confirmType: 'danger' as const,
       overwriteDraft: false,
     }
