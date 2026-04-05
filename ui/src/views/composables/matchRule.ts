@@ -38,6 +38,7 @@ export function cloneMatchRule(rule: MatchRule): MatchRule {
 
 /**
  * why: 只对“形状正确”的对象做归一化，保证简单模式、JSON 模式和后端入参围绕同一份稳定结构工作。
+ * 同时保留编辑过程中的“空条件组”中间态，让用户先删空再继续补条件；是否允许保存，交给校验层决定。
  */
 export function normalizeMatchRule(input: unknown): MatchRule {
   if (!isObject(input)) {
@@ -46,6 +47,7 @@ export function normalizeMatchRule(input: unknown): MatchRule {
 
   const type = input.type
   const negate = input.negate === true
+  const inputChildren = Array.isArray(input.children) ? input.children : null
 
   if (type === 'PATH') {
     return makePathMatchRule({
@@ -63,14 +65,15 @@ export function normalizeMatchRule(input: unknown): MatchRule {
     })
   }
 
-  const children = Array.isArray(input.children)
-    ? input.children.map((child) => normalizeMatchRule(child))
+  const hasExplicitChildren = Array.isArray(inputChildren)
+  const children = hasExplicitChildren
+    ? inputChildren.map((child) => normalizeMatchRule(child))
     : [makePathMatchRule()]
 
   return makeMatchRuleGroup({
     negate,
     operator: input.operator === 'OR' ? 'OR' : 'AND',
-    children: children.length ? children : [makePathMatchRule()],
+    children: hasExplicitChildren ? children : [makePathMatchRule()],
   })
 }
 
@@ -150,7 +153,7 @@ export function resolveRuleMatchRule(rule: InjectionRule): MatchRuleParseResult 
     return parseMatchRuleDraft(rule.matchRuleDraft)
   }
   const normalized = normalizeMatchRule(rule.matchRule)
-  return { rule: normalized, error: null }
+  return validateMatchRuleTree(normalized)
 }
 
 export function isValidMatchRule(rule: MatchRule | null): boolean {

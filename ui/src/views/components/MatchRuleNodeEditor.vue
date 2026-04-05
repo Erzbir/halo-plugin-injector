@@ -56,18 +56,13 @@ function updateChild(index: number, child: MatchRule) {
   updateRule(next)
 }
 
+/**
+ * why: 条件组删到空，是用户编辑过程中的合法中间态；
+ * 先保留空组并在编辑器下方提示错误，用户补完后再保存，比强行回填默认规则更符合预期。
+ */
 function removeChild(index: number) {
   const next = cloneMatchRule(rule.value)
   const children = (next.children ?? []).filter((_, idx) => idx !== index)
-  if (!children.length) {
-    if (props.root) {
-      next.children = [makePathMatchRule()]
-      updateRule(next)
-      return
-    }
-    emit('remove')
-    return
-  }
   next.children = children
   updateRule(next)
 }
@@ -189,7 +184,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
           :key="index"
           :can-move-down="index < (rule.children?.length ?? 0) - 1"
           :can-move-up="index > 0"
-          :can-remove="!root || (rule.children?.length ?? 0) > 1 || child.type === 'GROUP'"
+          :can-remove="true"
           :model-value="child"
           @change="emit('change')"
           @move-down="moveChild(index, 1)"
