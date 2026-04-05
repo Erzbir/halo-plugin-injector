@@ -64,7 +64,6 @@ const simpleValidateResult = computed(() =>
 const simpleValidationError = computed<MatchRuleValidationError | null>(
   () => simpleValidateResult.value.error,
 )
-const simpleError = computed(() => formatMatchRuleError(simpleValidateResult.value.error))
 const jsonActionLabel = computed(() => (parseResult.value.error ? '重建 JSON' : '格式化 JSON'))
 const jsonActionTitle = computed(() =>
   parseResult.value.error
@@ -219,9 +218,6 @@ function formatJson() {
         @change="emit('change')"
         @update:model-value="updateSimple"
       />
-      <p v-if="simpleError" class=":uno: text-xs text-red-500">
-        {{ simpleError }}
-      </p>
     </template>
 
     <div v-else class=":uno: space-y-2">
