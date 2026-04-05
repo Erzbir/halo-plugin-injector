@@ -128,7 +128,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
             type="checkbox"
             @change="updateGroupField('negate', ($event.target as HTMLInputElement).checked)"
           />
-          取反
+          反向匹配（NOT）
         </label>
         <div v-if="!root" class=":uno: inline-flex items-center gap-1">
           <VButton :disabled="!canMoveUp" size="sm" title="上移" @click="emit('move-up')">↑</VButton>
@@ -195,7 +195,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
             type="checkbox"
             @change="updateGroupField('negate', ($event.target as HTMLInputElement).checked)"
           />
-          取反
+          反向匹配（NOT）
         </label>
 
         <div v-if="!root" class=":uno: inline-flex items-center gap-1">

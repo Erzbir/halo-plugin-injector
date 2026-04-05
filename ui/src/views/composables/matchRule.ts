@@ -184,7 +184,7 @@ function collectMatchRuleChips(rule: MatchRule, chips: string[], limit: number) 
 }
 
 function describeMatchRule(rule: MatchRule): string {
-  const prefix = rule.negate ? '非 ' : ''
+  const prefix = rule.negate ? '反向匹配（NOT） · ' : ''
   if (rule.type === 'PATH') {
     const matcherLabel =
       rule.matcher === 'REGEX' ? '正则表达式' : rule.matcher === 'EXACT' ? '精确匹配' : 'Ant 风格'
