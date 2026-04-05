@@ -134,11 +134,13 @@ export function supportsDomPathPrecheck(rule: MatchRule | null): boolean {
   return analyzePathPrecheckKind(rule) === 'PATH_SCOPED'
 }
 
-export function getDomRulePerformanceWarning(rule: Pick<InjectionRule, 'mode' | 'matchRule'>): string | null {
+export function getDomRulePerformanceWarning(
+  rule: Pick<InjectionRule, 'mode' | 'matchRule'>,
+): string | null {
   if ((rule.mode !== 'SELECTOR' && rule.mode !== 'ID') || supportsDomPathPrecheck(rule.matchRule)) {
     return null
   }
-  return '⚠ 当前规则里没有包含页面路径条件。建议使用“页面路径 AND 模板 ID”这类组合继续细化。否则元素 ID / CSS 选择器模式会对所有 HTML 页面先进行处理，带来一些额外开销。因为插件需要先拿到完整 HTML，之后才能判断模板 ID 是否命中。'
+  return '⚠ 当前规则还不能先按页面路径缩小范围。建议在“全部满足（AND）”里先加入“页面路径匹配”，再按需叠加模板 ID 等条件。否则元素 ID / CSS 选择器模式会先处理所有页面，再继续判断其它条件，因此会多一些处理开销。'
 }
 
 /**
@@ -315,7 +317,7 @@ function validateMatchRuleInput(
 
 /**
  * why: 前端与后端共用同一套“路径预筛能力”判定思路，
- * 让简单模式能尽早阻止会把 DOM 注入拖成全站缓冲的规则结构。
+ * 用来识别 DOM 注入是否能先按页面路径缩小范围，并在配置页给出准确的性能提示。
  */
 function analyzePathPrecheckKind(rule: MatchRule | null): PathPrecheckKind {
   if (!rule) return 'UNSUPPORTED'

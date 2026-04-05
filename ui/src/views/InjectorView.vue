@@ -135,8 +135,10 @@ function syncQueryState() {
 }
 
 function validateSelection() {
-  const hasSnippet = !!selectedSnippetId.value && snippets.value.some((item) => item.id === selectedSnippetId.value)
-  const hasRule = !!selectedRuleId.value && rules.value.some((item) => item.id === selectedRuleId.value)
+  const hasSnippet =
+    !!selectedSnippetId.value && snippets.value.some((item) => item.id === selectedSnippetId.value)
+  const hasRule =
+    !!selectedRuleId.value && rules.value.some((item) => item.id === selectedRuleId.value)
 
   if (selectedSnippetId.value && !hasSnippet) {
     selectedSnippetId.value = null
@@ -176,13 +178,10 @@ watch(
   { immediate: true },
 )
 
-watch(
-  [activeTab, selectedSnippetId, selectedRuleId, showSnippetModal, showRuleModal],
-  () => {
-    if (syncingQuery.value) return
-    syncQueryState()
-  },
-)
+watch([activeTab, selectedSnippetId, selectedRuleId, showSnippetModal, showRuleModal], () => {
+  if (syncingQuery.value) return
+  syncQueryState()
+})
 
 watch([snippets, rules], () => {
   validateSelection()

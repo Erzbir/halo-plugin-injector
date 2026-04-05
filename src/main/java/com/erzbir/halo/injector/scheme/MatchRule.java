@@ -155,7 +155,7 @@ public class MatchRule {
 
     /**
      * why: 这里不是在做完整匹配，而是在做“这棵树能否仅依赖路径预筛”的静态分类，
-     * 供 DOM 注入在写入期和启动后快速拒绝会导致全站缓冲的规则结构。
+     * 供 DOM 注入在写入期和运行期快速识别是否会退化成“先处理所有页面，再继续判断其它条件”。
      */
     private static PathPrecheckKind pathPrecheckKind(MatchRule rule) {
         if (rule == null || rule.getType() == null) {

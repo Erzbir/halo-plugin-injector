@@ -49,7 +49,9 @@ watch(
 const currentMode = computed(() => props.editorMode ?? 'SIMPLE')
 const parseResult = computed(() => parseMatchRuleDraft(jsonDraft.value))
 const parseError = computed(() => formatMatchRuleError(parseResult.value.error))
-const simpleValidateResult = computed(() => validateMatchRuleTree(normalizeMatchRule(props.modelValue)))
+const simpleValidateResult = computed(() =>
+  validateMatchRuleTree(normalizeMatchRule(props.modelValue)),
+)
 const simpleError = computed(() => formatMatchRuleError(simpleValidateResult.value.error))
 const jsonActionLabel = computed(() => (parseResult.value.error ? '重建 JSON' : '格式化 JSON'))
 const jsonActionTitle = computed(() =>

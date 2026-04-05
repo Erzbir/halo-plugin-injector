@@ -16,8 +16,16 @@ const emit = defineEmits<{
 
 <template>
   <VModal :title="title" :width="1000" @close="emit('close')">
-    <div class=":uno: flex injector-editor-container" :class="showPicker === false ? '' : 'divide-x divide-gray-100'" style="min-height: 400px">
-      <div class=":uno: px-5 py-4 space-y-4 overflow-y-auto" :class="showPicker === false ? 'flex-1' : 'flex-1'" :style="showPicker === false ? 'width: 100%' : 'width: 60%'">
+    <div
+      class=":uno: flex injector-editor-container"
+      :class="showPicker === false ? '' : 'divide-x divide-gray-100'"
+      style="min-height: 400px"
+    >
+      <div
+        class=":uno: px-5 py-4 space-y-4 overflow-y-auto"
+        :class="showPicker === false ? 'flex-1' : 'flex-1'"
+        :style="showPicker === false ? 'width: 100%' : 'width: 60%'"
+      >
         <slot name="form" />
       </div>
 
