@@ -5,6 +5,7 @@ defineProps<{
   title: string
   saving: boolean
   submitLabel?: string
+  showPicker?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -15,15 +16,16 @@ const emit = defineEmits<{
 
 <template>
   <VModal :title="title" :width="1000" @close="emit('close')">
-    <div
-      class=":uno: flex divide-x divide-gray-100 injector-editor-container"
-      style="min-height: 400px"
-    >
-      <div class=":uno: flex-1 px-5 py-4 space-y-4 overflow-y-auto" style="width: 60%">
+    <div class=":uno: flex injector-editor-container" :class="showPicker === false ? '' : 'divide-x divide-gray-100'" style="min-height: 400px">
+      <div class=":uno: px-5 py-4 space-y-4 overflow-y-auto" :class="showPicker === false ? 'flex-1' : 'flex-1'" :style="showPicker === false ? 'width: 100%' : 'width: 60%'">
         <slot name="form" />
       </div>
 
-      <div class=":uno: flex-none px-4 py-4 space-y-2 overflow-y-auto" style="width: 40%">
+      <div
+        v-if="showPicker !== false"
+        class=":uno: flex-none px-4 py-4 space-y-2 overflow-y-auto"
+        style="width: 40%"
+      >
         <slot name="picker" />
       </div>
     </div>

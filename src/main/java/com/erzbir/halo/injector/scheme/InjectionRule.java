@@ -60,10 +60,20 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
         validateDomModeMatchRule();
     }
 
+    public void setPosition(Position position) {
+        this.position = position;
+        validateRemoveSnippetRelation();
+    }
+
     public void setMatchRule(MatchRule matchRule) {
         MatchRule.validateForWrite(matchRule);
         this.matchRule = matchRule;
         validateDomModeMatchRule();
+    }
+
+    public void setSnippetIds(Set<String> snippetIds) {
+        this.snippetIds = snippetIds == null ? new LinkedHashSet<>() : new LinkedHashSet<>(snippetIds);
+        validateRemoveSnippetRelation();
     }
 
     /**
@@ -78,6 +88,16 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
                     "matchRule：ID/SELECTOR 模式下必须可按路径预筛；"
                             + "模板 ID 条件仅可作为已命中路径分支上的附加约束"
             );
+        }
+    }
+
+    /**
+     * why: REMOVE 的语义是“直接删掉元素节点”，不会消费任何代码内容；
+     * 因此一旦仍允许关联代码块，就会制造误导性的脏数据和无意义的关联关系。
+     */
+    private void validateRemoveSnippetRelation() {
+        if (Position.REMOVE.equals(position) && snippetIds != null && !snippetIds.isEmpty()) {
+            throw new IllegalArgumentException("snippetIds：REMOVE 模式下无需关联代码块");
         }
     }
 }

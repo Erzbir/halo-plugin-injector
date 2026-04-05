@@ -133,6 +133,7 @@ export function makeRulePayload(rule: InjectionRule, snippetIds: string[]) {
   if (!result.rule) {
     return null
   }
+  const normalizedSnippetIds = rule.position === 'REMOVE' ? [] : snippetIds
   return {
     apiVersion: rule.apiVersion,
     kind: rule.kind,
@@ -146,7 +147,7 @@ export function makeRulePayload(rule: InjectionRule, snippetIds: string[]) {
     matchRule: result.rule,
     position: rule.position,
     wrapMarker: rule.wrapMarker,
-    snippetIds,
+    snippetIds: normalizedSnippetIds,
   }
 }
 

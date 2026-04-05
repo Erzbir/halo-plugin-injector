@@ -24,6 +24,11 @@ public class InjectionRuleValidator {
         }
         try {
             MatchRule.validateForWrite(rule.getMatchRule());
+            if (InjectionRule.Position.REMOVE.equals(rule.getPosition())
+                    && rule.getSnippetIds() != null
+                    && !rule.getSnippetIds().isEmpty()) {
+                return Mono.error(new InjectionRuleValidationException("snippetIds：REMOVE 模式下无需关联代码块"));
+            }
             if ((InjectionRule.Mode.ID.equals(rule.getMode()) || InjectionRule.Mode.SELECTOR.equals(rule.getMode()))
                     && !MatchRule.supportsDomPathPrecheck(rule.getMatchRule())) {
                 return Mono.error(new InjectionRuleValidationException(

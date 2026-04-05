@@ -33,6 +33,7 @@ function reset() {
 }
 
 const needsTarget = computed(() => rule.value.mode === 'ID' || rule.value.mode === 'SELECTOR')
+const needsSnippets = computed(() => rule.value.position !== 'REMOVE')
 
 function toggleSnippet(id: string) {
   const idx = selectedSnippetIds.value.indexOf(id)
@@ -48,6 +49,7 @@ function handleSubmit() {
 <template>
   <BaseFormModal
     :saving="saving"
+    :show-picker="needsSnippets"
     title="新建注入规则"
     @close="emit('close')"
     @submit="handleSubmit"
@@ -119,7 +121,7 @@ function handleSubmit() {
       </FormField>
     </template>
 
-    <template #picker>
+    <template v-if="needsSnippets" #picker>
       <div class=":uno: flex items-center justify-between">
         <label class=":uno: text-xs font-medium text-gray-600">关联代码块</label>
         <span class=":uno: text-xs text-gray-400"> {{ selectedSnippetIds.length }} 个已选 </span>

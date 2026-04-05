@@ -71,4 +71,34 @@ class InjectionRuleTest {
 
         assertTrue(error.getMessage().contains("ID/SELECTOR 模式下必须可按路径预筛"));
     }
+
+    // why: REMOVE 不消费代码块内容；模型层也必须拒绝仍携带 snippetIds 的脏数据。
+    @Test
+    void shouldRejectRemoveRuleWithSnippetIdsWhenConvertedToInjectionRule() {
+        IllegalArgumentException error = assertThrows(
+                IllegalArgumentException.class,
+                () -> objectMapper.convertValue(
+                        Map.of(
+                                "mode", "SELECTOR",
+                                "match", "main",
+                                "position", "REMOVE",
+                                "snippetIds", List.of("snippet-a"),
+                                "matchRule", Map.of(
+                                        "type", "GROUP",
+                                        "operator", "AND",
+                                        "children", List.of(
+                                                Map.of(
+                                                        "type", "PATH",
+                                                        "matcher", "ANT",
+                                                        "value", "/**"
+                                                )
+                                        )
+                                )
+                        ),
+                        InjectionRule.class
+                )
+        );
+
+        assertTrue(error.getMessage().contains("REMOVE 模式下无需关联代码块"));
+    }
 }

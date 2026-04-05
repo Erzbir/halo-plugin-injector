@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { CodeSnippet, InjectionRule } from '@/types'
 import { makeSnippet } from '@/types'
 import BaseFormModal from './BaseFormModal.vue'
@@ -7,7 +7,7 @@ import ItemPicker from './ItemPicker.vue'
 import FormField from './FormField.vue'
 import { rulePreview } from '@/views/composables/util'
 
-defineProps<{
+const props = defineProps<{
   rules: InjectionRule[]
   saving: boolean
 }>()
@@ -37,6 +37,8 @@ function toggleRule(id: string) {
 function handleSubmit() {
   emit('submit', snippet.value, selectedRuleIds.value)
 }
+
+const selectableRules = computed(() => props.rules.filter((rule) => rule.position !== 'REMOVE'))
 </script>
 
 <template>
@@ -76,7 +78,7 @@ function handleSubmit() {
         <span class=":uno: text-xs text-gray-400">{{ selectedRuleIds.length }} 个已选</span>
       </div>
       <ItemPicker
-        :items="rules"
+        :items="selectableRules"
         :preview-fn="rulePreview"
         :selected-ids="selectedRuleIds"
         empty-text="暂无规则, 请先创建"

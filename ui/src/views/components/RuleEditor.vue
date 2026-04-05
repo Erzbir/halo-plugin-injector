@@ -33,6 +33,7 @@ const currentRule = computed(() => pendingRule.value ?? props.rule)
 const needsTarget = computed(
   () => currentRule.value?.mode === 'ID' || currentRule.value?.mode === 'SELECTOR',
 )
+const needsSnippets = computed(() => currentRule.value?.position !== 'REMOVE')
 
 watch(
   () => props.rule,
@@ -158,7 +159,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
         />
       </FormField>
 
-      <FormField label="关联代码块">
+      <FormField v-if="needsSnippets" label="关联代码块">
         <template #default>
           <div class=":uno: flex items-center justify-between mb-1">
             <span />

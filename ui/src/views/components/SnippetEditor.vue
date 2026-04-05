@@ -24,7 +24,11 @@ const emit = defineEmits<{
   (e: 'update:snippet', snippet: CodeSnippet): void
 }>()
 
-const sortedRules = computed(() => sortSelectedFirst(props.rules, props.selectedRuleIds))
+const selectableRules = computed(() => props.rules.filter((rule) => rule.position !== 'REMOVE'))
+const visibleSelectedRuleIds = computed(() =>
+  props.selectedRuleIds.filter((ruleId) => selectableRules.value.some((rule) => rule.id === ruleId)),
+)
+const sortedRules = computed(() => sortSelectedFirst(selectableRules.value, visibleSelectedRuleIds.value))
 
 function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K]) {
   if (!props.snippet) return
@@ -82,12 +86,12 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
         <template #default>
           <div class=":uno: flex items-center justify-between mb-1">
             <span />
-            <span class=":uno: text-xs text-gray-400">{{ selectedRuleIds.length }} 个已选</span>
+            <span class=":uno: text-xs text-gray-400">{{ visibleSelectedRuleIds.length }} 个已选</span>
           </div>
           <ItemPicker
             :items="sortedRules"
             :preview-fn="rulePreview"
-            :selected-ids="selectedRuleIds"
+            :selected-ids="visibleSelectedRuleIds"
             empty-text="暂无规则, 请先创建"
             @toggle="(id) => emit('toggle-rule', id)"
           />

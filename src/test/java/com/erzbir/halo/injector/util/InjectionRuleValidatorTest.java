@@ -106,6 +106,23 @@ class InjectionRuleValidatorTest {
         );
     }
 
+    // why: REMOVE 不会消费代码内容；写入期必须拒绝仍携带 snippetIds 的规则，避免产生误导性脏数据。
+    @Test
+    void shouldRejectSnippetIdsWhenPositionIsRemove() {
+        InjectionRule rule = makeRule();
+        rule.setMode(InjectionRule.Mode.SELECTOR);
+        rule.setMatch("main");
+        rule.setPosition(InjectionRule.Position.REMOVE);
+        setSnippetIdsDirectly(rule, java.util.Set.of("snippet-a"));
+
+        InjectionRuleValidationException error = assertThrows(
+                InjectionRuleValidationException.class,
+                () -> validator.validateForWrite(rule).block()
+        );
+
+        assertEquals("snippetIds：REMOVE 模式下无需关联代码块", error.getReason());
+    }
+
     private InjectionRule makeRule() {
         InjectionRule rule = new InjectionRule();
         rule.setMatchRule(MatchRule.defaultRule());
@@ -125,6 +142,16 @@ class InjectionRuleValidatorTest {
             var field = InjectionRule.class.getDeclaredField("matchRule");
             field.setAccessible(true);
             field.set(rule, matchRule);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void setSnippetIdsDirectly(InjectionRule rule, java.util.Set<String> snippetIds) {
+        try {
+            var field = InjectionRule.class.getDeclaredField("snippetIds");
+            field.setAccessible(true);
+            field.set(rule, snippetIds);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }

@@ -76,6 +76,17 @@ export function useInjectorData() {
       .filter((s): s is CodeSnippet => !!s)
   })
 
+  function _normalizeRuleSnippetIds(rule: InjectionRule, snippetIds: string[]) {
+    return rule.position === 'REMOVE' ? [] : uniqueStrings(snippetIds)
+  }
+
+  function _normalizeSnippetRuleIds(ruleIds: string[]) {
+    const allowedRuleIds = new Set(
+      rules.value.filter((rule) => rule.position !== 'REMOVE').map((rule) => rule.id),
+    )
+    return uniqueStrings(ruleIds).filter((ruleId) => allowedRuleIds.has(ruleId))
+  }
+
   function _validateRule(rule: InjectionRule): string | null {
     if ((rule.mode === 'SELECTOR' || rule.mode === 'ID') && !rule.match.trim())
       return '请填写匹配内容'
@@ -179,7 +190,7 @@ export function useInjectorData() {
       Toast.error('代码内容不能为空')
       return null
     }
-    const nextRuleIds = uniqueStrings(ruleIds)
+    const nextRuleIds = _normalizeSnippetRuleIds(ruleIds)
     saving.value = true
     try {
       const res = await snippetApi.add({ ...snippet, ruleIds: nextRuleIds })
@@ -203,7 +214,7 @@ export function useInjectorData() {
       Toast.error(err)
       return null
     }
-    const nextSnippetIds = uniqueStrings(snippetIds)
+    const nextSnippetIds = _normalizeRuleSnippetIds(rule, snippetIds)
     saving.value = true
     try {
       const payload = makeRulePayload(rule, nextSnippetIds)
@@ -231,7 +242,7 @@ export function useInjectorData() {
       Toast.error('代码内容不能为空')
       return
     }
-    const nextRuleIds = uniqueStrings(editSnippetRuleIds.value)
+    const nextRuleIds = _normalizeSnippetRuleIds(editSnippetRuleIds.value)
     saving.value = true
     try {
       await snippetApi.update(editSnippet.value.id, { ...editSnippet.value, ruleIds: nextRuleIds })
@@ -253,7 +264,7 @@ export function useInjectorData() {
       Toast.error(err)
       return
     }
-    const nextSnippetIds = uniqueStrings(editRuleSnippetIds.value)
+    const nextSnippetIds = _normalizeRuleSnippetIds(editRule.value, editRuleSnippetIds.value)
     saving.value = true
     try {
       const payload = makeRulePayload(editRule.value, nextSnippetIds)
@@ -293,7 +304,10 @@ export function useInjectorData() {
     }
     try {
       editRule.value.enabled = !editRule.value.enabled
-      const payload = makeRulePayload(editRule.value, uniqueStrings(editRuleSnippetIds.value))
+      const payload = makeRulePayload(
+        editRule.value,
+        _normalizeRuleSnippetIds(editRule.value, editRuleSnippetIds.value),
+      )
       if (!payload) {
         Toast.error('匹配规则有误，请先修正后再操作')
         editRule.value.enabled = !editRule.value.enabled
