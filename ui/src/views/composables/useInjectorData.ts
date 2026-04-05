@@ -1,4 +1,5 @@
 import { computed, ref, watch } from 'vue'
+import type { AxiosError } from 'axios'
 import { Dialog, Toast } from '@halo-dev/components'
 import { ruleApi, snippetApi } from '@/apis'
 import type { CodeSnippet, InjectionRule, ItemList } from '@/types'
@@ -23,6 +24,16 @@ function emptyList<T>(): ItemList<T> {
     items: [],
     total: 0,
   }
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  const axiosError = error as AxiosError<{ message?: string; detail?: string; error?: { message?: string } }>
+  return (
+    axiosError?.response?.data?.message ||
+    axiosError?.response?.data?.detail ||
+    axiosError?.response?.data?.error?.message ||
+    fallback
+  )
 }
 
 export function useInjectorData() {
@@ -170,8 +181,8 @@ export function useInjectorData() {
       selectedSnippetId.value = id
       Toast.success('代码块已创建')
       return id
-    } catch {
-      Toast.error('创建失败')
+    } catch (error) {
+      Toast.error(getErrorMessage(error, '创建失败'))
       return null
     } finally {
       saving.value = false
@@ -199,8 +210,8 @@ export function useInjectorData() {
       selectedRuleId.value = res.data.id
       Toast.success('规则已创建')
       return res.data.id
-    } catch {
-      Toast.error('创建失败')
+    } catch (error) {
+      Toast.error(getErrorMessage(error, '创建失败'))
       return null
     } finally {
       saving.value = false
@@ -220,8 +231,8 @@ export function useInjectorData() {
       await fetchAll()
       editDirty.value = false
       Toast.success('保存成功')
-    } catch {
-      Toast.error('保存失败')
+    } catch (error) {
+      Toast.error(getErrorMessage(error, '保存失败'))
     } finally {
       saving.value = false
     }
@@ -247,8 +258,8 @@ export function useInjectorData() {
       await fetchAll()
       editDirty.value = false
       Toast.success('保存成功')
-    } catch {
-      Toast.error('保存失败')
+    } catch (error) {
+      Toast.error(getErrorMessage(error, '保存失败'))
     } finally {
       saving.value = false
     }
@@ -282,9 +293,9 @@ export function useInjectorData() {
       }
       await ruleApi.update(editRule.value.id, payload)
       await fetchAll()
-    } catch {
+    } catch (error) {
       editRule.value.enabled = !editRule.value.enabled
-      Toast.error('操作失败')
+      Toast.error(getErrorMessage(error, '操作失败'))
     }
   }
 

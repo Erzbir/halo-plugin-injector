@@ -5,8 +5,6 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 @Data
 public class MatchRule {
@@ -45,30 +43,15 @@ public class MatchRule {
         if (type == null) {
             return false;
         }
+        // 这里只保留运行时快速判定，避免每次请求都重复编译正则；
+        // 非法正则由写入期校验兜底，防止把坏数据持久化进去。
         return switch (type) {
             case GROUP -> children != null
                     && !children.isEmpty()
                     && children.stream().allMatch(child -> child != null && child.isValid());
-            case PATH -> supportsPathMatcher(matcher)
-                    && StringUtils.hasText(value)
-                    && regexValidIfNeeded();
-            case TEMPLATE_ID -> supportsTemplateMatcher(matcher)
-                    && StringUtils.hasText(value)
-                    && regexValidIfNeeded();
+            case PATH -> supportsPathMatcher(matcher) && StringUtils.hasText(value);
+            case TEMPLATE_ID -> supportsTemplateMatcher(matcher) && StringUtils.hasText(value);
         };
-    }
-
-    private boolean regexValidIfNeeded() {
-        if (matcher != Matcher.REGEX) {
-            return true;
-        }
-        try {
-            // 后端再次校验，避免非法正则绕过前端后落库，导致运行时才以“不生效”形式暴露问题。
-            Pattern.compile(value);
-            return true;
-        } catch (PatternSyntaxException e) {
-            return false;
-        }
     }
 
     private boolean supportsPathMatcher(Matcher matcher) {

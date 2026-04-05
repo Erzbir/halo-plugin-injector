@@ -2,8 +2,10 @@ import { axiosInstance } from '@halo-dev/api-client'
 import type { CodeSnippet, InjectionRule, ItemList } from '@/types'
 
 const BASE = '/apis/injector.erzbir.com/v1alpha1'
+const CONSOLE_BASE = '/apis/console.api.injector.erzbir.com/v1alpha1'
 const SNIPPETS = `${BASE}/codeSnippets`
 const RULES = `${BASE}/injectionRules`
+const RULES_WRITE = `${CONSOLE_BASE}/injectionRules`
 
 export const snippetApi = {
   list() {
@@ -29,11 +31,11 @@ export const ruleApi = {
   },
 
   add(rule: InjectionRule) {
-    return axiosInstance.post<InjectionRule>(RULES, rule)
+    return axiosInstance.post<InjectionRule>(RULES_WRITE, rule)
   },
 
   update(id: string, rule: InjectionRule) {
-    return axiosInstance.put<InjectionRule>(`${RULES}/${id}`, rule)
+    return axiosInstance.put<InjectionRule>(`${RULES_WRITE}/${id}`, rule)
   },
 
   delete(id: string) {
