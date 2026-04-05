@@ -95,9 +95,7 @@ function handleClick() {
 }
 
 const buttonStateClass = computed(() =>
-  progress.value > 0
-    ? ':uno: border-amber-300 text-amber-700 bg-amber-50'
-    : ':uno: border-gray-200 text-gray-500',
+  progress.value >= 100 ? ':uno: border-red-600 text-white' : ':uno: border-gray-200 text-gray-500',
 )
 
 const buttonText = computed(() => {
@@ -106,11 +104,23 @@ const buttonText = computed(() => {
   }
   return '撤销全部'
 })
+
+const buttonStyle = computed(() => {
+  if (progress.value <= 0) {
+    return {
+      background: 'rgb(255 255 255)',
+    }
+  }
+  return {
+    background: `linear-gradient(90deg, rgb(220 38 38) 0%, rgb(220 38 38) ${progress.value}%, rgb(255 255 255) ${progress.value}%, rgb(255 255 255) 100%)`,
+  }
+})
 </script>
 
 <template>
   <button
     :class="buttonStateClass"
+    :style="buttonStyle"
     class=":uno: relative overflow-hidden rounded border px-2 py-0.5 text-xs transition-colors hover:border-gray-300 hover:text-gray-700"
     title="单击或按住 1 秒内松开：撤销上一步；继续按到 3 秒：自动恢复初始值"
     type="button"
@@ -120,10 +130,6 @@ const buttonText = computed(() => {
     @pointerleave="finishPress(false)"
     @pointerup="finishPress(true)"
   >
-    <span
-      class=":uno: pointer-events-none absolute inset-y-0 left-0 bg-amber-100/80 transition-[width]"
-      :style="{ width: `${progress}%` }"
-    />
     <span class=":uno: relative z-1">{{ buttonText }}</span>
   </button>
 </template>
