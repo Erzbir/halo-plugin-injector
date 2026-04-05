@@ -67,7 +67,7 @@ const simpleValidationError = computed<MatchRuleValidationError | null>(
 const jsonActionLabel = computed(() => (parseResult.value.error ? '重建 JSON' : '格式化 JSON'))
 const jsonActionTitle = computed(() =>
   parseResult.value.error
-    ? '当前 JSON 有误，将按当前生效规则重新生成 JSON'
+    ? '当前 JSON 有误，将按当前简单模式配置重新生成 JSON'
     : '整理当前 JSON 的缩进与格式',
 )
 
