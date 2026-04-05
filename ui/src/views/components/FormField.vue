@@ -7,7 +7,10 @@ defineProps<{
 
 <template>
   <div class=":uno: space-y-1">
-    <div v-if="label || $slots.actions" class=":uno: flex items-center justify-between gap-2">
+    <div
+      v-if="label || $slots.actions"
+      class=":uno: flex items-center justify-between gap-2 py-0.5"
+    >
       <label v-if="label" class=":uno: text-xs font-medium text-gray-600">
         {{ label }}
         <span v-if="required" class=":uno: text-red-500">*</span>
