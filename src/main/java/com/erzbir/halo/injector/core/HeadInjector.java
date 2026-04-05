@@ -12,7 +12,7 @@ import org.thymeleaf.model.IModel;
 public class HeadInjector implements TemplateInjector {
 
     @Override
-    public void inject(ITemplateContext context, IModel model, String code) {
-        model.add(context.getModelFactory().createText(processCode(code)));
+    public void inject(ITemplateContext context, IModel model, String code, boolean wrapMarker) {
+        model.add(context.getModelFactory().createText(processCode(code, wrapMarker)));
     }
 }

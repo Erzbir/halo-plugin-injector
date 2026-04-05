@@ -23,7 +23,7 @@ public abstract class AbstractTemplateProcessor {
 
     protected abstract InjectionRule.Mode mode();
 
-    protected abstract void doProcess(ITemplateContext context, IModel model, String code);
+    protected abstract void doProcess(ITemplateContext context, IModel model, String code, boolean wrapMarker);
 
 
     protected Mono<Void> processInternal(ITemplateContext context, IModel model) {
@@ -34,7 +34,7 @@ public abstract class AbstractTemplateProcessor {
                 .flatMap(rule ->
                         injectHelper.getConcatCode(rule)
                                 .doOnNext(code -> {
-                                    doProcess(context, model, code);
+                                    doProcess(context, model, code, rule.getWrapMarker());
                                 }).doOnSuccess(s -> log.debug("Injected rule: [{}] into [{}]",
                                         rule.getId(),
                                         path))

@@ -40,6 +40,7 @@ export interface InjectionRule {
   match: string
   matchRule: MatchRule
   position: InjectionPosition
+  wrapMarker: boolean
   snippetIds: string[]
   matchRuleDraft?: string
   matchRuleEditorMode?: MatchRuleEditorMode
@@ -149,6 +150,7 @@ export function makeRule(override: Partial<InjectionRule> = {}): InjectionRule {
     match: '',
     matchRule: makeMatchRuleGroup(),
     position: 'APPEND',
+    wrapMarker: true,
     snippetIds: [],
     ...override,
   }

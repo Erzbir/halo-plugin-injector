@@ -40,7 +40,7 @@ public class InjectorHeadProcessor extends AbstractTemplateProcessor
     }
 
     @Override
-    protected void doProcess(ITemplateContext context, IModel model, String code) {
-        headInjector.inject(context, model, code);
+    protected void doProcess(ITemplateContext context, IModel model, String code, boolean wrapMarker) {
+        headInjector.inject(context, model, code, wrapMarker);
     }
 }

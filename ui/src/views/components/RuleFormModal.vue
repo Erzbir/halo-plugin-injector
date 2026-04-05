@@ -99,6 +99,13 @@ function handleSubmit() {
         </FormField>
       </template>
 
+      <FormField label="注释标记">
+        <label class=":uno: inline-flex items-center gap-2 text-sm text-gray-700">
+          <input v-model="rule.wrapMarker" type="checkbox" />
+          输出 `<!-- PluginInjector start/end -->` 注释标记
+        </label>
+      </FormField>
+
       <FormField label="匹配规则" required>
         <MatchRuleEditor
           :draft="rule.matchRuleDraft"

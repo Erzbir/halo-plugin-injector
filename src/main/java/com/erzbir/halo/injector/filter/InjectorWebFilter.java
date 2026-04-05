@@ -133,7 +133,7 @@ public class InjectorWebFilter implements AdditionalWebFilter {
 
                     log.debug("Injected rule: [{}] into [{}]", rule.getId(), path);
 
-                    return injector.inject(ctx, rule.getMatch(), code, rule.getPosition());
+                    return injector.inject(ctx, rule.getMatch(), code, rule.getPosition(), rule.getWrapMarker());
                 });
     }
 

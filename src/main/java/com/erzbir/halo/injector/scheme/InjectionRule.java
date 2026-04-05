@@ -21,6 +21,7 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     private String match = "";
     private MatchRule matchRule = MatchRule.defaultRule();
     private Position position = Position.APPEND;
+    private Boolean wrapMarker = true;
     private Set<String> snippetIds = new LinkedHashSet<>();
 
     @Override
@@ -39,6 +40,11 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     @Override
     public boolean isEnabled() {
         return enabled;
+    }
+
+    @Override
+    public Boolean getWrapMarker() {
+        return !Boolean.FALSE.equals(wrapMarker);
     }
 
     public boolean isValid() {

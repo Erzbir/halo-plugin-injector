@@ -40,7 +40,7 @@ public class InjectorFooterProcessor extends AbstractTemplateProcessor
     }
 
     @Override
-    protected void doProcess(ITemplateContext context, IModel model, String code) {
-        footerInjector.inject(context, model, code);
+    protected void doProcess(ITemplateContext context, IModel model, String code, boolean wrapMarker) {
+        footerInjector.inject(context, model, code, wrapMarker);
     }
 }
