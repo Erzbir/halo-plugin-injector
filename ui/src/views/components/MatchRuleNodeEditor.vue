@@ -19,11 +19,15 @@ defineOptions({
 const props = defineProps<{
   modelValue: MatchRule
   root?: boolean
+  canMoveUp?: boolean
+  canMoveDown?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: MatchRule): void
   (e: 'remove'): void
+  (e: 'move-up'): void
+  (e: 'move-down'): void
   (e: 'change'): void
 }>()
 
@@ -53,6 +57,16 @@ function updateChild(index: number, child: MatchRule) {
 function removeChild(index: number) {
   const next = cloneMatchRule(rule.value)
   next.children = (next.children ?? []).filter((_, idx) => idx !== index)
+  updateRule(next)
+}
+
+function moveChild(index: number, direction: -1 | 1) {
+  const next = cloneMatchRule(rule.value)
+  const children = [...(next.children ?? [])]
+  const targetIndex = index + direction
+  if (targetIndex < 0 || targetIndex >= children.length) return
+  ;[children[index], children[targetIndex]] = [children[targetIndex], children[index]]
+  next.children = children
   updateRule(next)
 }
 
@@ -116,6 +130,12 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
           />
           取反
         </label>
+        <div v-if="!root" class=":uno: inline-flex items-center gap-1">
+          <VButton :disabled="!canMoveUp" size="sm" title="上移" @click="emit('move-up')">↑</VButton>
+          <VButton :disabled="!canMoveDown" size="sm" title="下移" @click="emit('move-down')">
+            ↓
+          </VButton>
+        </div>
         <VButton v-if="!root" size="sm" type="danger" @click="emit('remove')">移除此组</VButton>
       </div>
 
@@ -123,8 +143,12 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
         <MatchRuleNodeEditor
           v-for="(child, index) in rule.children ?? []"
           :key="index"
+          :can-move-down="index < (rule.children?.length ?? 0) - 1"
+          :can-move-up="index > 0"
           :model-value="child"
           @change="emit('change')"
+          @move-down="moveChild(index, 1)"
+          @move-up="moveChild(index, -1)"
           @remove="removeChild(index)"
           @update:model-value="updateChild(index, $event)"
         />
@@ -173,6 +197,13 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
           />
           取反
         </label>
+
+        <div v-if="!root" class=":uno: inline-flex items-center gap-1">
+          <VButton :disabled="!canMoveUp" size="sm" title="上移" @click="emit('move-up')">↑</VButton>
+          <VButton :disabled="!canMoveDown" size="sm" title="下移" @click="emit('move-down')">
+            ↓
+          </VButton>
+        </div>
 
         <VButton size="sm" type="danger" @click="emit('remove')">移除此条件</VButton>
       </div>
