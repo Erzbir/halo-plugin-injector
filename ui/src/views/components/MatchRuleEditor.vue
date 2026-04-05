@@ -158,16 +158,17 @@ function formatJson() {
       </VButton>
     </div>
 
-    <MatchRuleNodeEditor
-      v-if="currentMode === 'SIMPLE'"
-      :model-value="normalizeMatchRule(modelValue)"
-      root
-      @change="emit('change')"
-      @update:model-value="updateSimple"
-    />
-    <p v-if="currentMode === 'SIMPLE' && simpleError" class=":uno: text-xs text-red-500">
-      {{ simpleError }}
-    </p>
+    <template v-if="currentMode === 'SIMPLE'">
+      <MatchRuleNodeEditor
+        :model-value="normalizeMatchRule(modelValue)"
+        root
+        @change="emit('change')"
+        @update:model-value="updateSimple"
+      />
+      <p v-if="simpleError" class=":uno: text-xs text-red-500">
+        {{ simpleError }}
+      </p>
+    </template>
 
     <div v-else class=":uno: space-y-2">
       <textarea
