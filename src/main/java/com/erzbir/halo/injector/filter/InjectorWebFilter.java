@@ -83,7 +83,7 @@ public class InjectorWebFilter implements AdditionalWebFilter {
 
     ServerWebExchangeMatcher createPathMatcher() {
         var pathMatcher = pathMatchers(HttpMethod.GET, "/**");
-        var excludeeMatcher =
+        var excludeMatcher =
                 new NegatedServerWebExchangeMatcher(
                         pathMatchers("/console/**", "/uc/**", "/login/**",
                                 "/signup/**", "/logout/**", "/themes/**",
@@ -95,7 +95,7 @@ public class InjectorWebFilter implements AdditionalWebFilter {
 
         return new AndServerWebExchangeMatcher(
                 mediaTypeMatcher,
-                excludeeMatcher,
+                excludeMatcher,
                 pathMatcher
         );
     }

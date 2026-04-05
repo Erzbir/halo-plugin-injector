@@ -86,7 +86,9 @@ function addGroupRule() {
 
 function resolveNextMatcher(type: 'PATH' | 'TEMPLATE_ID'): MatchRule['matcher'] {
   if (type === 'PATH') {
-    return rule.value.matcher === 'EXACT' || rule.value.matcher === 'REGEX' ? rule.value.matcher : 'ANT'
+    return rule.value.matcher === 'EXACT' || rule.value.matcher === 'REGEX'
+      ? rule.value.matcher
+      : 'ANT'
   }
   return rule.value.matcher === 'REGEX' ? 'REGEX' : 'EXACT'
 }
@@ -102,9 +104,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
     value: rule.value.value ?? '',
   }
   const next =
-    type === 'PATH'
-      ? makePathMatchRule(sharedFields)
-      : makeTemplateMatchRule(sharedFields)
+    type === 'PATH' ? makePathMatchRule(sharedFields) : makeTemplateMatchRule(sharedFields)
   updateRule(next)
 }
 </script>

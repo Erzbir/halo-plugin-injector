@@ -120,28 +120,28 @@ Halo 自带的代码注入更偏向全局场景；这个插件更适合：
 
 #### Halo 内置页面
 
-| 模板 ID | 说明 |
-| ------- | ---- |
-| `index` | 首页 |
-| `categories` | 分类列表页 |
-| `category` | 单个分类页 |
-| `archives` | 归档页 |
-| `post` | 文章详情页 |
-| `tag` | 单个标签页 |
-| `tags` | 标签列表页 |
-| `page` | 单个独立页面 |
-| `author` | 作者页 |
+| 模板 ID      | 说明         |
+| ------------ | ------------ |
+| `index`      | 首页         |
+| `categories` | 分类列表页   |
+| `category`   | 单个分类页   |
+| `archives`   | 归档页       |
+| `post`       | 文章详情页   |
+| `tag`        | 单个标签页   |
+| `tags`       | 标签列表页   |
+| `page`       | 单个独立页面 |
+| `author`     | 作者页       |
 
 #### 常见插件页面
 
-| 模板 ID | 来源 | 说明 |
-| ------- | ---- | ---- |
-| `moments` | [瞬间插件](https://github.com/halo-sigs/plugin-moments) | 瞬间列表页，常见路径为 `/moments` |
-| `moment` | [瞬间插件](https://github.com/halo-sigs/plugin-moments) | 瞬间详情页，常见路径为 `/moments/{slug}` |
-| `photos` | [图库管理插件](https://github.com/halo-sigs/plugin-photos) | 图库页，常见路径为 `/photos` |
-| `friends` | [朋友圈插件](https://github.com/chengzhongxue/plugin-friends-new) | 朋友圈页，常见路径为 `/friends` |
-| `douban` | [豆瓣插件](https://github.com/chengzhongxue/plugin-douban) | 豆瓣页，常见路径为 `/douban` |
-| `bangumi` | [BangumiData 插件](https://github.com/ShiinaKin/halo-plugin-bangumi-data) | 番剧页，常见路径为 `/bangumi` |
+| 模板 ID   | 来源                                                                      | 说明                                     |
+| --------- | ------------------------------------------------------------------------- | ---------------------------------------- |
+| `moments` | [瞬间插件](https://github.com/halo-sigs/plugin-moments)                   | 瞬间列表页，常见路径为 `/moments`        |
+| `moment`  | [瞬间插件](https://github.com/halo-sigs/plugin-moments)                   | 瞬间详情页，常见路径为 `/moments/{slug}` |
+| `photos`  | [图库管理插件](https://github.com/halo-sigs/plugin-photos)                | 图库页，常见路径为 `/photos`             |
+| `friends` | [朋友圈插件](https://github.com/chengzhongxue/plugin-friends-new)         | 朋友圈页，常见路径为 `/friends`          |
+| `douban`  | [豆瓣插件](https://github.com/chengzhongxue/plugin-douban)                | 豆瓣页，常见路径为 `/douban`             |
+| `bangumi` | [BangumiData 插件](https://github.com/ShiinaKin/halo-plugin-bangumi-data) | 番剧页，常见路径为 `/bangumi`            |
 
 > 说明：
 >
