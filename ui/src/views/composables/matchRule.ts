@@ -176,6 +176,10 @@ export function matchRuleChips(rule: MatchRule, limit = 4): string[] {
   return chips
 }
 
+export function matchRuleExpression(rule: MatchRule): string {
+  return formatMatchRuleExpression(normalizeMatchRule(rule), true)
+}
+
 function collectMatchRuleChips(rule: MatchRule, chips: string[], limit: number) {
   if (chips.length >= limit) return
   if (rule.type === 'GROUP') {
@@ -194,6 +198,22 @@ function describeMatchRule(rule: MatchRule): string {
   }
   const matcherLabel = rule.matcher === 'REGEX' ? '正则表达式' : '精确匹配'
   return `${prefix}模板 ID · ${matcherLabel}: ${rule.value ?? ''}`
+}
+
+function formatMatchRuleExpression(rule: MatchRule, root = false): string {
+  if (rule.type === 'GROUP') {
+    const operator = rule.operator === 'OR' ? ' | ' : ' & '
+    const content = (rule.children ?? [])
+      .map((child) => formatMatchRuleExpression(child))
+      .join(operator)
+    const grouped = root ? content : `(${content})`
+    return rule.negate ? `!${grouped}` : grouped
+  }
+
+  const subject = rule.type === 'PATH' ? 'path' : 'template_id'
+  const matcher = rule.matcher === 'REGEX' ? 'regex' : rule.matcher === 'EXACT' ? '=' : 'ant'
+  const leaf = `${subject}:${matcher}:${rule.value ?? ''}`
+  return rule.negate ? `!${leaf}` : leaf
 }
 
 type PathPrecheckKind = 'PATH_SCOPED' | 'TEMPLATE_ONLY' | 'UNSUPPORTED'
