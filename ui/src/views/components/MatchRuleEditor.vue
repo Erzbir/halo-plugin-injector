@@ -71,6 +71,38 @@ const jsonActionTitle = computed(() =>
     : '整理当前 JSON 的缩进与格式',
 )
 
+function isEqualValue(a: unknown, b: unknown) {
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
+function emitStatePatch(
+  patch: Partial<{
+    matchRule: MatchRule
+    matchRuleDraft: string
+    matchRuleEditorMode: MatchRuleEditorMode
+  }>,
+) {
+  const hasChanges = Object.entries(patch).some(([key, value]) => {
+    if (key === 'matchRule') {
+      return !isEqualValue(props.modelValue, value)
+    }
+    if (key === 'matchRuleDraft') {
+      return (props.draft ?? '') !== value
+    }
+    if (key === 'matchRuleEditorMode') {
+      return (props.editorMode ?? 'SIMPLE') !== value
+    }
+    return false
+  })
+
+  if (!hasChanges) {
+    return
+  }
+
+  emit('update:state', patch)
+  emit('change')
+}
+
 function switchMode(mode: MatchRuleEditorMode) {
   const warningConfig = getModeSwitchWarning(mode)
   if (warningConfig) {
@@ -128,19 +160,17 @@ function applyModeSwitch(mode: MatchRuleEditorMode, overwriteDraft: boolean) {
     jsonDraft.value = text
     patch.matchRuleDraft = text
   }
-  emit('update:state', patch)
-  emit('change')
+  emitStatePatch(patch)
 }
 
 function updateSimple(value: MatchRule) {
   const normalized = normalizeMatchRule(value)
   const draft = formatMatchRule(normalized)
-  emit('update:state', {
+  emitStatePatch({
     matchRule: normalized,
     matchRuleDraft: draft,
     matchRuleEditorMode: 'SIMPLE',
   })
-  emit('change')
 }
 
 function updateJsonDraft(value: string) {
@@ -156,20 +186,18 @@ function updateJsonDraft(value: string) {
   if (parseResult.value.rule) {
     patch.matchRule = parseResult.value.rule
   }
-  emit('update:state', patch)
-  emit('change')
+  emitStatePatch(patch)
 }
 
 function formatJson() {
   const parsed = parseResult.value.rule ?? normalizeMatchRule(props.modelValue)
   const next = formatMatchRule(parsed || makeMatchRuleGroup())
   jsonDraft.value = next
-  emit('update:state', {
+  emitStatePatch({
     matchRule: parsed || makeMatchRuleGroup(),
     matchRuleDraft: next,
     matchRuleEditorMode: 'JSON',
   })
-  emit('change')
 }
 </script>
 
