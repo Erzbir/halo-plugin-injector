@@ -92,7 +92,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
         </span>
         <select
           :value="rule.operator"
-          class=":uno: rounded-md border border-gray-200 px-2 py-1 text-sm focus:border-primary focus:outline-none bg-white"
+          class=":uno: min-w-[7rem] shrink-0 rounded-md border border-gray-200 bg-white px-2 py-1 pr-8 text-sm focus:border-primary focus:outline-none"
           @change="
             updateGroupField(
               'operator',
@@ -141,7 +141,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
       <div class=":uno: flex flex-wrap items-center gap-2">
         <select
           :value="rule.type"
-          class=":uno: rounded-md border border-gray-200 px-2 py-1 text-sm focus:border-primary focus:outline-none bg-white"
+          class=":uno: min-w-[8rem] shrink-0 rounded-md border border-gray-200 bg-white px-2 py-1 pr-8 text-sm focus:border-primary focus:outline-none"
           @change="
             switchLeafType(($event.target as HTMLSelectElement).value as 'PATH' | 'TEMPLATE_ID')
           "
@@ -152,7 +152,7 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
 
         <select
           :value="rule.matcher"
-          class=":uno: rounded-md border border-gray-200 px-2 py-1 text-sm focus:border-primary focus:outline-none bg-white"
+          class=":uno: min-w-[8rem] shrink-0 rounded-md border border-gray-200 bg-white px-2 py-1 pr-8 text-sm focus:border-primary focus:outline-none"
           @change="
             updateGroupField(
               'matcher',
