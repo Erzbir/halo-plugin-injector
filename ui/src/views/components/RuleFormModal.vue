@@ -129,9 +129,7 @@ function handleSubmit() {
           :editor-mode="rule.matchRuleEditorMode"
           :model-value="rule.matchRule"
           @change="void 0"
-          @update:draft="rule.matchRuleDraft = $event"
-          @update:editor-mode="rule.matchRuleEditorMode = $event"
-          @update:model-value="rule.matchRule = $event"
+          @update:state="Object.assign(rule, $event)"
         />
         <div
           v-if="performanceWarning"

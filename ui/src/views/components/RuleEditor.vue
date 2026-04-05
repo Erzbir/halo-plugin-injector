@@ -441,9 +441,7 @@ function resetField(
           :editor-mode="currentRule.matchRuleEditorMode"
           :model-value="currentRule.matchRule"
           @change="emit('field-change')"
-          @update:draft="updateMatchRuleField({ matchRuleDraft: $event })"
-          @update:editor-mode="updateMatchRuleField({ matchRuleEditorMode: $event })"
-          @update:model-value="updateMatchRuleField({ matchRule: $event })"
+          @update:state="updateMatchRuleField($event)"
         />
         <div
           v-if="performanceWarning"

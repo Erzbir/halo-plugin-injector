@@ -22,6 +22,14 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: MatchRule): void
   (e: 'update:draft', value: string): void
   (e: 'update:editorMode', value: MatchRuleEditorMode): void
+  (
+    e: 'update:state',
+    value: Partial<{
+      matchRule: MatchRule
+      matchRuleDraft: string
+      matchRuleEditorMode: MatchRuleEditorMode
+    }>,
+  ): void
   (e: 'change'): void
 }>()
 
@@ -101,40 +109,59 @@ function getModeSwitchWarning(mode: MatchRuleEditorMode) {
 }
 
 function applyModeSwitch(mode: MatchRuleEditorMode, overwriteDraft: boolean) {
-  emit('update:editorMode', mode)
+  const patch: Partial<{
+    matchRule: MatchRule
+    matchRuleDraft: string
+    matchRuleEditorMode: MatchRuleEditorMode
+  }> = {
+    matchRuleEditorMode: mode,
+  }
   if (mode === 'JSON' || overwriteDraft) {
     const text = formatMatchRule(props.modelValue)
     jsonDraft.value = text
-    emit('update:draft', text)
+    patch.matchRuleDraft = text
   }
+  emit('update:state', patch)
   emit('change')
 }
 
 function updateSimple(value: MatchRule) {
   const normalized = normalizeMatchRule(value)
   const draft = formatMatchRule(normalized)
-  emit('update:modelValue', normalized)
-  emit('update:draft', draft)
-  emit('update:editorMode', 'SIMPLE')
+  emit('update:state', {
+    matchRule: normalized,
+    matchRuleDraft: draft,
+    matchRuleEditorMode: 'SIMPLE',
+  })
   emit('change')
 }
 
 function updateJsonDraft(value: string) {
   jsonDraft.value = value
-  emit('update:draft', value)
-  emit('update:editorMode', 'JSON')
-  emit('change')
-  if (parseResult.value.rule) {
-    emit('update:modelValue', parseResult.value.rule)
+  const patch: Partial<{
+    matchRule: MatchRule
+    matchRuleDraft: string
+    matchRuleEditorMode: MatchRuleEditorMode
+  }> = {
+    matchRuleDraft: value,
+    matchRuleEditorMode: 'JSON',
   }
+  if (parseResult.value.rule) {
+    patch.matchRule = parseResult.value.rule
+  }
+  emit('update:state', patch)
+  emit('change')
 }
 
 function formatJson() {
   const parsed = parseResult.value.rule ?? normalizeMatchRule(props.modelValue)
   const next = formatMatchRule(parsed || makeMatchRuleGroup())
   jsonDraft.value = next
-  emit('update:modelValue', parsed || makeMatchRuleGroup())
-  emit('update:draft', next)
+  emit('update:state', {
+    matchRule: parsed || makeMatchRuleGroup(),
+    matchRuleDraft: next,
+    matchRuleEditorMode: 'JSON',
+  })
   emit('change')
 }
 </script>
