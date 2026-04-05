@@ -115,6 +115,23 @@ class InjectionRuleValidatorTest {
         assertEquals("snippetIds：REMOVE 模式下无需关联代码块", error.getReason());
     }
 
+    // why: REMOVE 会直接删除元素，写入期必须拒绝仍要求输出注释标记的规则，避免产生无意义配置。
+    @Test
+    void shouldRejectWrapMarkerWhenPositionIsRemove() {
+        InjectionRule rule = makeRule();
+        rule.setMode(InjectionRule.Mode.SELECTOR);
+        rule.setMatch("main");
+        rule.setPosition(InjectionRule.Position.REMOVE);
+        setWrapMarkerDirectly(rule, true);
+
+        InjectionRuleValidationException error = assertThrows(
+                InjectionRuleValidationException.class,
+                () -> validator.validateForWrite(rule).block()
+        );
+
+        assertEquals("wrapMarker：REMOVE 模式下无需输出注释标记", error.getReason());
+    }
+
     private InjectionRule makeRule() {
         InjectionRule rule = new InjectionRule();
         rule.setMatchRule(MatchRule.defaultRule());
@@ -144,6 +161,16 @@ class InjectionRuleValidatorTest {
             var field = InjectionRule.class.getDeclaredField("snippetIds");
             field.setAccessible(true);
             field.set(rule, snippetIds);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void setWrapMarkerDirectly(InjectionRule rule, boolean wrapMarker) {
+        try {
+            var field = InjectionRule.class.getDeclaredField("wrapMarker");
+            field.setAccessible(true);
+            field.set(rule, wrapMarker);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }

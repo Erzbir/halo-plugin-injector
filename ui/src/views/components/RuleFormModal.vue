@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import {
   type CodeSnippet,
   type InjectionRule,
@@ -35,7 +35,17 @@ function reset() {
 
 const needsTarget = computed(() => rule.value.mode === 'ID' || rule.value.mode === 'SELECTOR')
 const needsSnippets = computed(() => rule.value.position !== 'REMOVE')
+const needsWrapMarker = computed(() => rule.value.position !== 'REMOVE')
 const performanceWarning = computed(() => getDomRulePerformanceWarning(rule.value))
+
+watch(
+  () => rule.value.position,
+  (position) => {
+    if (position === 'REMOVE') {
+      rule.value.wrapMarker = false
+    }
+  },
+)
 
 function toggleSnippet(id: string) {
   const idx = selectedSnippetIds.value.indexOf(id)
@@ -103,7 +113,7 @@ function handleSubmit() {
         </FormField>
       </template>
 
-      <FormField label="注释标记">
+      <FormField v-if="needsWrapMarker" label="注释标记">
         <label class=":uno: inline-flex items-center gap-2 text-sm text-gray-700">
           <input v-model="rule.wrapMarker" type="checkbox" />
           输出 `<!-- PluginInjector start/end -->` 注释标记

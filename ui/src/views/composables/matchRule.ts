@@ -138,7 +138,7 @@ export function getDomRulePerformanceWarning(rule: Pick<InjectionRule, 'mode' | 
   if ((rule.mode !== 'SELECTOR' && rule.mode !== 'ID') || supportsDomPathPrecheck(rule.matchRule)) {
     return null
   }
-  return '⚠ 当前匹配规则不能先用页面路径缩小范围。启用后，元素 ID / CSS 选择器注入会对所有 HTML 页面先做处理，再判断是否命中，可能明显增加页面处理开销。'
+  return '⚠ 当前规则没有先使用页面路径缩小范围。建议先添加页面路径条件，再用模板 ID 或其它条件继续细化。若保持当前写法，元素 ID / CSS 选择器模式会在更多 HTML 页面上参与处理，带来一些额外开销。原因是插件需要先拿到完整 HTML，之后才能继续判断模板 ID 等条件是否命中。'
 }
 
 /**
@@ -150,6 +150,7 @@ export function makeRulePayload(rule: InjectionRule, snippetIds: string[]) {
     return null
   }
   const normalizedSnippetIds = rule.position === 'REMOVE' ? [] : snippetIds
+  const normalizedWrapMarker = rule.position === 'REMOVE' ? false : rule.wrapMarker
   return {
     apiVersion: rule.apiVersion,
     kind: rule.kind,
@@ -162,7 +163,7 @@ export function makeRulePayload(rule: InjectionRule, snippetIds: string[]) {
     match: rule.match.trim(),
     matchRule: result.rule,
     position: rule.position,
-    wrapMarker: rule.wrapMarker,
+    wrapMarker: normalizedWrapMarker,
     snippetIds: normalizedSnippetIds,
   }
 }

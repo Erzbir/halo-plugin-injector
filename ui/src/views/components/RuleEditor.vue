@@ -35,6 +35,7 @@ const needsTarget = computed(
   () => currentRule.value?.mode === 'ID' || currentRule.value?.mode === 'SELECTOR',
 )
 const needsSnippets = computed(() => currentRule.value?.position !== 'REMOVE')
+const needsWrapMarker = computed(() => currentRule.value?.position !== 'REMOVE')
 const performanceWarning = computed(() =>
   currentRule.value ? getDomRulePerformanceWarning(currentRule.value) : null,
 )
@@ -49,6 +50,9 @@ watch(
 function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule[K]) {
   if (!currentRule.value) return
   const next = { ...currentRule.value, [key]: value }
+  if (key === 'position' && value === 'REMOVE') {
+    next.wrapMarker = false
+  }
   pendingRule.value = next
   emit('update:rule', next)
   emit('field-change')
@@ -140,7 +144,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
         </FormField>
       </template>
 
-      <FormField label="注释标记">
+      <FormField v-if="needsWrapMarker" label="注释标记">
         <label class=":uno: inline-flex items-center gap-2 text-sm text-gray-700">
           <input
             :checked="currentRule.wrapMarker"

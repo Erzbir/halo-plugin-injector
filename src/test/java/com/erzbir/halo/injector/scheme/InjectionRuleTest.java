@@ -101,4 +101,34 @@ class InjectionRuleTest {
 
         assertTrue(error.getMessage().contains("REMOVE 模式下无需关联代码块"));
     }
+
+    // why: REMOVE 会直接删掉元素节点，不存在稳定的注释输出位置；模型层也必须拒绝仍开启 wrapMarker 的脏数据。
+    @Test
+    void shouldRejectRemoveRuleWithWrapMarkerWhenConvertedToInjectionRule() {
+        IllegalArgumentException error = assertThrows(
+                IllegalArgumentException.class,
+                () -> objectMapper.convertValue(
+                        Map.of(
+                                "mode", "SELECTOR",
+                                "match", "main",
+                                "position", "REMOVE",
+                                "wrapMarker", true,
+                                "matchRule", Map.of(
+                                        "type", "GROUP",
+                                        "operator", "AND",
+                                        "children", List.of(
+                                                Map.of(
+                                                        "type", "PATH",
+                                                        "matcher", "ANT",
+                                                        "value", "/**"
+                                                )
+                                        )
+                                )
+                        ),
+                        InjectionRule.class
+                )
+        );
+
+        assertTrue(error.getMessage().contains("REMOVE 模式下无需输出注释标记"));
+    }
 }

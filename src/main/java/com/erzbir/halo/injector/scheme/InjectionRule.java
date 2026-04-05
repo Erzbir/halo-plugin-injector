@@ -63,7 +63,7 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
 
     /**
      * why: REMOVE 的语义会改变“是否还需要代码块”这一数据约束，
-     * 因此在位置变更时立即收紧校验，避免对象进入短暂但可持久化的脏状态。
+     * 也会让注释标记失去稳定落点；因此在位置变更时立即收紧相关约束，避免对象进入短暂但可持久化的脏状态。
      */
     public void setPosition(Position position) {
         this.position = position;
@@ -85,12 +85,31 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     }
 
     /**
+     * why: REMOVE 会直接删掉目标节点，不会留下可包裹注释标记的稳定位置；
+     * 因此一旦仍允许开启注释标记，就会制造“配置看似生效、实际无处输出”的误导性状态。
+     */
+    public void setWrapMarker(boolean wrapMarker) {
+        this.wrapMarker = wrapMarker;
+        validateRemoveWrapMarkerRelation();
+    }
+
+    /**
      * why: REMOVE 的语义是“直接删掉元素节点”，不会消费任何代码内容；
      * 因此一旦仍允许关联代码块，就会制造误导性的脏数据和无意义的关联关系。
      */
     private void validateRemoveSnippetRelation() {
         if (Position.REMOVE.equals(position) && snippetIds != null && !snippetIds.isEmpty()) {
             throw new IllegalArgumentException("snippetIds：REMOVE 模式下无需关联代码块");
+        }
+    }
+
+    /**
+     * why: 注释标记依赖注入内容或节点周围的稳定输出位置；
+     * REMOVE 直接删除节点时不存在这样的落点，因此要拒绝这类无意义配置。
+     */
+    private void validateRemoveWrapMarkerRelation() {
+        if (Position.REMOVE.equals(position) && wrapMarker) {
+            throw new IllegalArgumentException("wrapMarker：REMOVE 模式下无需输出注释标记");
         }
     }
 }
