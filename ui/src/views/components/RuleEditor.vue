@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import type { CodeSnippet, InjectionRule } from '@/types'
 import { MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
 import {
+  formatMatchRule,
   getDomRulePerformanceWarning,
   persistMatchRuleEditorState,
 } from '@/views/composables/matchRule'
@@ -117,10 +118,14 @@ function updateRuleSnapshot(next: InjectionRule) {
 }
 
 function currentMatchRuleSnapshot() {
+  const formattedDraft = currentRule.value ? formatMatchRule(currentRule.value.matchRule) : ''
+  const currentDraft = currentRule.value?.matchRuleDraft?.trim()
+  const hasCustomDraft = !!currentDraft && currentDraft !== formattedDraft
+
   return {
     matchRule: currentRule.value?.matchRule,
-    matchRuleDraft: currentRule.value?.matchRuleDraft ?? '',
-    matchRuleEditorMode: currentRule.value?.matchRuleEditorMode ?? 'SIMPLE',
+    matchRuleDraft: hasCustomDraft ? currentDraft : '',
+    matchRuleEditorMode: hasCustomDraft ? (currentRule.value?.matchRuleEditorMode ?? 'JSON') : '',
   }
 }
 
@@ -131,10 +136,13 @@ function updateMatchRuleField(patch: Partial<InjectionRule>) {
     ...currentRule.value,
     ...patch,
   }
+  const formattedDraft = formatMatchRule(next.matchRule)
+  const nextDraft = next.matchRuleDraft?.trim()
+  const hasCustomDraft = !!nextDraft && nextDraft !== formattedDraft
   const after = {
     matchRule: next.matchRule,
-    matchRuleDraft: next.matchRuleDraft ?? '',
-    matchRuleEditorMode: next.matchRuleEditorMode ?? 'SIMPLE',
+    matchRuleDraft: hasCustomDraft ? nextDraft : '',
+    matchRuleEditorMode: hasCustomDraft ? (next.matchRuleEditorMode ?? 'JSON') : '',
   }
   undo.trackChange('matchRule', previous, after)
   persistMatchRuleEditorState({
@@ -228,14 +236,19 @@ function undoField(
     const snapshot = previous as {
       matchRule: InjectionRule['matchRule']
       matchRuleDraft: string
-      matchRuleEditorMode: InjectionRule['matchRuleEditorMode']
+      matchRuleEditorMode: InjectionRule['matchRuleEditorMode'] | ''
     }
-    updateRuleSnapshot({
+    const next = {
       ...currentRule.value,
       matchRule: snapshot.matchRule,
-      matchRuleDraft: snapshot.matchRuleDraft,
-      matchRuleEditorMode: snapshot.matchRuleEditorMode,
-    })
+      matchRuleDraft: snapshot.matchRuleDraft || formatMatchRule(snapshot.matchRule),
+      matchRuleEditorMode:
+        snapshot.matchRuleDraft && snapshot.matchRuleEditorMode
+          ? snapshot.matchRuleEditorMode
+          : currentRule.value.matchRuleEditorMode,
+    }
+    persistMatchRuleEditorState(next)
+    updateRuleSnapshot(next)
     return
   }
 
@@ -277,14 +290,19 @@ function resetField(
     const snapshot = baseline as {
       matchRule: InjectionRule['matchRule']
       matchRuleDraft: string
-      matchRuleEditorMode: InjectionRule['matchRuleEditorMode']
+      matchRuleEditorMode: InjectionRule['matchRuleEditorMode'] | ''
     }
-    updateRuleSnapshot({
+    const next = {
       ...currentRule.value,
       matchRule: snapshot.matchRule,
-      matchRuleDraft: snapshot.matchRuleDraft,
-      matchRuleEditorMode: snapshot.matchRuleEditorMode,
-    })
+      matchRuleDraft: snapshot.matchRuleDraft || formatMatchRule(snapshot.matchRule),
+      matchRuleEditorMode:
+        snapshot.matchRuleDraft && snapshot.matchRuleEditorMode
+          ? snapshot.matchRuleEditorMode
+          : currentRule.value.matchRuleEditorMode,
+    }
+    persistMatchRuleEditorState(next)
+    updateRuleSnapshot(next)
     return
   }
 
