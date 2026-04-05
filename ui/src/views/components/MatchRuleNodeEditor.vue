@@ -122,13 +122,13 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
             {{ option.label }}
           </option>
         </select>
-        <label class=":uno: inline-flex items-center gap-1 text-xs text-gray-600">
+        <label class=":uno: inline-flex items-center gap-2 text-sm text-gray-700">
           <input
             :checked="rule.negate"
             type="checkbox"
             @change="updateGroupField('negate', ($event.target as HTMLInputElement).checked)"
           />
-          反向匹配（NOT）
+          不满足本组（NOT）
         </label>
         <div v-if="!root" class=":uno: inline-flex items-center gap-1">
           <VButton :disabled="!canMoveUp" size="sm" title="上移" @click="emit('move-up')">↑</VButton>
@@ -189,13 +189,13 @@ function switchLeafType(type: 'PATH' | 'TEMPLATE_ID') {
           </option>
         </select>
 
-        <label class=":uno: inline-flex items-center gap-1 text-xs text-gray-600">
+        <label class=":uno: inline-flex items-center gap-2 text-sm text-gray-700">
           <input
             :checked="rule.negate"
             type="checkbox"
             @change="updateGroupField('negate', ($event.target as HTMLInputElement).checked)"
           />
-          反向匹配（NOT）
+          不满足本项（NOT）
         </label>
 
         <div v-if="!root" class=":uno: inline-flex items-center gap-1">

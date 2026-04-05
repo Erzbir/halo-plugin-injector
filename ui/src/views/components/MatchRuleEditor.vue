@@ -184,7 +184,7 @@ function formatJson() {
       />
       <p class=":uno: text-xs text-gray-500">
         这里可以直接编辑匹配规则 JSON。根节点请使用条件组；支持全部满足 / 任一满足、
-        反向匹配（NOT）、页面路径匹配和模板 ID 匹配。
+        不满足本组（NOT） / 不满足本项（NOT）、页面路径匹配和模板 ID 匹配。
       </p>
       <p v-if="parseError" class=":uno: text-xs text-red-500">{{ parseError }}</p>
     </div>
