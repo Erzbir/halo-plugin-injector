@@ -11,19 +11,19 @@ Halo 自带的代码注入更偏向全局场景；这个插件更适合：
 ## 功能特性
 
 - 支持四种注入模式：
-  - `<head>`
-  - `<footer>`
-  - 指定元素 `id`
-  - `CSS Selector`
+    - `<head>`
+    - `<footer>`
+    - 指定元素 `id`
+    - `CSS Selector`
 - 支持可组合的匹配规则：
-  - 路径匹配
-  - 模板 ID 匹配
-  - `AND` / `OR`
-  - `NOT`
-  - 条件组嵌套
+    - 路径匹配
+    - 模板 ID 匹配
+    - `AND` / `OR`
+    - `NOT`
+    - 条件组嵌套
 - 支持两种规则编辑方式：
-  - 简单模式
-  - 高级模式（JSON）
+    - 简单模式
+    - 高级模式（JSON）
 - 支持运行期高频 regex 复用编译结果，减少重复 `Pattern.compile`
 - 支持前后端双重校验，避免非法规则落库后才在运行时“悄悄不生效”
 
@@ -40,12 +40,12 @@ Halo 自带的代码注入更偏向全局场景；这个插件更适合：
 
 插件提供四种注入模式：
 
-| 模式 | 实现方式 | 说明 |
-| --- | --- | --- |
-| `head` | `TemplateHeadProcessor` | 插入到 `<head>` 中 |
-| `footer` | `TemplateFooterProcessor` | 插入到 `<halo:footer />` 中，具体位置由主题控制 |
-| `id` | `InjectorWebFilter` | 通过元素 ID 定位并处理目标元素 |
-| `selector` | `InjectorWebFilter` | 通过 CSS Selector 匹配并处理所有命中的元素 |
+| 模式       | 实现方式                  | 说明                                            |
+| ---------- | ------------------------- | ----------------------------------------------- |
+| `head`     | `TemplateHeadProcessor`   | 插入到 `<head>` 中                              |
+| `footer`   | `TemplateFooterProcessor` | 插入到 `<halo:footer />` 中，具体位置由主题控制 |
+| `id`       | `InjectorWebFilter`       | 通过元素 ID 定位并处理目标元素                  |
+| `selector` | `InjectorWebFilter`       | 通过 CSS Selector 匹配并处理所有命中的元素      |
 
 > `id` 与 `selector` 模式需要在服务端读取并处理完整 HTML，因此会额外引入响应改写成本。  
 > 非必要时，优先使用 `head` / `footer` 模式。
@@ -88,47 +88,47 @@ Halo 自带的代码注入更偏向全局场景；这个插件更适合：
 根节点必须是 `GROUP`。叶子节点支持：
 
 - `PATH`
-  - `ANT`
-  - `REGEX`
-  - `EXACT`
+    - `ANT`
+    - `REGEX`
+    - `EXACT`
 - `TEMPLATE_ID`
-  - `REGEX`
-  - `EXACT`
+    - `REGEX`
+    - `EXACT`
 
 #### JSON 示例
 
 ```json
 {
-  "type": "GROUP",
-  "operator": "AND",
-  "negate": false,
-  "children": [
-    {
-      "type": "PATH",
-      "matcher": "ANT",
-      "value": "/posts/**",
-      "negate": false
-    },
-    {
-      "type": "GROUP",
-      "operator": "OR",
-      "negate": false,
-      "children": [
+    "type": "GROUP",
+    "operator": "AND",
+    "negate": false,
+    "children": [
         {
-          "type": "TEMPLATE_ID",
-          "matcher": "EXACT",
-          "value": "post",
-          "negate": false
+            "type": "PATH",
+            "matcher": "ANT",
+            "value": "/posts/**",
+            "negate": false
         },
         {
-          "type": "TEMPLATE_ID",
-          "matcher": "REGEX",
-          "value": "^(post|page)$",
-          "negate": false
+            "type": "GROUP",
+            "operator": "OR",
+            "negate": false,
+            "children": [
+                {
+                    "type": "TEMPLATE_ID",
+                    "matcher": "EXACT",
+                    "value": "post",
+                    "negate": false
+                },
+                {
+                    "type": "TEMPLATE_ID",
+                    "matcher": "REGEX",
+                    "value": "^(post|page)$",
+                    "negate": false
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }
 ```
 
@@ -138,8 +138,8 @@ Halo 自带的代码注入更偏向全局场景；这个插件更适合：
 - 能定位时，会提示错误行列
 - 当 JSON 草稿有误且切回简单模式时，会先弹出确认，避免草稿被静默覆盖
 - 在高级模式下：
-  - JSON 合法时可执行“格式化 JSON”
-  - JSON 非法时可执行“重建 JSON”，按当前已生效规则重新生成
+    - JSON 合法时可执行“格式化 JSON”
+    - JSON 非法时可执行“重建 JSON”，按当前已生效规则重新生成
 
 ## 校验与性能
 
@@ -159,12 +159,6 @@ Halo 自带的代码注入更偏向全局场景；这个插件更适合：
 - 运行时不再为“结构合法性检查”重复编译 regex
 - regex 匹配会缓存编译结果，避免同一规则在高频请求下重复 `Pattern.compile`
 - `ANT` 路径匹配复用统一的 `RouteMatcher`
-
-## 升级说明
-
-当前版本已切换到新的 `matchRule` 规则模型，**不兼容旧规则字段**。
-
-升级后请按新的规则编辑器重新配置并保存规则。
 
 ## 开发环境
 
