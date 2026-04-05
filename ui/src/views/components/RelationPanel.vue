@@ -2,7 +2,7 @@
 import type { CodeSnippet, InjectionRule } from '@/types'
 import ItemListV from './ItemListV.vue'
 import { rulePreview } from '@/views/composables/util'
-import { matchRuleChips } from '@/views/composables/matchRule'
+import { matchRuleExpression } from '@/views/composables/matchRule'
 
 defineProps<{
   mode: 'snippets' | 'rules'
@@ -45,15 +45,12 @@ const emit = defineEmits<{
         >
           <template #meta="{ item: r }">
             <span class=":uno: text-xs text-gray-500">{{ rulePreview(r) }}</span>
-            <div class=":uno: flex flex-wrap gap-1 mt-0.5">
-              <span
-                v-for="chip in matchRuleChips(r.matchRule)"
-                :key="chip"
-                class=":uno: text-xs text-gray-500 px-1 py-0.5 rounded border"
-              >
-                {{ chip }}
-              </span>
-            </div>
+            <span
+              class=":uno: mt-0.5 block overflow-hidden text-ellipsis whitespace-nowrap text-xs text-gray-400"
+              :title="matchRuleExpression(r.matchRule)"
+            >
+              {{ matchRuleExpression(r.matchRule) }}
+            </span>
           </template>
 
           <template #hint>
