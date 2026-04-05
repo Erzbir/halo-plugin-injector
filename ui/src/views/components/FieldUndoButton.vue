@@ -7,7 +7,7 @@ const props = withDefaults(
     resetPressMs?: number
   }>(),
   {
-    previewStartMs: 1000,
+    previewStartMs: 500,
     resetPressMs: 3000,
   },
 )
@@ -122,7 +122,7 @@ const buttonStyle = computed(() => {
     :class="buttonStateClass"
     :style="buttonStyle"
     class=":uno: relative overflow-hidden rounded border px-2 py-0.5 text-xs transition-colors hover:border-gray-300 hover:text-gray-700"
-    title="单击或按住 1 秒内松开：撤销上一步；继续按到 3 秒：自动恢复初始值"
+    title="单击，或按住 0.5 秒内松开：撤销上一步；继续按到 3 秒：自动恢复初始值"
     type="button"
     @click="handleClick"
     @pointercancel="finishPress(false)"
