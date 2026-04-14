@@ -14,7 +14,20 @@ export interface CodeSnippet {
 
 export type InjectionMode = 'HEAD' | 'FOOTER' | 'ID' | 'SELECTOR'
 export type InjectionPosition = 'APPEND' | 'PREPEND' | 'BEFORE' | 'AFTER' | 'REPLACE'
+export type MatchRuleType = 'GROUP' | 'PATH'
+export type MatchRuleOperator = 'AND' | 'OR'
+export type MatchRuleMatcher = 'ANT' | 'REGEX' | 'EXACT'
 
+export interface MatchRule {
+  type: MatchRuleType
+  negate: boolean
+  operator?: MatchRuleOperator
+  matcher?: MatchRuleMatcher
+  value?: string
+  children?: MatchRule[]
+}
+
+// Backward-compatible type for legacy editor component.
 export interface PathMatchRule {
   pathPattern: string
 }
@@ -30,7 +43,7 @@ export interface InjectionRule {
   mode: InjectionMode
   match: string
   position: InjectionPosition
-  pathPatterns: PathMatchRule[]
+  matchRule: MatchRule
   snippetIds: string[]
 }
 
@@ -63,6 +76,37 @@ export const POSITION_OPTIONS: { value: InjectionPosition; label: string }[] = [
   { value: 'REPLACE', label: '替换元素 (replace)' },
 ]
 
+export const MATCH_RULE_GROUP_OPTIONS: { value: MatchRuleOperator; label: string }[] = [
+  { value: 'AND', label: '全部满足 (AND)' },
+  { value: 'OR', label: '任一满足 (OR)' },
+]
+
+export const PATH_MATCHER_OPTIONS: { value: MatchRuleMatcher; label: string }[] = [
+  { value: 'ANT', label: 'Ant 风格' },
+  { value: 'REGEX', label: '正则表达式' },
+  { value: 'EXACT', label: '精确匹配' },
+]
+
+export function makePathMatchRule(override: Partial<MatchRule> = {}): MatchRule {
+  return {
+    type: 'PATH',
+    negate: false,
+    matcher: 'ANT',
+    value: '/**',
+    ...override,
+  }
+}
+
+export function makeMatchRuleGroup(override: Partial<MatchRule> = {}): MatchRule {
+  return {
+    type: 'GROUP',
+    negate: false,
+    operator: 'AND',
+    children: [makePathMatchRule()],
+    ...override,
+  }
+}
+
 export function makeSnippet(override: Partial<CodeSnippet> = {}): CodeSnippet {
   return {
     apiVersion: 'injector.erzbir.com/v1alpha1',
@@ -90,7 +134,7 @@ export function makeRule(override: Partial<InjectionRule> = {}): InjectionRule {
     mode: 'FOOTER',
     match: '',
     position: 'APPEND',
-    pathPatterns: [{ pathPattern: '/**' }],
+    matchRule: makeMatchRuleGroup(),
     snippetIds: [],
     ...override,
   }

@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { CodeSnippet, InjectionRule } from '@/types'
 import ItemListV from './ItemListV.vue'
-import { rulePreview } from '@/views/composables/util'
+import { matchRuleExpression, rulePreview } from '@/views/composables/util'
 
 defineProps<{
   mode: 'snippets' | 'rules'
@@ -44,15 +44,12 @@ const emit = defineEmits<{
         >
           <template #meta="{ item: r }">
             <span class=":uno: text-xs text-gray-500">{{ rulePreview(r) }}</span>
-            <div class=":uno: flex flex-wrap gap-1 mt-0.5">
-              <span
-                v-for="p in r.pathPatterns ?? []"
-                :key="p.pathPattern"
-                class=":uno: text-xs text-gray-500 px-1 py-0.5 rounded border"
-              >
-                {{ p.pathPattern }}
-              </span>
-            </div>
+            <span
+              class=":uno: mt-0.5 block overflow-hidden text-ellipsis whitespace-nowrap text-xs text-gray-400"
+              :title="matchRuleExpression(r.matchRule)"
+            >
+              {{ matchRuleExpression(r.matchRule) }}
+            </span>
           </template>
 
           <template #hint>

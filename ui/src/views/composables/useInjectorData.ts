@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { Dialog, Toast } from '@halo-dev/components'
 import { ruleApi, snippetApi } from '@/apis'
-import type { CodeSnippet, InjectionRule, ItemList } from '@/types'
+import type { CodeSnippet, InjectionRule, ItemList, MatchRule } from '@/types'
 import { uniqueStrings } from './util'
 
 function emptyList<T>(): ItemList<T> {
@@ -16,6 +16,31 @@ function emptyList<T>(): ItemList<T> {
     items: [],
     total: 0,
   }
+}
+
+function isValidMatchRule(rule?: MatchRule): boolean {
+  if (!rule) return false
+  if (rule.type === 'GROUP') {
+    if (rule.operator !== 'AND' && rule.operator !== 'OR') return false
+    const children = rule.children ?? []
+    return children.length > 0 && children.every((child) => isValidMatchRule(child))
+  }
+  if (!rule.matcher || !rule.value?.trim()) return false
+  if (rule.matcher === 'REGEX') {
+    try {
+      // eslint-disable-next-line no-new
+      new RegExp(rule.value)
+    } catch {
+      return false
+    }
+  }
+  if (rule.type === 'PATH') {
+    return rule.matcher === 'ANT' || rule.matcher === 'REGEX' || rule.matcher === 'EXACT'
+  }
+  if (rule.type === 'TEMPLATE_ID') {
+    return rule.matcher === 'EXACT' || rule.matcher === 'REGEX'
+  }
+  return false
 }
 
 export function useInjectorData() {
@@ -54,8 +79,7 @@ export function useInjectorData() {
   })
 
   function _validateRule(rule: InjectionRule): string | null {
-    const pats = uniqueStrings(rule.pathPatterns.map((p) => p.pathPattern))
-    if (!pats.length) return '至少需要一条路径规则'
+    if (!isValidMatchRule(rule.matchRule)) return '匹配规则无效，请完善规则组'
     if ((rule.mode === 'SELECTOR' || rule.mode === 'ID') && !rule.match.trim())
       return '请填写匹配内容'
     return null
@@ -178,9 +202,6 @@ export function useInjectorData() {
     const nextRule = {
       ...rule,
       snippetIds: nextSnippetIds,
-      pathPatterns: uniqueStrings(rule.pathPatterns.map((p) => p.pathPattern)).map((p) => ({
-        pathPattern: p,
-      })),
     }
     saving.value = true
     try {
@@ -230,9 +251,6 @@ export function useInjectorData() {
     const nextRule = {
       ...editRule.value,
       snippetIds: nextSnippetIds,
-      pathPatterns: uniqueStrings(editRule.value.pathPatterns.map((p) => p.pathPattern)).map(
-        (p) => ({ pathPattern: p }),
-      ),
     }
     saving.value = true
     try {

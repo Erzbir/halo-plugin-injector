@@ -1,4 +1,4 @@
-import { type InjectionRule, MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
+import { type InjectionRule, type MatchRule, MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
 
 export function modeLabel(mode: string) {
   return MODE_OPTIONS.find((o) => o.value === mode)?.label ?? mode
@@ -10,6 +10,21 @@ export function positionLabel(pos?: string) {
 }
 export function rulePreview(rule: InjectionRule) {
   return `${modeLabel(rule.mode)} · ${positionLabel(rule.position)}`
+}
+
+export function matchRuleExpression(rule?: MatchRule): string {
+  if (!rule) return ''
+  const negatePrefix = rule.negate ? 'NOT ' : ''
+  if (rule.type === 'GROUP') {
+    const op = rule.operator ?? 'AND'
+    const parts = (rule.children ?? []).map((child) => matchRuleExpression(child)).filter(Boolean)
+    if (!parts.length) return `${negatePrefix}()`
+    return `${negatePrefix}(${parts.join(` ${op} `)})`
+  }
+  const matcher = rule.matcher ?? ''
+  const value = rule.value ?? ''
+  const kind = rule.type === 'PATH' ? 'PATH' : 'UNKNOWN'
+  return `${negatePrefix}${kind}[${matcher}](${value})`
 }
 
 export function codePreview(code: string) {
