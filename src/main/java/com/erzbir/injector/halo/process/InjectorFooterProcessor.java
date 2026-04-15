@@ -21,11 +21,10 @@ import run.halo.app.theme.dialect.TemplateFooterProcessor;
 @Component
 public class InjectorFooterProcessor extends AbstractTemplateProcessor
         implements TemplateFooterProcessor {
-    private final FooterInjector footerInjector;
+    private final FooterInjector footerInjector = new FooterInjector();
 
-    public InjectorFooterProcessor(InjectHelper injectHelper, FooterInjector footerInjector) {
+    public InjectorFooterProcessor(InjectHelper injectHelper) {
         super(injectHelper);
-        this.footerInjector = footerInjector;
     }
 
     @Override

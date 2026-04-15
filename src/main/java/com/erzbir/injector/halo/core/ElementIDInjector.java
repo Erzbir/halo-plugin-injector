@@ -6,13 +6,11 @@ import com.erzbir.injector.halo.util.HTMLInjectUtil;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.springframework.stereotype.Component;
 
 /**
  * @author Erzbir
  * @since 1.0.0
  */
-@Component
 public class ElementIDInjector implements HTMLInjector {
     @Override
     public String inject(String html, Code code, IInjectionRule rule, Void context) {

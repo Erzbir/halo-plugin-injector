@@ -20,12 +20,10 @@ import run.halo.app.theme.dialect.TemplateHeadProcessor;
 @Component
 public class InjectorHeadProcessor extends AbstractTemplateProcessor
         implements TemplateHeadProcessor {
-    private final HeadInjector headInjector;
+    private final HeadInjector headInjector = new HeadInjector();
 
-    public InjectorHeadProcessor(InjectHelper injectHelper,
-                                 HeadInjector headInjector) {
+    public InjectorHeadProcessor(InjectHelper injectHelper) {
         super(injectHelper);
-        this.headInjector = headInjector;
     }
 
     @Override

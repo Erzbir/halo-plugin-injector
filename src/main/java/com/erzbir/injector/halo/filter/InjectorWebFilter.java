@@ -19,14 +19,13 @@ import run.halo.app.security.AdditionalWebFilter;
 public class InjectorWebFilter implements AdditionalWebFilter {
 
     private final InjectHelper injectHelper;
-    private final HtmlInjectDispatcher dispatcher;
+    private final HTMLInjectDispatcher dispatcher;
     private final ServerWebExchangeMatcher pathMatcher;
 
-    public InjectorWebFilter(InjectHelper injectHelper, HtmlInjectDispatcher dispatcher,
-                             PathMatcherFactory matcherFactory) {
+    public InjectorWebFilter(InjectHelper injectHelper, HTMLInjectDispatcher dispatcher) {
         this.injectHelper = injectHelper;
         this.dispatcher = dispatcher;
-        this.pathMatcher = matcherFactory.create();
+        this.pathMatcher = PathMatcherFactory.create();
     }
 
     @Override

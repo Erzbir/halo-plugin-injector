@@ -22,10 +22,10 @@ import java.nio.charset.StandardCharsets;
 public class InjectorResponseDecorator extends ServerHttpResponseDecorator {
 
     private final ServerWebExchange exchange;
-    private final HtmlInjectDispatcher dispatcher;
+    private final HTMLInjectDispatcher dispatcher;
 
     public InjectorResponseDecorator(ServerWebExchange exchange,
-                                     HtmlInjectDispatcher dispatcher) {
+                                     HTMLInjectDispatcher dispatcher) {
         super(exchange.getResponse());
         this.exchange = exchange;
         this.dispatcher = dispatcher;

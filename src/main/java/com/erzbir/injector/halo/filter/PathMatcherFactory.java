@@ -6,7 +6,6 @@ import org.springframework.security.web.server.util.matcher.AndServerWebExchange
 import org.springframework.security.web.server.util.matcher.MediaTypeServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
-import org.springframework.stereotype.Component;
 
 import java.util.Set;
 
@@ -16,8 +15,7 @@ import static org.springframework.security.web.server.util.matcher.ServerWebExch
  * @author Erzbir
  * @since 1.0.0
  */
-@Component
-public class PathMatcherFactory {
+public final class PathMatcherFactory {
     private static final String[] INCLUDE_PATHS = {
             "/**"
     };
@@ -30,7 +28,10 @@ public class PathMatcherFactory {
             "/upload/**", "/webjars/**"
     };
 
-    public ServerWebExchangeMatcher create() {
+    private PathMatcherFactory() {
+    }
+
+    public static ServerWebExchangeMatcher create() {
         var pathMatcher = pathMatchers(HttpMethod.GET, INCLUDE_PATHS);
 
         var excludeMatcher =

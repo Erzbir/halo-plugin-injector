@@ -1,12 +1,8 @@
 package com.erzbir.injector.halo.filter;
 
 import com.erzbir.injector.api.InjectMode;
-import com.erzbir.injector.halo.core.ElementIDInjector;
-import com.erzbir.injector.halo.core.HTMLCode;
-import com.erzbir.injector.halo.core.HTMLInjector;
-import com.erzbir.injector.halo.core.SelectorInjector;
+import com.erzbir.injector.halo.core.*;
 import com.erzbir.injector.halo.scheme.InjectionRule;
-import com.erzbir.injector.halo.core.InjectHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,11 +11,11 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class HtmlInjectDispatcher {
+public class HTMLInjectDispatcher {
 
     private final InjectHelper injectHelper;
-    private final SelectorInjector selectorInjector;
-    private final ElementIDInjector elementIDInjector;
+    private final SelectorInjector selectorInjector = new SelectorInjector();
+    private final ElementIDInjector elementIDInjector = new ElementIDInjector();
 
     public Mono<String> dispatch(String html, String permalink) {
         return applyMode(html, permalink, InjectMode.SELECTOR)

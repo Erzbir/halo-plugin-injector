@@ -7,13 +7,11 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.stereotype.Component;
 
 /**
  * @author Erzbir
  * @since 1.0.0
  */
-@Component
 public class SelectorInjector implements HTMLInjector {
 
     @Override
