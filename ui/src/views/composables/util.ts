@@ -14,17 +14,18 @@ export function rulePreview(rule: InjectionRule) {
 
 export function matchRuleExpression(rule?: MatchRule): string {
   if (!rule) return ''
-  const negatePrefix = rule.negate ? 'NOT ' : ''
   if (rule.type === 'GROUP') {
     const op = rule.operator ?? 'AND'
     const parts = (rule.children ?? []).map((child) => matchRuleExpression(child)).filter(Boolean)
-    if (!parts.length) return `${negatePrefix}()`
-    return `${negatePrefix}(${parts.join(` ${op} `)})`
+    if (!parts.length) return '()'
+    if (op === 'NOT') return `NOT (${parts.join(' OR ')})`
+    return `(${parts.join(` ${op} `)})`
   }
   const matcher = rule.matcher ?? ''
   const value = rule.value ?? ''
   const kind = rule.type === 'PATH' ? 'PATH' : 'UNKNOWN'
-  return `${negatePrefix}${kind}[${matcher}](${value})`
+  const leaf = `${kind}[${matcher}](${value})`
+  return rule.operator === 'NOT' ? `NOT ${leaf}` : leaf
 }
 
 export function codePreview(code: string) {

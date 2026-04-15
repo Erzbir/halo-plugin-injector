@@ -1,6 +1,7 @@
 package com.erzbir.halo.injector.util;
 
-import com.erzbir.halo.injector.core.MatchRule;
+import com.erzbir.injector.api.MatchRule;
+import com.erzbir.injector.halo.util.MatchRuleEvaluator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.server.PathContainer;
@@ -24,12 +25,11 @@ class MatchRuleEvaluatorTest {
 
     @Test
     void shouldMatchAndGroup() {
-        MatchRule root = new MatchRule();
-        root.setType(MatchRule.Type.GROUP);
-        root.setOperator(MatchRule.Operator.AND);
-        root.setNegate(false);
-        root.getChildren().add(MatchRule.pathRule(MatchRule.Matcher.ANT, "/posts/**"));
-        root.getChildren().add(MatchRule.pathRule(MatchRule.Matcher.REGEX, "^/posts/[0-9]+$"));
+        MatchRule root = MatchRule.groupRule(
+                MatchRule.Operator.AND,
+                MatchRule.pathRule(MatchRule.Matcher.ANT, "/posts/**"),
+                MatchRule.pathRule(MatchRule.Matcher.REGEX, "^/posts/[0-9]+$")
+        );
 
         assertTrue(evaluator.matchesPath(root, "/posts/123"));
         assertFalse(evaluator.matchesPath(root, "/posts/test"));
@@ -37,12 +37,11 @@ class MatchRuleEvaluatorTest {
 
     @Test
     void shouldMatchOrGroup() {
-        MatchRule root = new MatchRule();
-        root.setType(MatchRule.Type.GROUP);
-        root.setOperator(MatchRule.Operator.OR);
-        root.setNegate(false);
-        root.getChildren().add(MatchRule.pathRule(MatchRule.Matcher.EXACT, "/a"));
-        root.getChildren().add(MatchRule.pathRule(MatchRule.Matcher.EXACT, "/b"));
+        MatchRule root = MatchRule.groupRule(
+                MatchRule.Operator.OR,
+                MatchRule.pathRule(MatchRule.Matcher.EXACT, "/a"),
+                MatchRule.pathRule(MatchRule.Matcher.EXACT, "/b")
+        );
 
         assertTrue(evaluator.matchesPath(root, "/a"));
         assertTrue(evaluator.matchesPath(root, "/b"));
@@ -51,21 +50,18 @@ class MatchRuleEvaluatorTest {
 
     @Test
     void shouldApplyNotOperatorOnLeafAndGroup() {
-        MatchRule negatedLeaf = MatchRule.pathRule(MatchRule.Matcher.EXACT, "/admin");
-        negatedLeaf.setNegate(true);
+        MatchRule negatedLeaf = MatchRule.pathRule(MatchRule.Operator.NOT, MatchRule.Matcher.EXACT, "/admin");
 
         assertTrue(evaluator.matchesPath(negatedLeaf, "/home"));
         assertFalse(evaluator.matchesPath(negatedLeaf, "/admin"));
 
-        MatchRule group = new MatchRule();
-        group.setType(MatchRule.Type.GROUP);
-        group.setOperator(MatchRule.Operator.OR);
-        group.setNegate(true);
-        group.getChildren().add(MatchRule.pathRule(MatchRule.Matcher.EXACT, "/a"));
-        group.getChildren().add(MatchRule.pathRule(MatchRule.Matcher.EXACT, "/b"));
+        MatchRule group = MatchRule.groupRule(
+                MatchRule.Operator.NOT,
+                MatchRule.pathRule(MatchRule.Matcher.EXACT, "/a"),
+                MatchRule.pathRule(MatchRule.Matcher.EXACT, "/b")
+        );
 
         assertTrue(evaluator.matchesPath(group, "/c"));
         assertFalse(evaluator.matchesPath(group, "/a"));
     }
 }
-

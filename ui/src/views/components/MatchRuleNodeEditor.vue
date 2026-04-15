@@ -6,6 +6,7 @@ import {
   makeMatchRuleGroup,
   makePathMatchRule,
   MATCH_RULE_GROUP_OPTIONS,
+  MATCH_RULE_LEAF_OPTIONS,
   PATH_MATCHER_OPTIONS,
 } from '@/types'
 
@@ -82,15 +83,6 @@ function addGroupChild() {
         <option value="PATH">路径规则</option>
       </select>
 
-      <label class=":uno: inline-flex items-center gap-1 text-xs text-gray-600">
-        <input
-          :checked="modelValue.negate"
-          type="checkbox"
-          @change="update({ negate: ($event.target as HTMLInputElement).checked })"
-        />
-        NOT
-      </label>
-
       <VButton v-if="canRemove" size="xs" type="danger" @click="emit('remove')">删除</VButton>
     </div>
 
@@ -133,6 +125,20 @@ function addGroupChild() {
 
     <template v-else>
       <div class=":uno: flex flex-wrap items-center gap-2">
+        <select
+          :value="modelValue.operator ?? 'AND'"
+          class=":uno: rounded-md border border-gray-200 px-2 py-1 text-xs bg-white"
+          @change="
+            update({
+              operator: ($event.target as HTMLSelectElement).value as MatchRule['operator'],
+            })
+          "
+        >
+          <option v-for="o in MATCH_RULE_LEAF_OPTIONS" :key="o.value" :value="o.value">
+            {{ o.label }}
+          </option>
+        </select>
+
         <select
           :value="modelValue.matcher ?? 'ANT'"
           class=":uno: rounded-md border border-gray-200 px-2 py-1 text-xs bg-white"

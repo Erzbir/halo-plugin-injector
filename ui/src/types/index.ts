@@ -15,12 +15,11 @@ export interface CodeSnippet {
 export type InjectionMode = 'HEAD' | 'FOOTER' | 'ID' | 'SELECTOR'
 export type InjectionPosition = 'APPEND' | 'PREPEND' | 'BEFORE' | 'AFTER' | 'REPLACE'
 export type MatchRuleType = 'GROUP' | 'PATH'
-export type MatchRuleOperator = 'AND' | 'OR'
+export type MatchRuleOperator = 'AND' | 'OR' | 'NOT'
 export type MatchRuleMatcher = 'ANT' | 'REGEX' | 'EXACT'
 
 export interface MatchRule {
   type: MatchRuleType
-  negate: boolean
   operator?: MatchRuleOperator
   matcher?: MatchRuleMatcher
   value?: string
@@ -79,6 +78,12 @@ export const POSITION_OPTIONS: { value: InjectionPosition; label: string }[] = [
 export const MATCH_RULE_GROUP_OPTIONS: { value: MatchRuleOperator; label: string }[] = [
   { value: 'AND', label: '全部满足 (AND)' },
   { value: 'OR', label: '任一满足 (OR)' },
+  { value: 'NOT', label: '全部不满足 (NOT)' },
+]
+
+export const MATCH_RULE_LEAF_OPTIONS: { value: MatchRuleOperator; label: string }[] = [
+  { value: 'AND', label: '匹配 (AND)' },
+  { value: 'NOT', label: '不匹配 (NOT)' },
 ]
 
 export const PATH_MATCHER_OPTIONS: { value: MatchRuleMatcher; label: string }[] = [
@@ -90,7 +95,7 @@ export const PATH_MATCHER_OPTIONS: { value: MatchRuleMatcher; label: string }[] 
 export function makePathMatchRule(override: Partial<MatchRule> = {}): MatchRule {
   return {
     type: 'PATH',
-    negate: false,
+    operator: 'AND',
     matcher: 'ANT',
     value: '/**',
     ...override,
@@ -100,7 +105,6 @@ export function makePathMatchRule(override: Partial<MatchRule> = {}): MatchRule 
 export function makeMatchRuleGroup(override: Partial<MatchRule> = {}): MatchRule {
   return {
     type: 'GROUP',
-    negate: false,
     operator: 'AND',
     children: [makePathMatchRule()],
     ...override,

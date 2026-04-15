@@ -57,8 +57,7 @@ Halo 自带的代码注入功能仅支持全局注入, 此插件允许将特定�
 规则匹配改为 `matchRule` 树结构，支持：
 
 - 规则组 `GROUP`
-- 逻辑运算 `AND` / `OR`
-- 取反 `NOT`（通过 `negate` 字段）
+- 逻辑运算 `AND` / `OR` / `NOT`（通过 `operator` 字段）
 - 子规则类型：
   - `PATH`（支持 `ANT` / `REGEX` / `EXACT`）
 
@@ -67,19 +66,17 @@ Halo 自带的代码注入功能仅支持全局注入, 此插件允许将特定�
 ```json
 {
   "type": "GROUP",
-  "negate": false,
   "operator": "AND",
   "children": [
     {
       "type": "GROUP",
-      "negate": false,
       "operator": "OR",
       "children": [
-        { "type": "PATH", "negate": false, "matcher": "ANT", "value": "/posts/**" },
-        { "type": "PATH", "negate": false, "matcher": "ANT", "value": "/archives/**" }
+        { "type": "PATH", "operator": "AND", "matcher": "ANT", "value": "/posts/**" },
+        { "type": "PATH", "operator": "AND", "matcher": "ANT", "value": "/archives/**" }
       ]
     },
-    { "type": "PATH", "negate": true, "matcher": "ANT", "value": "/admin/**" }
+    { "type": "PATH", "operator": "NOT", "matcher": "ANT", "value": "/admin/**" }
   ]
 }
 ```
