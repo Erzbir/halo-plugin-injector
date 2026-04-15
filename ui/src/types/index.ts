@@ -16,7 +16,7 @@ export type InjectionMode = 'HEAD' | 'FOOTER' | 'ID' | 'SELECTOR'
 export type InjectionPosition = 'APPEND' | 'PREPEND' | 'BEFORE' | 'AFTER' | 'REPLACE'
 export type MatchRuleType = 'GROUP' | 'PATH'
 export type MatchRuleOperator = 'AND' | 'OR' | 'NOT'
-export type MatchRuleMatcher = 'ANT' | 'REGEX' | 'EXACT'
+export type MatchRuleMatcher = 'PATH_PATTERN' | 'ANT' | 'REGEX' | 'EXACT'
 
 export interface MatchRule {
   type: MatchRuleType
@@ -87,6 +87,7 @@ export const MATCH_RULE_LEAF_OPTIONS: { value: MatchRuleOperator; label: string 
 ]
 
 export const PATH_MATCHER_OPTIONS: { value: MatchRuleMatcher; label: string }[] = [
+  { value: 'PATH_PATTERN', label: 'Spring 路径模式' },
   { value: 'ANT', label: 'Ant 风格' },
   { value: 'REGEX', label: '正则表达式' },
   { value: 'EXACT', label: '精确匹配' },
@@ -96,7 +97,7 @@ export function makePathMatchRule(override: Partial<MatchRule> = {}): MatchRule 
   return {
     type: 'PATH',
     operator: 'AND',
-    matcher: 'ANT',
+    matcher: 'PATH_PATTERN',
     value: '/**',
     ...override,
   }

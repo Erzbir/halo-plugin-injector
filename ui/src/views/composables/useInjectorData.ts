@@ -29,14 +29,18 @@ function isValidMatchRule(rule?: MatchRule): boolean {
   if (!rule.matcher || !rule.value?.trim()) return false
   if (rule.matcher === 'REGEX') {
     try {
-      // eslint-disable-next-line no-new
       new RegExp(rule.value)
     } catch {
       return false
     }
   }
   if (rule.type === 'PATH') {
-    return rule.matcher === 'ANT' || rule.matcher === 'REGEX' || rule.matcher === 'EXACT'
+    return (
+      rule.matcher === 'PATH_PATTERN' ||
+      rule.matcher === 'ANT' ||
+      rule.matcher === 'REGEX' ||
+      rule.matcher === 'EXACT'
+    )
   }
   if (rule.type === 'TEMPLATE_ID') {
     return rule.matcher === 'EXACT' || rule.matcher === 'REGEX'
@@ -80,7 +84,7 @@ export function useInjectorData() {
   })
 
   function _validateRule(rule: InjectionRule): string | null {
-    if (!isValidMatchRule(rule.matchRule)) return '匹配规则无效，请完善规则组'
+    if (!isValidMatchRule(rule.matchRule)) return '匹配规则无效, 请完善规则组'
     if ((rule.mode === 'SELECTOR' || rule.mode === 'ID') && !rule.match.trim())
       return '请填写匹配内容'
     return null

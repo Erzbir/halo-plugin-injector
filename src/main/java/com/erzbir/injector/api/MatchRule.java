@@ -22,7 +22,7 @@ public class MatchRule {
     private List<MatchRule> children = new ArrayList<>();
 
     public static MatchRule defaultRule() {
-        return groupRule(Operator.AND, pathRule(Matcher.ANT, "/**"));
+        return groupRule(Operator.AND, pathRule(Matcher.PATH_PATTERN, "/**"));
     }
 
     public static MatchRule groupRule(Operator operator, MatchRule... children) {
@@ -87,6 +87,6 @@ public class MatchRule {
     }
 
     public enum Matcher {
-        ANT, REGEX, EXACT
+        ANT, REGEX, EXACT, PATH_PATTERN
     }
 }

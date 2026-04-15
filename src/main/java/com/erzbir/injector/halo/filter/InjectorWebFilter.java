@@ -1,7 +1,7 @@
 package com.erzbir.injector.halo.filter;
 
 import com.erzbir.injector.api.InjectMode;
-import com.erzbir.injector.halo.util.InjectHelper;
+import com.erzbir.injector.halo.core.InjectHelper;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;

@@ -140,7 +140,7 @@ function addGroupChild() {
         </select>
 
         <select
-          :value="modelValue.matcher ?? 'ANT'"
+          :value="modelValue.matcher ?? 'PATH_PATTERN'"
           class=":uno: rounded-md border border-gray-200 px-2 py-1 text-xs bg-white"
           @change="
             update({

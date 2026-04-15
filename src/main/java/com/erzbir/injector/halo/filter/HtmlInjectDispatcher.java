@@ -6,7 +6,7 @@ import com.erzbir.injector.halo.core.HTMLCode;
 import com.erzbir.injector.halo.core.HTMLInjector;
 import com.erzbir.injector.halo.core.SelectorInjector;
 import com.erzbir.injector.halo.scheme.InjectionRule;
-import com.erzbir.injector.halo.util.InjectHelper;
+import com.erzbir.injector.halo.core.InjectHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

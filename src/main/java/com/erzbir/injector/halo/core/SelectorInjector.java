@@ -20,7 +20,7 @@ public class SelectorInjector implements HTMLInjector {
     public String inject(String html, Code code, IInjectionRule rule, Void context) {
         Document doc = Jsoup.parse(html);
 
-        Elements elements = doc.select(html);
+        Elements elements = doc.select(rule.getMatch());
         if (elements.isEmpty()) {
             return html;
         }

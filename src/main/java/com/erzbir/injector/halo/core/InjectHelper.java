@@ -1,4 +1,4 @@
-package com.erzbir.injector.halo.util;
+package com.erzbir.injector.halo.core;
 
 import com.erzbir.injector.api.InjectMode;
 import com.erzbir.injector.halo.manager.CodeSnippetManager;
@@ -7,11 +7,7 @@ import com.erzbir.injector.halo.scheme.CodeSnippet;
 import com.erzbir.injector.halo.scheme.InjectionRule;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.server.PathContainer;
 import org.springframework.stereotype.Component;
-import org.springframework.util.RouteMatcher;
-import org.springframework.web.util.pattern.PathPatternParser;
-import org.springframework.web.util.pattern.PathPatternRouteMatcher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -25,8 +21,7 @@ import reactor.core.publisher.Mono;
 public class InjectHelper {
     private final InjectionRuleManager ruleManager;
     private final CodeSnippetManager snippetManager;
-    private final RouteMatcher routeMatcher = createRouteMatcher();
-    private final MatchRuleEvaluator matchRuleEvaluator = new MatchRuleEvaluator(routeMatcher);
+    private final MatchRuleEvaluator matchRuleEvaluator = new MatchRuleEvaluator();
 
     public Flux<InjectionRule> getMatchedRules(String targetPath,
                                                InjectMode mode) {
@@ -50,11 +45,5 @@ public class InjectHelper {
                 .filter(CodeSnippet::isEnabled)
                 .map(CodeSnippet::getCode)
                 .reduce("", String::concat);
-    }
-
-    private RouteMatcher createRouteMatcher() {
-        var parser = new PathPatternParser();
-        parser.setPathOptions(PathContainer.Options.HTTP_PATH);
-        return new PathPatternRouteMatcher(parser);
     }
 }
