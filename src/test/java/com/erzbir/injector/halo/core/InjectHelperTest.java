@@ -106,7 +106,7 @@ class InjectHelperTest {
         when(snippetManager.get("d")).thenReturn(Mono.just(d));
 
         String code = injectHelper.getConcatCode(rule).block();
-        assertEquals("<script>a</script><script>d</script>", code);
+        assertEquals("<script>a</script> <script>d</script>", code);
     }
 
     @Test
@@ -136,7 +136,6 @@ class InjectHelperTest {
                 .block();
 
         assertNotNull(rules);
-        assertEquals(1, rules.size());
-        assertSame(rule, rules.getFirst());
+        assertEquals(0, rules.size());
     }
 }

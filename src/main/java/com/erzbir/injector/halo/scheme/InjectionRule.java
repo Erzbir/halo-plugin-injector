@@ -4,6 +4,10 @@ import com.erzbir.injector.api.IInjectionRule;
 import com.erzbir.injector.api.InjectMode;
 import com.erzbir.injector.api.InjectPosition;
 import com.erzbir.injector.api.MatchRule;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import run.halo.app.extension.AbstractExtension;
@@ -24,11 +28,16 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     private String name = "";
     private String description = "";
     private Boolean enabled = false;
+    @NotNull(message = "InjectionRule mode must not be null")
     private InjectMode mode = InjectMode.HEAD;
     private String match = "";
+    @NotNull(message = "InjectionRule position must not be null")
     private InjectPosition position = InjectPosition.APPEND;
+    @Valid
+    @NotNull(message = "InjectionRule matchRule must not be null")
     private MatchRule matchRule = MatchRule.defaultRule();
-    private Set<String> snippetIds = new LinkedHashSet<>();
+    @NotNull(message = "InjectionRule snippetIds must not be null")
+    private Set<@NotBlank(message = "InjectionRule snippetId must not be blank") String> snippetIds = new LinkedHashSet<>();
 
     @Override
     public String getId() {
@@ -48,20 +57,21 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
         return enabled;
     }
 
-    @Override
-    public MatchRule getMatchRule() {
-        if (matchRule != null) {
-            return matchRule;
+    public boolean valid() {
+        if (!getMatchRule().valid()) {
+            return false;
         }
-        MatchRule root = MatchRule.groupRule(MatchRule.Operator.OR);
-        return root.getChildren().isEmpty() ? MatchRule.defaultRule() : root;
+
+        if (InjectMode.ID.equals(getMode()) || InjectMode.SELECTOR.equals(getMode())) {
+            return getMatch() != null && !getMatch().isBlank();
+        }
+
+        return true;
     }
 
-    public boolean isValid() {
-        if (InjectMode.ID.equals(getMode()) || InjectMode.SELECTOR.equals(getMode())) {
-            return !getMatch().isBlank();
-        }
-
-        return getMatchRule().isValid();
+    @AssertTrue(message = "InjectionRule is invalid for current mode or matchRule")
+    @SuppressWarnings("unused")
+    private boolean isInjectionRuleValid() {
+        return valid();
     }
 }

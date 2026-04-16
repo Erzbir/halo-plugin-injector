@@ -30,7 +30,7 @@ public class InjectHelper {
         }
 
         return ruleManager.listRuleByMode(mode)
-                .filter(rule -> rule.isEnabled() && rule.isValid())
+                .filter(InjectionRule::isEnabled)
                 .filter(rule -> matchRuleEvaluator.matches(rule.getMatchRule(), targetPath))
                 .onErrorResume(e -> {
                     log.error("Failed to get matched rules for mode: {}", mode, e);
@@ -41,7 +41,6 @@ public class InjectHelper {
     public Mono<String> getConcatCode(InjectionRule rule) {
         return Flux.fromIterable(rule.getSnippetIds())
                 .flatMap(snippetManager::get)
-                .filter(CodeSnippet::isValid)
                 .filter(CodeSnippet::isEnabled)
                 .map(CodeSnippet::getCode)
                 .collectList()

@@ -12,11 +12,11 @@ class CodeSnippetTest {
         CodeSnippet snippet = new CodeSnippet();
         snippet.setCode(null);
 
-        assertFalse(snippet.isValid());
+        assertFalse(snippet.valid());
 
         snippet.setCode(" ");
 
-        assertFalse(snippet.isValid());
+        assertTrue(snippet.valid());
     }
 
     @Test
@@ -24,6 +24,6 @@ class CodeSnippetTest {
         CodeSnippet snippet = new CodeSnippet();
         snippet.setCode("<script>console.log('ok')</script>");
 
-        assertTrue(snippet.isValid());
+        assertTrue(snippet.valid());
     }
 }

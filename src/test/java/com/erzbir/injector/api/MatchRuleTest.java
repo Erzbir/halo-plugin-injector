@@ -17,7 +17,7 @@ class MatchRuleTest {
         MatchRule child = rule.getChildren().getFirst();
         assertEquals(MatchRule.Matcher.PATH_PATTERN, child.getMatcher());
         assertEquals("/**", child.getValue());
-        assertTrue(rule.isValid());
+        assertTrue(rule.valid());
     }
 
     @Test
@@ -53,14 +53,14 @@ class MatchRuleTest {
         MatchRule rule = new MatchRule();
         rule.setType(null);
 
-        assertFalse(rule.isValid());
+        assertFalse(rule.valid());
     }
 
     @Test
     void shouldBeInvalidWhenGroupHasEmptyChildren() {
         MatchRule rule = MatchRule.groupRule(MatchRule.Operator.AND);
 
-        assertFalse(rule.isValid());
+        assertFalse(rule.valid());
     }
 
     @Test
@@ -69,13 +69,13 @@ class MatchRuleTest {
         MatchRule invalidChild = MatchRule.pathRule(MatchRule.Matcher.EXACT, " ");
         MatchRule parent = MatchRule.groupRule(MatchRule.Operator.AND, validChild, invalidChild);
 
-        assertFalse(parent.isValid());
+        assertFalse(parent.valid());
     }
 
     @Test
     void shouldBeInvalidWhenRegexIsMalformed() {
         MatchRule rule = MatchRule.pathRule(MatchRule.Matcher.REGEX, "*bad");
 
-        assertFalse(rule.isValid());
+        assertFalse(rule.valid());
     }
 }

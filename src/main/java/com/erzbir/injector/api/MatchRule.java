@@ -1,6 +1,8 @@
 package com.erzbir.injector.api;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.util.StringUtils;
 
@@ -16,10 +18,15 @@ import java.util.regex.PatternSyntaxException;
  */
 @Data
 public class MatchRule {
+    @NotNull(message = "MatchRule type must not be null")
     private Type type = Type.GROUP;
+    @NotNull(message = "MatchRule operator must not be null")
     private Operator operator = Operator.AND;
-    private Matcher matcher;
+    @NotNull(message = "MatchRule matcher must not be null")
+    private Matcher matcher = Matcher.PATH_PATTERN;
+    @NotNull(message = "MatchRule value must not be null")
     private String value = "";
+    @Valid
     private List<MatchRule> children = new ArrayList<>();
 
     public static MatchRule defaultRule() {
@@ -51,32 +58,44 @@ public class MatchRule {
         return rule;
     }
 
-    public MatchRule addChild(MatchRule child) {
+    public void addChild(MatchRule child) {
         if (children == null) {
             children = new ArrayList<>();
         }
         children.add(child);
-        return this;
     }
 
-    @JsonIgnore
-    public boolean isValid() {
-        if (type == null) {
+    public boolean valid() {
+        if (type == null || operator == null) {
             return false;
-        }
-        if (Matcher.REGEX.equals(matcher)) {
-            try {
-                Pattern.compile(value);
-            } catch (PatternSyntaxException e) {
-                return false;
-            }
         }
         return switch (type) {
             case GROUP -> children != null
                     && !children.isEmpty()
-                    && children.stream().allMatch(child -> child != null && child.isValid());
-            case PATH -> StringUtils.hasText(value);
+                    && children.stream().allMatch(child -> child != null && child.valid());
+            case PATH -> {
+                if (matcher == null || !StringUtils.hasText(value)) {
+                    yield false;
+                }
+                if (Operator.OR.equals(operator)) {
+                    yield false;
+                }
+                if (Matcher.REGEX.equals(matcher)) {
+                    try {
+                        Pattern.compile(value);
+                    } catch (PatternSyntaxException e) {
+                        yield false;
+                    }
+                }
+                yield true;
+            }
         };
+    }
+
+    @AssertTrue(message = "MatchRule is invalid")
+    @SuppressWarnings("unused")
+    private boolean isMatchRuleValid() {
+        return valid();
     }
 
     public enum Type {

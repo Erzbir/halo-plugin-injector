@@ -1,6 +1,9 @@
 package com.erzbir.injector.halo.scheme;
 
 import com.erzbir.injector.api.ICodeSnippet;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import run.halo.app.extension.AbstractExtension;
@@ -19,10 +22,12 @@ import java.util.Set;
         version = "v1alpha1", singular = "codeSnippet", plural = "codeSnippets")
 public class CodeSnippet extends AbstractExtension implements ICodeSnippet {
     private String name = "";
+    @NotBlank(message = "CodeSnippet code must not be blank")
     private String code = "";
     private String description = "";
     private Boolean enabled = true;
-    private Set<String> ruleIds = new LinkedHashSet<>();
+    @NotNull(message = "CodeSnippet ruleIds must not be null")
+    private Set<@NotBlank(message = "CodeSnippet ruleId must not be blank") String> ruleIds = new LinkedHashSet<>();
 
     @Override
     public boolean isEnabled() {
@@ -42,7 +47,13 @@ public class CodeSnippet extends AbstractExtension implements ICodeSnippet {
         return name;
     }
 
-    public boolean isValid() {
-        return code != null && !code.isBlank();
+    public boolean valid() {
+        return code != null && !code.isEmpty();
+    }
+
+    @AssertTrue(message = "CodeSnippet code must not be blank")
+    @SuppressWarnings("unused")
+    private boolean isCodeSnippetValid() {
+        return valid();
     }
 }

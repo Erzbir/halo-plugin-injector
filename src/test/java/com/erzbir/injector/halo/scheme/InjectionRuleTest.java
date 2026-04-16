@@ -14,11 +14,11 @@ class InjectionRuleTest {
         rule.setMode(InjectMode.ID);
         rule.setMatch(" ");
 
-        assertFalse(rule.isValid());
+        assertFalse(rule.valid());
 
         rule.setMatch("content-root");
 
-        assertTrue(rule.isValid());
+        assertTrue(rule.valid());
     }
 
     @Test
@@ -27,11 +27,11 @@ class InjectionRuleTest {
         rule.setMode(InjectMode.SELECTOR);
         rule.setMatch("");
 
-        assertFalse(rule.isValid());
+        assertFalse(rule.valid());
 
         rule.setMatch(".article-body");
 
-        assertTrue(rule.isValid());
+        assertTrue(rule.valid());
     }
 
     @Test
@@ -40,21 +40,10 @@ class InjectionRuleTest {
         rule.setMode(InjectMode.HEAD);
         rule.setMatchRule(MatchRule.groupRule(MatchRule.Operator.AND));
 
-        assertFalse(rule.isValid());
+        assertFalse(rule.valid());
 
         rule.setMatchRule(MatchRule.defaultRule());
 
-        assertTrue(rule.isValid());
-    }
-
-    @Test
-    void shouldFallbackToDefaultMatchRuleWhenRuleMatchRuleIsNull() {
-        InjectionRule rule = new InjectionRule();
-        rule.setMatchRule(null);
-
-        MatchRule matchRule = rule.getMatchRule();
-
-        assertNotNull(matchRule);
-        assertTrue(matchRule.isValid());
+        assertTrue(rule.valid());
     }
 }
