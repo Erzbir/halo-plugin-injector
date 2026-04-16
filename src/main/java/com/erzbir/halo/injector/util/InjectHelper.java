@@ -11,11 +11,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.RouteMatcher;
 import org.springframework.web.util.pattern.PathPatternParser;
 import org.springframework.web.util.pattern.PathPatternRouteMatcher;
-import org.springframework.web.util.pattern.PatternParseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.Set;
 
 /**
  * @author Erzbir
@@ -28,21 +25,24 @@ public class InjectHelper {
     protected final InjectionRuleManager ruleManager;
     protected final CodeSnippetManager snippetManager;
     protected final RouteMatcher routeMatcher = createRouteMatcher();
+    protected final MatchRuleEvaluator matchRuleEvaluator = new MatchRuleEvaluator(routeMatcher);
 
-    public Flux<InjectionRule> getRulesByMode(InjectionRule.Mode mode) {
-        return ruleManager.list()
-                .filter(rule -> mode.equals(rule.getMode()));
+
+    public Flux<InjectionRule> getMatchedRules(String targetPath,
+                                               InjectionRule.Mode mode) {
+        return getMatchedRules(targetPath, null, mode);
     }
 
     public Flux<InjectionRule> getMatchedRules(String targetPath,
+                                               String templateId,
                                                InjectionRule.Mode mode) {
         if (targetPath.isEmpty()) {
             return Flux.empty();
         }
 
-        return getRulesByMode(mode)
+        return ruleManager.listRuleByMode(mode)
                 .filter(rule -> rule.isEnabled() && rule.isValid())
-                .filter(rule -> matchesPath(rule.getPathPatterns(), targetPath, routeMatcher))
+                .filter(rule -> matchRuleEvaluator.matches(rule.getMatchRule(), targetPath, templateId))
                 .onErrorResume(e -> {
                     log.error("Failed to get matched rules for mode: {}", mode, e);
                     return Flux.empty();
@@ -56,28 +56,6 @@ public class InjectHelper {
                 .filter(CodeSnippet::isEnabled)
                 .map(CodeSnippet::getCode)
                 .reduce("", String::concat);
-    }
-
-    private boolean matchesPath(Set<InjectionRule.PathMatchRule> pathPatterns,
-                                String currentPath,
-                                RouteMatcher routeMatcher) {
-        if (currentPath == null || pathPatterns == null || pathPatterns.isEmpty()) {
-            return false;
-        }
-
-        RouteMatcher.Route requestRoute = routeMatcher.parseRoute(currentPath);
-
-        return pathPatterns.stream()
-                .filter(pattern -> pattern != null && !pattern.getPathPattern().trim().isEmpty())
-                .anyMatch(pattern -> {
-                    try {
-                        return routeMatcher.match(pattern.getPathPattern(), requestRoute);
-                    } catch (PatternParseException e) {
-                        log.warn("Parse route pattern [{}] failed for path [{}]", pattern, currentPath,
-                                e);
-                        return false;
-                    }
-                });
     }
 
     private RouteMatcher createRouteMatcher() {

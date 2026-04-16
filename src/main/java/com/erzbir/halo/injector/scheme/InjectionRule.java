@@ -1,6 +1,7 @@
 package com.erzbir.halo.injector.scheme;
 
 import com.erzbir.halo.injector.core.IInjectionRule;
+import com.erzbir.halo.injector.core.MatchRule;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import run.halo.app.extension.AbstractExtension;
@@ -20,6 +21,8 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     private Mode mode = Mode.FOOTER;
     private String match = "";
     private Position position = Position.APPEND;
+    private MatchRule matchRule = MatchRule.defaultRule();
+    @Deprecated
     private Set<PathMatchRule> pathPatterns = new LinkedHashSet<>();
     private Set<String> snippetIds = new LinkedHashSet<>();
 
@@ -41,14 +44,36 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
         return enabled;
     }
 
+    @Override
+    public MatchRule getMatchRule() {
+        if (matchRule != null) {
+            return matchRule;
+        }
+        if (pathPatterns == null || pathPatterns.isEmpty()) {
+            return MatchRule.defaultRule();
+        }
+        MatchRule root = new MatchRule();
+        root.setType(MatchRule.Type.GROUP);
+        root.setNegate(false);
+        root.setOperator(MatchRule.Operator.OR);
+        pathPatterns.stream()
+                .map(PathMatchRule::getPathPattern)
+                .filter(path -> path != null && !path.isBlank())
+                .map(path -> MatchRule.pathRule(MatchRule.Matcher.ANT, path))
+                .forEach(rule -> root.getChildren().add(rule));
+        return root.getChildren().isEmpty() ? MatchRule.defaultRule() : root;
+    }
+
     public boolean isValid() {
         if (Mode.ID.equals(getMode()) || Mode.SELECTOR.equals(getMode())) {
             return !getMatch().isBlank();
         }
-        Set<InjectionRule.PathMatchRule> pathPatterns = getPathPatterns();
-        return pathPatterns != null
-                && !pathPatterns.isEmpty()
-                && pathPatterns.stream()
-                .anyMatch(p -> p.getPathPattern() != null && !p.getPathPattern().isBlank());
+
+        return getMatchRule().isValid();
+    }
+
+    @Data
+    public static class PathMatchRule {
+        private String pathPattern = "";
     }
 }

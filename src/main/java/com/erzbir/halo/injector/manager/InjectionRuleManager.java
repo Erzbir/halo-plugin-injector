@@ -19,4 +19,9 @@ public class InjectionRuleManager {
         return client.list(InjectionRule.class, null, null)
                 .doOnError(e -> log.error("Failed to fetch InjectionRules", e));
     }
+
+    public Flux<InjectionRule> listRuleByMode(InjectionRule.Mode mode) {
+        return list()
+                .filter(rule -> mode.equals(rule.getMode()));
+    }
 }
