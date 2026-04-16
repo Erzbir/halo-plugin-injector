@@ -1,67 +1,68 @@
 ## 这是什么?
 
-一个用于 **将 HTML 代码注入到指定页面** 的 Halo 插件
+一个用于 **按规则将 HTML 代码注入指定页面** 的 Halo 插件
 
-Halo 自带的代码注入功能仅支持全局注入, 此插件允许将特定的代码注入指定页面
-
----
-
-## 功能特性
-
-* 按页面路径注入 HTML 代码
-* 支持注入:
-    * `<head>` 标签中
-    * `<footer>` 标签中
-    * 指定 `id` 的元素
-    * 匹配 `CSS selector` 的元素
+相比 Halo 的全局注入方式, 本插件支持 "代码片段 + 规则" 组合管理, 可精细控制注入范围与位置
 
 ![preview](assets/images/preview.png)
 
-## 示例配置
+界面入口: Halo 管理后台 -> 工具 -> Injector
 
-配置页面在: 管理后台 -> 工具 -> Injector
+## 功能特性
 
-![code](assets/images/config_code.png)
-![rule](assets/images/config_rule.png)
+- 四种注入模式: `HEAD` / `FOOTER` / `ID` / `SELECTOR`
+- 支持注入位置: `APPEND` / `PREPEND` / `BEFORE` / `AFTER` / `REPLACE`
+- 规则组: `AND` / `OR` / `NOT`
+- 路径匹配模式: `PATH_PATTERN` / `ANT` / `REGEX` / `EXACT`
+- 代码片段与规则双向关联管理
 
-## 注入机制说明
+## 关键概念
 
-插件提供四种注入模式:
+### 代码片段 (CodeSnippet)
 
-| 模式         | 实现方式                      | 说明                             |
-|------------|---------------------------|--------------------------------|
-| `head`     | `TemplateHeadProcessor`   | 插入到 `<head>` 标签中               |
-| `footer`   | `TemplateFooterProcessor` | 插入到 `<halo:footer/>` 中(主题控制位置) |
-| `id`       | `AdditionalWebFilter`     | 通过元素 ID 定位插入                   |
-| `selector` | `AdditionalWebFilter`     | 通过 CSS 选择器匹配插入, 会处理所有匹配到的元素    |
+你要注入的实际内容
 
-> `id` 与 `selector` 模式为临时实现方案,
-> 因其需在服务端完整读取 HTML, 因此使用了 `AdditionalWebFilter`, 这会导致性能下降, 非特殊情况尽量不要使用
->
-> 需要根据 ID 的注入时, 可以在 `<head>` 中注入 JS 代码, 并通过此 JS 来匹配 ID
+一个片段可被多条规则复用
 
-## 注入位置选项
+创建后默认是启用状态, 禁用的代码片段不会注入
 
-在 `id` 或 `selector` 模式下, 可通过配置选择注入方式:
+### 注入规则 (InjectionRule)
 
-* `append`: 追加为目标元素的子元素
-* `prepend`: 插入到目标元素第一个子元素之前
-* `before`: 插入到目标元素之前
-* `after`: 插入到目标元素之后
-* `replace`: 替换目标元素
+定义 "把哪些代码片段注入到哪里"
 
-> 注入到 `<head>` 时需注意 HTML 合法性. 例如 `<div>` 等块级标签不会被放入 `<head>`, 而是自动插入到 `<body>` 的第一个子元素位置
+创建之后默认是禁用状态, 需要手动启用
 
-## MatchRule（规则组）
+#### 注入模式说明
 
-规则匹配改为 `matchRule` 树结构，支持：
+| 模式         | 说明                |
+|------------|-------------------|
+| `HEAD`     | 注入到页面 `<head>`    |
+| `FOOTER`   | 注入到主题 footer 输出位置 |
+| `ID`       | 按元素 `id` 定位注入     |
+| `SELECTOR` | 按 CSS 选择器定位注入     |
 
-- 规则组 `GROUP`
-- 逻辑运算 `AND` / `OR` / `NOT`（通过 `operator` 字段）
-- 子规则类型：
-  - `PATH`（支持 `ANT` / `REGEX` / `EXACT`）
+> `ID` / `SELECTOR` 模式虽是一种更便利的方式, 但服务端需要处理完整 HTML, 性能开销通常高于 `HEAD` / `FOOTER`.
+> 
+> 常规场景建议优先使用 `HEAD` / `FOOTER`.
 
-示例（`(PATH('/posts/**') OR PATH('/archives/**')) AND NOT PATH('/admin/**')`）：
+#### 路径匹配
+
+四种匹配方式
+
+- `PATH_PATTERN`: Spring 风格的路径匹配
+- `ANT`: Ant 风格
+- `REGEX`: 正则
+- `EXACT`: 精确匹配
+
+#### 规则组
+
+规则采用树结构:
+
+- 节点类型: `GROUP`, `PATH`
+- 逻辑操作: `AND`, `OR`, `NOT`
+- 路径匹配器: `PATH_PATTERN`, `ANT`, `REGEX`, `EXACT`
+
+示例: `(PATH('/posts/**') OR PATH('/archives/**')) AND NOT PATH('/admin/**')`
 
 ```json
 {
@@ -72,11 +73,26 @@ Halo 自带的代码注入功能仅支持全局注入, 此插件允许将特定�
       "type": "GROUP",
       "operator": "OR",
       "children": [
-        { "type": "PATH", "operator": "AND", "matcher": "ANT", "value": "/posts/**" },
-        { "type": "PATH", "operator": "AND", "matcher": "ANT", "value": "/archives/**" }
+        {
+          "type": "PATH",
+          "operator": "AND",
+          "matcher": "PATH_PATTERN",
+          "value": "/posts/**"
+        },
+        {
+          "type": "PATH",
+          "operator": "AND",
+          "matcher": "PATH_PATTERN",
+          "value": "/archives/**"
+        }
       ]
     },
-    { "type": "PATH", "operator": "NOT", "matcher": "ANT", "value": "/admin/**" }
+    {
+      "type": "PATH",
+      "operator": "NOT",
+      "matcher": "PATH_PATTERN",
+      "value": "/admin/**"
+    }
   ]
 }
 ```
