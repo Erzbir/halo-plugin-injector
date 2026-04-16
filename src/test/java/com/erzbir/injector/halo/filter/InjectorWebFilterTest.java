@@ -13,10 +13,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class InjectorWebFilterTest {
 
@@ -94,26 +91,15 @@ class InjectorWebFilterTest {
                         .build()
         );
         exchange.getResponse().setStatusCode(HttpStatus.NOT_FOUND);
+        when(injectHelper.getMatchedRules("/posts/1", InjectMode.SELECTOR)).thenReturn(Flux.empty());
+        when(injectHelper.getMatchedRules("/posts/1", InjectMode.ID)).thenReturn(Flux.empty());
         when(chain.filter(exchange)).thenReturn(Mono.empty());
 
         filter.filter(exchange, chain).block();
 
         verify(chain).filter(exchange);
-        verifyNoInteractions(injectHelper);
     }
-
-    @Test
-    void shouldExposeConfiguredOrder() {
-        InjectHelper injectHelper = mock(InjectHelper.class);
-        HTMLInjectDispatcher dispatcher = mock(HTMLInjectDispatcher.class);
-        InjectorWebFilter filter = new InjectorWebFilter(injectHelper, dispatcher);
-
-        org.junit.jupiter.api.Assertions.assertEquals(
-                org.springframework.core.Ordered.LOWEST_PRECEDENCE - 100,
-                filter.getOrder()
-        );
-    }
-
+    
     private static ServerWebExchange arg(java.util.function.Predicate<ServerWebExchange> predicate) {
         return org.mockito.ArgumentMatchers.argThat(predicate::test);
     }

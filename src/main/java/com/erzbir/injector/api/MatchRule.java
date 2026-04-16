@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * @author Erzbir
@@ -66,7 +67,7 @@ public class MatchRule {
         if (Matcher.REGEX.equals(matcher)) {
             try {
                 Pattern.compile(value);
-            } catch (Throwable e) {
+            } catch (PatternSyntaxException e) {
                 return false;
             }
         }

@@ -3,7 +3,6 @@ package com.erzbir.injector.halo.filter;
 import com.erzbir.injector.api.InjectMode;
 import com.erzbir.injector.halo.core.InjectHelper;
 import org.jspecify.annotations.NonNull;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -33,7 +32,7 @@ public class InjectorWebFilter implements AdditionalWebFilter {
                                       @NonNull WebFilterChain chain) {
         return pathMatcher.matches(exchange)
                 .flatMap(matchResult -> {
-                    if (!matchResult.isMatch() || !isOkResponse(exchange)) {
+                    if (!matchResult.isMatch()) {
                         return chain.filter(exchange);
                     }
                     String path = exchange.getRequest().getPath().value();
@@ -49,11 +48,6 @@ public class InjectorWebFilter implements AdditionalWebFilter {
                 });
     }
 
-    private boolean isOkResponse(ServerWebExchange exchange) {
-        var statusCode = exchange.getResponse().getStatusCode();
-        return statusCode != null && statusCode.isSameCodeAs(HttpStatus.OK);
-    }
-
     private Mono<Boolean> hasMatchingRules(String path) {
         return Mono.zip(
                         injectHelper.getMatchedRules(path, InjectMode.SELECTOR).hasElements(),
@@ -63,8 +57,4 @@ public class InjectorWebFilter implements AdditionalWebFilter {
                 .defaultIfEmpty(false);
     }
 
-    @Override
-    public int getOrder() {
-        return LOWEST_PRECEDENCE - 100;
-    }
 }

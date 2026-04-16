@@ -44,6 +44,7 @@ public class InjectHelper {
                 .filter(CodeSnippet::isValid)
                 .filter(CodeSnippet::isEnabled)
                 .map(CodeSnippet::getCode)
-                .reduce("", String::concat);
+                .collectList()
+                .map(codes -> String.join("", codes));
     }
 }

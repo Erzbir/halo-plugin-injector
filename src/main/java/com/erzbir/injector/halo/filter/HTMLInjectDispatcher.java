@@ -36,11 +36,11 @@ public class HTMLInjectDispatcher {
         return injectHelper.getMatchedRules(path, mode)
                 .concatMap(rule ->
                         injectHelper.getConcatCode(rule)
-                                .map(code -> new Object[]{rule, code})
+                                .map(code -> new RuleCode(rule, code))
                 )
                 .reduce(html, (ctx, tuple) -> {
-                    InjectionRule rule = (InjectionRule) tuple[0];
-                    String code = (String) tuple[1];
+                    InjectionRule rule = tuple.rule();
+                    String code = tuple.code();
                     log.debug("Injected rule [{}] into [{}]", rule.getId(), path);
                     return injector.inject(ctx, new HTMLCode(code), rule, null);
                 });
@@ -52,5 +52,8 @@ public class HTMLInjectDispatcher {
             case ID -> elementIDInjector;
             default -> null;
         };
+    }
+
+    private record RuleCode(InjectionRule rule, String code) {
     }
 }

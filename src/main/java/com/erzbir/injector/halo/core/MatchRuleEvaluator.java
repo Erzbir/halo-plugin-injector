@@ -2,6 +2,7 @@ package com.erzbir.injector.halo.core;
 
 import com.erzbir.injector.api.MatchRule;
 import org.springframework.http.server.PathContainer;
+import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.SimpleRouteMatcher;
 import org.springframework.web.util.pattern.PathPatternParser;
@@ -54,7 +55,9 @@ public class MatchRuleEvaluator {
         if (children == null || children.isEmpty()) {
             return false;
         }
-        return switch (rule.getOperator()) {
+        MatchRule.Operator operator =
+                rule.getOperator() == null ? MatchRule.Operator.AND : rule.getOperator();
+        return switch (operator) {
             case AND -> children.stream().allMatch(c -> evaluate(c, path));
             case OR -> children.stream().anyMatch(c -> evaluate(c, path));
             case NOT -> children.stream().noneMatch(c -> evaluate(c, path));
@@ -71,7 +74,9 @@ public class MatchRuleEvaluator {
             case EXACT -> Objects.equals(rule.getValue(), path);
             case REGEX -> matchRegex(rule.getValue(), path);
         };
-        return (rule.getOperator() == MatchRule.Operator.NOT) != matched;
+        MatchRule.Operator operator =
+                rule.getOperator() == null ? MatchRule.Operator.AND : rule.getOperator();
+        return (operator == MatchRule.Operator.NOT) != matched;
     }
 
     private boolean matchAnt(String pattern, String path) {

@@ -35,7 +35,11 @@ public class HaloInjectorPlugin extends BasePlugin {
     private void unregisterScheme() {
         Scheme pushLogScheme = schemeManager.get(CodeSnippet.class);
         Scheme pushUniqueScheme = schemeManager.get(InjectionRule.class);
-        schemeManager.unregister(pushLogScheme);
-        schemeManager.unregister(pushUniqueScheme);
+        if (pushLogScheme != null) {
+            schemeManager.unregister(pushLogScheme);
+        }
+        if (pushUniqueScheme != null) {
+            schemeManager.unregister(pushUniqueScheme);
+        }
     }
 }
