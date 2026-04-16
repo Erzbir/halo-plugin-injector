@@ -1,6 +1,5 @@
 package com.erzbir.injector.halo.scheme;
 
-import com.erzbir.injector.halo.scheme.CodeSnippet;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;

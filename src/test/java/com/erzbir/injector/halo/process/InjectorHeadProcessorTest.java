@@ -11,9 +11,7 @@ import org.thymeleaf.model.IText;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class InjectorHeadProcessorTest {
 

@@ -6,9 +6,7 @@ import org.junit.jupiter.api.Test;
 import run.halo.app.extension.Scheme;
 import run.halo.app.extension.SchemeManager;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class HaloInjectorPluginTest {
 

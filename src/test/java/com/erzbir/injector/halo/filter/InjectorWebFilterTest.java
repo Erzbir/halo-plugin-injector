@@ -17,6 +17,10 @@ import static org.mockito.Mockito.*;
 
 class InjectorWebFilterTest {
 
+    private static ServerWebExchange arg(java.util.function.Predicate<ServerWebExchange> predicate) {
+        return org.mockito.ArgumentMatchers.argThat(predicate::test);
+    }
+
     @Test
     void shouldPassThroughWhenRequestNotMatchedByPathMatcher() {
         InjectHelper injectHelper = mock(InjectHelper.class);
@@ -98,9 +102,5 @@ class InjectorWebFilterTest {
         filter.filter(exchange, chain).block();
 
         verify(chain).filter(exchange);
-    }
-    
-    private static ServerWebExchange arg(java.util.function.Predicate<ServerWebExchange> predicate) {
-        return org.mockito.ArgumentMatchers.argThat(predicate::test);
     }
 }

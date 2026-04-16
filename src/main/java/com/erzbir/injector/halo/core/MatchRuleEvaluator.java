@@ -2,7 +2,6 @@ package com.erzbir.injector.halo.core;
 
 import com.erzbir.injector.api.MatchRule;
 import org.springframework.http.server.PathContainer;
-import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.SimpleRouteMatcher;
 import org.springframework.web.util.pattern.PathPatternParser;
@@ -31,6 +30,10 @@ public class MatchRuleEvaluator {
         var parser = new PathPatternParser();
         parser.setPathOptions(PathContainer.Options.HTTP_PATH);
         this.patternMatcher = new PathPatternRouteMatcher(parser);
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
     }
 
     public boolean matches(MatchRule rule, String path) {
@@ -104,9 +107,5 @@ public class MatchRuleEvaluator {
         } catch (PatternParseException e) {
             return false;
         }
-    }
-
-    private static boolean isBlank(String s) {
-        return s == null || s.isBlank();
     }
 }

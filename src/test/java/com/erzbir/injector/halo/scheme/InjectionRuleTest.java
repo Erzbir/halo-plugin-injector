@@ -2,12 +2,9 @@ package com.erzbir.injector.halo.scheme;
 
 import com.erzbir.injector.api.InjectMode;
 import com.erzbir.injector.api.MatchRule;
-import com.erzbir.injector.halo.scheme.InjectionRule;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class InjectionRuleTest {
 

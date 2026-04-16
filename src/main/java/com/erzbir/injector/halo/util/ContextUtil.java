@@ -1,9 +1,9 @@
 package com.erzbir.injector.halo.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.thymeleaf.context.Contexts;
 import org.thymeleaf.context.ITemplateContext;
 import org.thymeleaf.web.IWebRequest;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Erzbir

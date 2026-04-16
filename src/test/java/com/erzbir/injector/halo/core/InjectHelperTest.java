@@ -2,7 +2,6 @@ package com.erzbir.injector.halo.core;
 
 import com.erzbir.injector.api.InjectMode;
 import com.erzbir.injector.api.MatchRule;
-import com.erzbir.injector.halo.core.InjectHelper;
 import com.erzbir.injector.halo.manager.CodeSnippetManager;
 import com.erzbir.injector.halo.manager.InjectionRuleManager;
 import com.erzbir.injector.halo.scheme.CodeSnippet;
@@ -19,11 +18,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -37,6 +32,21 @@ class InjectHelperTest {
     private CodeSnippetManager snippetManager;
 
     private InjectHelper injectHelper;
+
+    private static InjectionRule createRule(boolean enabled, InjectMode mode, MatchRule matchRule) {
+        InjectionRule rule = new InjectionRule();
+        rule.setEnabled(enabled);
+        rule.setMode(mode);
+        rule.setMatchRule(matchRule);
+        return rule;
+    }
+
+    private static CodeSnippet createSnippet(boolean enabled, String code) {
+        CodeSnippet snippet = new CodeSnippet();
+        snippet.setEnabled(enabled);
+        snippet.setCode(code);
+        return snippet;
+    }
 
     @BeforeEach
     void setUp() {
@@ -128,20 +138,5 @@ class InjectHelperTest {
         assertNotNull(rules);
         assertEquals(1, rules.size());
         assertSame(rule, rules.getFirst());
-    }
-
-    private static InjectionRule createRule(boolean enabled, InjectMode mode, MatchRule matchRule) {
-        InjectionRule rule = new InjectionRule();
-        rule.setEnabled(enabled);
-        rule.setMode(mode);
-        rule.setMatchRule(matchRule);
-        return rule;
-    }
-
-    private static CodeSnippet createSnippet(boolean enabled, String code) {
-        CodeSnippet snippet = new CodeSnippet();
-        snippet.setEnabled(enabled);
-        snippet.setCode(code);
-        return snippet;
     }
 }
