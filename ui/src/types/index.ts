@@ -135,7 +135,7 @@ export function makeRule(override: Partial<InjectionRule> = {}): InjectionRule {
     id: '',
     name: '',
     description: '',
-    enabled: true,
+    enabled: false,
     mode: 'FOOTER',
     match: '',
     position: 'APPEND',

@@ -1,9 +1,17 @@
-$aside-width: 20%;
-$main-width: 60%;
+$right-aside-width: 20%;
+$left-aside-width: 21%;
+$main-width: 59%;
 
 #injector-view {
   .aside {
-    width: $aside-width;
+  }
+
+  .aside-left {
+    width: $left-aside-width;
+  }
+
+  .aside-right {
+    width: $right-aside-width;
   }
 
   .main {
@@ -17,10 +25,6 @@ $main-width: 60%;
 
       &:focus {
         box-shadow: 0 0 0 1px rgb(59, 130, 246);
-      }
-
-      &:focus {
-        box-shadow: 0 0 0 1px rgb(59, 130, 246) !important;
       }
     }
   }

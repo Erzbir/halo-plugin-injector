@@ -23,7 +23,7 @@ import java.util.Set;
 public class InjectionRule extends AbstractExtension implements IInjectionRule {
     private String name = "";
     private String description = "";
-    private Boolean enabled = true;
+    private Boolean enabled = false;
     private InjectMode mode = InjectMode.FOOTER;
     private String match = "";
     private InjectPosition position = InjectPosition.APPEND;

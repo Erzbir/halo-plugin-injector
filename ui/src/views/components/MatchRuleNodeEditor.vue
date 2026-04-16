@@ -31,6 +31,19 @@ const emit = defineEmits<{
 const isGroup = computed(() => props.modelValue.type === 'GROUP')
 const matcherOptions = computed(() => PATH_MATCHER_OPTIONS)
 const currentDepth = computed(() => props.depth ?? 0)
+const valueError = computed(() => {
+  if (isGroup.value) return ''
+  const value = props.modelValue.value?.trim() ?? ''
+  if (!value) return '路径不能为空'
+  if ((props.modelValue.matcher ?? 'PATH_PATTERN') === 'REGEX') {
+    try {
+      new RegExp(props.modelValue.value ?? '')
+    } catch {
+      return '正则表达式格式错误'
+    }
+  }
+  return ''
+})
 
 function update(next: Partial<MatchRule>) {
   emit('update:modelValue', { ...props.modelValue, ...next })
@@ -76,7 +89,7 @@ function addGroupChild() {
     <div class=":uno: flex flex-wrap items-center gap-2">
       <select
         :value="modelValue.type"
-        class=":uno: rounded-md border border-gray-200 px-2 py-1 text-xs bg-white"
+        class=":uno: w-auto min-w-max shrink-0 rounded-md border border-gray-200 pl-2 pr-6 py-1 text-xs bg-white"
         @change="updateType(($event.target as HTMLSelectElement).value as MatchRuleType)"
       >
         <option value="GROUP">规则组</option>
@@ -91,7 +104,7 @@ function addGroupChild() {
         <span class=":uno: text-xs text-gray-500">组合方式</span>
         <select
           :value="modelValue.operator ?? 'AND'"
-          class=":uno: rounded-md border border-gray-200 px-2 py-1 text-xs bg-white"
+          class=":uno: w-auto min-w-max shrink-0 rounded-md border border-gray-200 pl-2 pr-6 py-1 text-xs bg-white"
           @change="
             update({
               operator: ($event.target as HTMLSelectElement).value as MatchRule['operator'],
@@ -124,10 +137,11 @@ function addGroupChild() {
     </template>
 
     <template v-else>
-      <div class=":uno: flex flex-wrap items-center gap-2">
+      <div class=":uno: space-y-1">
+        <div class=":uno: flex flex-wrap items-center gap-2">
         <select
           :value="modelValue.operator ?? 'AND'"
-          class=":uno: rounded-md border border-gray-200 px-2 py-1 text-xs bg-white"
+          class=":uno: w-auto min-w-max shrink-0 rounded-md border border-gray-200 pl-2 pr-6 py-1 text-xs bg-white"
           @change="
             update({
               operator: ($event.target as HTMLSelectElement).value as MatchRule['operator'],
@@ -141,7 +155,7 @@ function addGroupChild() {
 
         <select
           :value="modelValue.matcher ?? 'PATH_PATTERN'"
-          class=":uno: rounded-md border border-gray-200 px-2 py-1 text-xs bg-white"
+          class=":uno: w-auto min-w-max shrink-0 rounded-md border border-gray-200 pl-2 pr-6 py-1 text-xs bg-white"
           @change="
             update({
               matcher: ($event.target as HTMLSelectElement).value as MatchRuleMatcher,
@@ -156,10 +170,27 @@ function addGroupChild() {
         <input
           :placeholder="modelValue.type === 'PATH' ? '/**' : 'post'"
           :value="modelValue.value ?? ''"
-          class=":uno: flex-1 min-w-40 rounded-md border border-gray-200 px-2 py-1 text-xs font-mono"
+          :class="
+            valueError
+              ? ':uno: match-rule-error-input flex-1 min-w-40 rounded-md border px-2 py-1 text-xs font-mono focus:outline-none'
+              : ':uno: flex-1 min-w-40 rounded-md border border-gray-200 px-2 py-1 text-xs font-mono'
+          "
           @input="update({ value: ($event.target as HTMLInputElement).value })"
         />
+        </div>
+        <p v-if="valueError" class=":uno: text-xs text-red-500">{{ valueError }}</p>
       </div>
     </template>
   </div>
 </template>
+
+<style scoped>
+.match-rule-error-input {
+  border-color: rgb(248 113 113) !important;
+}
+
+.match-rule-error-input:focus {
+  border-color: rgb(239 68 68) !important;
+  box-shadow: 0 0 0 1px rgb(239 68 68) !important;
+}
+</style>

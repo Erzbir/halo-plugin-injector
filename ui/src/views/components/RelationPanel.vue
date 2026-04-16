@@ -1,9 +1,10 @@
 <script lang="ts" setup>
+import { computed } from 'vue'
 import type { CodeSnippet, InjectionRule } from '@/types'
 import ItemListV from './ItemListV.vue'
-import { matchRuleExpression, rulePreview } from '@/views/composables/util'
+import { rulePreview } from '@/views/composables/util'
 
-defineProps<{
+const props = defineProps<{
   mode: 'snippets' | 'rules'
   selectedSnippetId: string | null
   selectedRuleId: string | null
@@ -15,69 +16,70 @@ const emit = defineEmits<{
   (e: 'jump-to-rule', id: string): void
   (e: 'jump-to-snippet', id: string): void
 }>()
+
+const hasSelection = computed(() =>
+  props.mode === 'snippets' ? !!props.selectedSnippetId : !!props.selectedRuleId,
+)
+const headerTitle = computed(() => {
+  if (props.mode === 'snippets') return `被 ${props.rulesUsingSnippet.length} 个规则引用`
+  return `关联 ${props.snippetsInRule.length} 个代码片段`
+})
+const headerPlaceholder = computed(() =>
+  props.mode === 'snippets' ? '选择一个代码片段' : '选择一个规则',
+)
+const emptyText = computed(() =>
+  props.mode === 'snippets' ? '该代码片段暂未被任何规则引用' : '该规则暂未关联代码片段',
+)
+const hintText = computed(() =>
+  props.mode === 'snippets' ? '点击跳转到规则 →' : '点击跳转到代码片段 →',
+)
+const ruleRelationItems = computed(() => props.rulesUsingSnippet)
+const snippetRelationItems = computed(() => props.snippetsInRule)
+
+function handleSelect(id: string) {
+  if (props.mode === 'snippets') {
+    emit('jump-to-rule', id)
+    return
+  }
+  emit('jump-to-snippet', id)
+}
 </script>
 
 <template>
   <div class=":uno: h-full flex flex-col">
     <div class=":uno: sticky top-0 z-10 h-12 flex items-center border-b bg-white px-4 shrink-0">
-      <template v-if="mode === 'snippets'">
-        <h2 v-if="selectedSnippetId" class=":uno: text-sm font-semibold text-gray-900">
-          被 <span class=":uno: text-primary">{{ rulesUsingSnippet.length }}</span> 个规则引用
-        </h2>
-        <span v-else class=":uno: text-sm text-gray-400">选择一个代码块</span>
-      </template>
-      <template v-else>
-        <h2 v-if="selectedRuleId" class=":uno: text-sm font-semibold text-gray-900">
-          关联 <span class=":uno: text-primary">{{ snippetsInRule.length }}</span> 个代码块
-        </h2>
-        <span v-else class=":uno: text-sm text-gray-400">选择一个规则</span>
-      </template>
+      <h2 v-if="hasSelection" class=":uno: text-sm font-semibold text-gray-900">{{ headerTitle }}</h2>
+      <span v-else class=":uno: text-sm text-gray-400">{{ headerPlaceholder }}</span>
     </div>
 
     <div class=":uno: flex-1 overflow-y-auto">
-      <template v-if="mode === 'snippets'">
-        <ItemListV
-          v-if="selectedSnippetId"
-          :items="rulesUsingSnippet"
-          empty-text="该代码块暂未被任何规则引用, 请在编辑面板中添加"
-          @select="emit('jump-to-rule', $event)"
-        >
-          <template #meta="{ item: r }">
-            <span class=":uno: text-xs text-gray-500">{{ rulePreview(r) }}</span>
-            <span
-              class=":uno: mt-0.5 block overflow-hidden text-ellipsis whitespace-nowrap text-xs text-gray-400"
-              :title="matchRuleExpression(r.matchRule)"
-            >
-              {{ matchRuleExpression(r.matchRule) }}
-            </span>
-          </template>
-
-          <template #hint>
-            <span
-              class=":uno: text-xs text-primary opacity-0 mt-0.5 group-hover:opacity-100 transition-opacity"
-            >
-              点击跳转到规则 →
-            </span>
-          </template>
-        </ItemListV>
-      </template>
-
-      <template v-else>
-        <ItemListV
-          v-if="selectedRuleId"
-          :items="snippetsInRule"
-          empty-text="该规则暂未关联代码块, 请在编辑面板中添加"
-          @select="emit('jump-to-snippet', $event)"
-        >
-          <template #hint>
-            <span
-              class=":uno: text-xs text-primary opacity-0 mt-0.5 group-hover:opacity-100 transition-opacity"
-            >
-              点击跳转到代码块 →
-            </span>
-          </template>
-        </ItemListV>
-      </template>
+      <ItemListV
+        v-if="hasSelection && mode === 'snippets'"
+        :items="ruleRelationItems"
+        :empty-text="emptyText"
+        @select="handleSelect"
+      >
+        <template #meta="{ item }">
+          <span class=":uno: text-xs text-gray-500">{{ rulePreview(item) }}</span>
+        </template>
+        <template #hint>
+          <span class=":uno: text-xs text-primary opacity-0 mt-0.5 group-hover:opacity-100 transition-opacity">
+            {{ hintText }}
+          </span>
+        </template>
+      </ItemListV>
+      <ItemListV
+        v-else-if="hasSelection"
+        :items="snippetRelationItems"
+        :empty-text="emptyText"
+        @select="handleSelect"
+      >
+        <template #hint>
+          <span class=":uno: text-xs text-primary opacity-0 mt-0.5 group-hover:opacity-100 transition-opacity">
+            {{ hintText }}
+          </span>
+        </template>
+      </ItemListV>
     </div>
   </div>
 </template>

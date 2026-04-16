@@ -1,9 +1,11 @@
 <script lang="ts" setup>
 import type { CodeSnippet, InjectionRule } from '@/types'
-import ItemPicker from './ItemPicker.vue'
+import { VButton } from '@halo-dev/components'
 import EditorToolbar from './EditorToolbar.vue'
 import EditorFooter from './EditorFooter.vue'
 import FormField from './FormField.vue'
+import RelationPicker from './RelationPicker.vue'
+import CodeEditor from './CodeEditor.vue'
 import { rulePreview, sortSelectedFirst } from '@/views/composables/util'
 import { computed } from 'vue'
 
@@ -13,6 +15,7 @@ const props = defineProps<{
   selectedRuleIds: string[]
   saving: boolean
   dirty: boolean
+  dirtyFields: Partial<Record<keyof CodeSnippet | 'ruleIds', boolean>>
 }>()
 
 const emit = defineEmits<{
@@ -20,7 +23,9 @@ const emit = defineEmits<{
   (e: 'delete'): void
   (e: 'toggle-enabled'): void
   (e: 'toggle-rule', ruleId: string): void
-  (e: 'field-change'): void
+  (e: 'field-change', field: keyof CodeSnippet | 'ruleIds'): void
+  (e: 'revert-field', field: keyof CodeSnippet | 'ruleIds'): void
+  (e: 'revert-all'): void
   (e: 'update:snippet', snippet: CodeSnippet): void
 }>()
 
@@ -29,7 +34,7 @@ const sortedRules = computed(() => sortSelectedFirst(props.rules, props.selected
 function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K]) {
   if (!props.snippet) return
   emit('update:snippet', { ...props.snippet, [key]: value })
-  emit('field-change')
+  emit('field-change', key)
 }
 </script>
 
@@ -37,14 +42,15 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
   <div class=":uno: h-full flex flex-col injector-editor-container">
     <EditorToolbar
       :enabled="snippet?.enabled"
+      :display-id="snippet?.id"
       :show-actions="!!snippet"
-      :title="snippet ? '编辑代码块' : '代码块'"
+      :title="snippet ? '编辑代码片段' : '代码片段'"
       @delete="emit('delete')"
       @toggle-enabled="emit('toggle-enabled')"
     />
 
     <div v-if="!snippet" class=":uno: flex flex-1 items-center justify-center">
-      <span class=":uno: text-sm text-gray-500">从左侧选择代码块进行编辑</span>
+      <span class=":uno: text-sm text-gray-500">从左侧选择代码片段进行编辑</span>
     </div>
 
     <form
@@ -52,15 +58,16 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
       class=":uno: flex-1 overflow-y-auto px-4 py-4 space-y-4"
       @submit.prevent="emit('save')"
     >
-      <FormField label="ID">
-        <input
-          :value="snippet.id"
-          class=":uno: w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-mono text-gray-400 cursor-default"
-          readonly
-        />
-      </FormField>
-
       <FormField label="名称">
+        <template #action>
+          <VButton
+            :class="dirtyFields.name ? '' : ':uno: invisible pointer-events-none'"
+            size="xs"
+            @click="emit('revert-field', 'name')"
+          >
+            撤销修改
+          </VButton>
+        </template>
         <input
           :value="snippet.name"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
@@ -70,42 +77,64 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
       </FormField>
 
       <FormField label="描述">
+        <template #action>
+          <VButton
+            :class="dirtyFields.description ? '' : ':uno: invisible pointer-events-none'"
+            size="xs"
+            @click="emit('revert-field', 'description')"
+          >
+            撤销修改
+          </VButton>
+        </template>
         <input
           :value="snippet.description"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
-          placeholder="说明此代码块的用途"
+          placeholder="说明此代码片段的用途"
           @change="updateField('description', ($event.target as HTMLInputElement).value)"
         />
       </FormField>
 
       <FormField label="关联规则">
-        <template #default>
-          <div class=":uno: flex items-center justify-between mb-1">
-            <span />
-            <span class=":uno: text-xs text-gray-400">{{ selectedRuleIds.length }} 个已选</span>
-          </div>
-          <ItemPicker
-            :items="sortedRules"
-            :preview-fn="rulePreview"
-            :selected-ids="selectedRuleIds"
-            empty-text="暂无规则, 请先创建"
-            @toggle="(id) => emit('toggle-rule', id)"
-          />
+        <template #action>
+          <VButton
+            :class="dirtyFields.ruleIds ? '' : ':uno: invisible pointer-events-none'"
+            size="xs"
+            @click="emit('revert-field', 'ruleIds')"
+          >
+            撤销修改
+          </VButton>
         </template>
-      </FormField>
-
-      <FormField label="代码内容" required>
-        <textarea
-          :value="snippet.code"
-          class=":uno: w-full rounded-md border border-gray-200 px-3 py-2 text-xs font-mono focus:border-primary focus:outline-none resize-none"
-          placeholder="输入 HTML 代码"
-          rows="10"
-          spellcheck="false"
-          @change="updateField('code', ($event.target as HTMLTextAreaElement).value)"
+        <RelationPicker
+          label="关联规则"
+          :show-label="false"
+          :items="sortedRules"
+          :preview-fn="rulePreview"
+          :selected-ids="selectedRuleIds"
+          empty-text="暂无规则, 请先创建"
+          @toggle="(id) => emit('toggle-rule', id)"
         />
       </FormField>
 
-      <EditorFooter :dirty="dirty" :saving="saving" @save="emit('save')" />
+      <FormField label="代码内容" required>
+        <template #action>
+          <VButton
+            :class="dirtyFields.code ? '' : ':uno: invisible pointer-events-none'"
+            size="xs"
+            @click="emit('revert-field', 'code')"
+          >
+            撤销修改
+          </VButton>
+        </template>
+        <CodeEditor
+          :model-value="snippet.code"
+          :invalid="!snippet.code.trim()"
+          placeholder="输入 HTML 代码"
+          :rows="10"
+          @update:model-value="updateField('code', $event)"
+        />
+      </FormField>
+
+      <EditorFooter :dirty="dirty" :saving="saving" @revert-all="emit('revert-all')" @save="emit('save')" />
     </form>
   </div>
 </template>

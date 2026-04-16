@@ -63,11 +63,57 @@ export function useInjectorData() {
 
   const editSnippet = ref<CodeSnippet | null>(null)
   const editSnippetRuleIds = ref<string[]>([])
+  const originalSnippet = ref<CodeSnippet | null>(null)
+  const originalSnippetRuleIds = ref<string[]>([])
 
   const editRule = ref<InjectionRule | null>(null)
   const editRuleSnippetIds = ref<string[]>([])
+  const originalRule = ref<InjectionRule | null>(null)
+  const originalRuleSnippetIds = ref<string[]>([])
 
   const editDirty = ref(false)
+
+  function cloneValue<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value)) as T
+  }
+
+  function normalizedIds(ids: string[]) {
+    return [...uniqueStrings(ids)].sort()
+  }
+
+  function isSameJson(a: unknown, b: unknown) {
+    return JSON.stringify(a) === JSON.stringify(b)
+  }
+
+  function setSnippetsItems(items: CodeSnippet[]) {
+    snippetsResp.value = { ...snippetsResp.value, items }
+  }
+
+  function setRulesItems(items: InjectionRule[]) {
+    rulesResp.value = { ...rulesResp.value, items }
+  }
+
+  function refreshDirty() {
+    if (selectedSnippetId.value && editSnippet.value && originalSnippet.value) {
+      const sameSnippet = isSameJson(editSnippet.value, originalSnippet.value)
+      const sameRelations = isSameJson(
+        normalizedIds(editSnippetRuleIds.value),
+        normalizedIds(originalSnippetRuleIds.value),
+      )
+      editDirty.value = !(sameSnippet && sameRelations)
+      return
+    }
+    if (selectedRuleId.value && editRule.value && originalRule.value) {
+      const sameRule = isSameJson(editRule.value, originalRule.value)
+      const sameRelations = isSameJson(
+        normalizedIds(editRuleSnippetIds.value),
+        normalizedIds(originalRuleSnippetIds.value),
+      )
+      editDirty.value = !(sameRule && sameRelations)
+      return
+    }
+    editDirty.value = false
+  }
 
   const rulesUsingSnippet = computed(() => {
     if (!selectedSnippetId.value) return []
@@ -144,31 +190,39 @@ export function useInjectorData() {
   function _syncEditSnippet() {
     if (!selectedSnippetId.value) {
       editSnippet.value = null
+      originalSnippet.value = null
       editSnippetRuleIds.value = []
+      originalSnippetRuleIds.value = []
       editDirty.value = false
       return
     }
     const found = snippets.value.find((s) => s.id === selectedSnippetId.value)
-    editSnippet.value = found ? found : null
+    editSnippet.value = found ? cloneValue(found) : null
+    originalSnippet.value = found ? cloneValue(found) : null
     editSnippetRuleIds.value = rules.value
       .filter((r) => r.snippetIds?.includes(selectedSnippetId.value!))
       .map((r) => r.id)
-    editDirty.value = false
+    originalSnippetRuleIds.value = cloneValue(editSnippetRuleIds.value)
+    refreshDirty()
   }
 
   function _syncEditRule() {
     if (!selectedRuleId.value) {
       editRule.value = null
+      originalRule.value = null
       editRuleSnippetIds.value = []
+      originalRuleSnippetIds.value = []
       editDirty.value = false
       return
     }
     const found = rules.value.find((r) => r.id === selectedRuleId.value)
-    editRule.value = found ? found : null
+    editRule.value = found ? cloneValue(found) : null
+    originalRule.value = found ? cloneValue(found) : null
     editRuleSnippetIds.value = snippets.value
       .filter((s) => s.ruleIds?.includes(selectedRuleId.value!))
       .map((s) => s.id)
-    editDirty.value = false
+    originalRuleSnippetIds.value = cloneValue(editRuleSnippetIds.value)
+    refreshDirty()
   }
 
   watch(selectedSnippetId, _syncEditSnippet)
@@ -187,7 +241,7 @@ export function useInjectorData() {
       if (nextRuleIds.length) await _applySnippetRuleSelection(id, nextRuleIds)
       await fetchAll()
       selectedSnippetId.value = id
-      Toast.success('代码块已创建')
+      Toast.success('代码片段已创建')
       return id
     } catch {
       Toast.error('创建失败')
@@ -298,7 +352,7 @@ export function useInjectorData() {
     editSnippetRuleIds.value = ids.includes(ruleId)
       ? ids.filter((id) => id !== ruleId)
       : [...ids, ruleId]
-    editDirty.value = true
+    refreshDirty()
   }
 
   function toggleSnippetInRuleEditor(snippetId: string) {
@@ -306,26 +360,100 @@ export function useInjectorData() {
     editRuleSnippetIds.value = ids.includes(snippetId)
       ? ids.filter((n) => n !== snippetId)
       : [...ids, snippetId]
-    editDirty.value = true
+    refreshDirty()
+  }
+
+  function updateEditSnippet(nextSnippet: CodeSnippet) {
+    editSnippet.value = nextSnippet
+    refreshDirty()
+  }
+
+  function updateEditRule(nextRule: InjectionRule) {
+    editRule.value = nextRule
+    refreshDirty()
+  }
+
+  function revertSnippetField(field: keyof CodeSnippet | 'ruleIds') {
+    if (!originalSnippet.value || !editSnippet.value) return
+    if (field === 'ruleIds') {
+      editSnippetRuleIds.value = cloneValue(originalSnippetRuleIds.value)
+      refreshDirty()
+      return
+    }
+    editSnippet.value = {
+      ...editSnippet.value,
+      [field]: cloneValue(originalSnippet.value[field]),
+    }
+    refreshDirty()
+  }
+
+  function revertRuleField(field: keyof InjectionRule | 'snippetIds') {
+    if (!originalRule.value || !editRule.value) return
+    if (field === 'snippetIds') {
+      editRuleSnippetIds.value = cloneValue(originalRuleSnippetIds.value)
+      refreshDirty()
+      return
+    }
+    editRule.value = {
+      ...editRule.value,
+      [field]: cloneValue(originalRule.value[field]),
+    }
+    refreshDirty()
+  }
+
+  function revertSnippetAll() {
+    if (!originalSnippet.value) return
+    editSnippet.value = cloneValue(originalSnippet.value)
+    editSnippetRuleIds.value = cloneValue(originalSnippetRuleIds.value)
+    refreshDirty()
+  }
+
+  function revertRuleAll() {
+    if (!originalRule.value) return
+    editRule.value = cloneValue(originalRule.value)
+    editRuleSnippetIds.value = cloneValue(originalRuleSnippetIds.value)
+    refreshDirty()
+  }
+
+  function isSnippetFieldDirty(field: keyof CodeSnippet | 'ruleIds') {
+    if (!editSnippet.value || !originalSnippet.value) return false
+    if (field === 'ruleIds') {
+      return !isSameJson(
+        normalizedIds(editSnippetRuleIds.value),
+        normalizedIds(originalSnippetRuleIds.value),
+      )
+    }
+    return !isSameJson(editSnippet.value[field], originalSnippet.value[field])
+  }
+
+  function isRuleFieldDirty(field: keyof InjectionRule | 'snippetIds') {
+    if (!editRule.value || !originalRule.value) return false
+    if (field === 'snippetIds') {
+      return !isSameJson(
+        normalizedIds(editRuleSnippetIds.value),
+        normalizedIds(originalRuleSnippetIds.value),
+      )
+    }
+    return !isSameJson(editRule.value[field], originalRule.value[field])
   }
 
   function confirmDeleteSnippet() {
     if (!editSnippet.value) return
     const id = editSnippet.value.id
     Dialog.warning({
-      title: '删除代码块',
-      description: `确认删除代码块 ${id}？删除后无法恢复。`,
+      title: '删除代码片段',
+      description: `确认删除代码片段 ${id}? 删除后无法恢复`,
       confirmType: 'danger',
       async onConfirm() {
         try {
           await _applySnippetRuleSelection(id, [])
           await snippetApi.delete(id)
-          snippetsResp.value.items = snippetsResp.value.items.filter((s) => s.id !== id)
+          setSnippetsItems(snippetsResp.value.items.filter((s) => s.id !== id))
           if (selectedSnippetId.value === id) selectedSnippetId.value = null
           editSnippet.value = null
           editSnippetRuleIds.value = []
           editDirty.value = false
-          Toast.success('代码块已删除')
+          Toast.success('代码片段已删除')
         } catch {
           Toast.error('删除失败')
         }
@@ -338,13 +466,13 @@ export function useInjectorData() {
     const id = editRule.value.id
     Dialog.warning({
       title: '删除规则',
-      description: `确认删除规则 ${id}？删除后无法恢复。`,
+      description: `确认删除规则 ${id}? 删除后无法恢复`,
       confirmType: 'danger',
       async onConfirm() {
         try {
           await _applyRuleSnippetSelection(id, [])
           await ruleApi.delete(id)
-          rulesResp.value.items = rulesResp.value.items.filter((r) => r.id !== id)
+          setRulesItems(rulesResp.value.items.filter((r) => r.id !== id))
           if (selectedRuleId.value === id) selectedRuleId.value = null
           editRule.value = null
           editRuleSnippetIds.value = []
@@ -355,6 +483,116 @@ export function useInjectorData() {
         }
       },
     })
+  }
+
+  async function batchSetSnippetEnabled(ids: string[], enabled: boolean) {
+    const targets = uniqueStrings(ids)
+    if (!targets.length) return
+    saving.value = true
+    try {
+      await Promise.all(
+        targets.map(async (id) => {
+          const snippet = snippets.value.find((s) => s.id === id)
+          if (!snippet) return
+          await snippetApi.update(id, { ...snippet, enabled })
+        }),
+      )
+      await fetchAll()
+      Toast.success(enabled ? '批量启用成功' : '批量禁用成功')
+    } catch {
+      Toast.error('批量状态更新失败')
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function batchSetRuleEnabled(ids: string[], enabled: boolean) {
+    const targets = uniqueStrings(ids)
+    if (!targets.length) return
+    saving.value = true
+    try {
+      await Promise.all(
+        targets.map(async (id) => {
+          const rule = rules.value.find((r) => r.id === id)
+          if (!rule) return
+          await ruleApi.update(id, { ...rule, enabled })
+        }),
+      )
+      await fetchAll()
+      Toast.success(enabled ? '批量启用成功' : '批量禁用成功')
+    } catch {
+      Toast.error('批量状态更新失败')
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function batchDeleteSnippets(ids: string[]) {
+    const targets = uniqueStrings(ids)
+    if (!targets.length) return
+    saving.value = true
+    try {
+      const deletedIds: string[] = []
+      await Promise.all(
+        targets.map(async (id) => {
+          await _applySnippetRuleSelection(id, [])
+          await snippetApi.delete(id)
+          deletedIds.push(id)
+        }),
+      )
+      setSnippetsItems(snippetsResp.value.items.filter((s) => !deletedIds.includes(s.id)))
+      setRulesItems(
+        rulesResp.value.items.map((rule) => ({
+          ...rule,
+          snippetIds: (rule.snippetIds ?? []).filter((id) => !deletedIds.includes(id)),
+        })),
+      )
+      if (selectedSnippetId.value && deletedIds.includes(selectedSnippetId.value)) {
+        selectedSnippetId.value = null
+      }
+      _syncEditSnippet()
+      _syncEditRule()
+      refreshDirty()
+      Toast.success('批量删除成功')
+    } catch {
+      Toast.error('批量删除失败')
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function batchDeleteRules(ids: string[]) {
+    const targets = uniqueStrings(ids)
+    if (!targets.length) return
+    saving.value = true
+    try {
+      const deletedIds: string[] = []
+      await Promise.all(
+        targets.map(async (id) => {
+          await _applyRuleSnippetSelection(id, [])
+          await ruleApi.delete(id)
+          deletedIds.push(id)
+        }),
+      )
+      setRulesItems(rulesResp.value.items.filter((r) => !deletedIds.includes(r.id)))
+      setSnippetsItems(
+        snippetsResp.value.items.map((snippet) => ({
+          ...snippet,
+          ruleIds: (snippet.ruleIds ?? []).filter((id) => !deletedIds.includes(id)),
+        })),
+      )
+      if (selectedRuleId.value && deletedIds.includes(selectedRuleId.value)) {
+        selectedRuleId.value = null
+      }
+      _syncEditRule()
+      _syncEditSnippet()
+      refreshDirty()
+      Toast.success('批量删除成功')
+    } catch {
+      Toast.error('批量删除失败')
+    } finally {
+      saving.value = false
+    }
   }
 
   return {
@@ -369,6 +607,7 @@ export function useInjectorData() {
     editRule,
     editRuleSnippetIds,
     editDirty,
+    refreshDirty,
     rulesUsingSnippet,
     snippetsInRule,
     fetchAll,
@@ -377,10 +616,22 @@ export function useInjectorData() {
     toggleSnippetEnabled,
     confirmDeleteSnippet,
     toggleRuleInSnippetEditor,
+    updateEditSnippet,
+    revertSnippetField,
+    revertSnippetAll,
+    isSnippetFieldDirty,
     addRule,
     saveRule,
     toggleRuleEnabled,
     confirmDeleteRule,
     toggleSnippetInRuleEditor,
+    updateEditRule,
+    revertRuleField,
+    revertRuleAll,
+    isRuleFieldDirty,
+    batchSetSnippetEnabled,
+    batchSetRuleEnabled,
+    batchDeleteSnippets,
+    batchDeleteRules,
   }
 }

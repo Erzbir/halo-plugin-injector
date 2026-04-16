@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
+import { VButton } from '@halo-dev/components'
 import type { CodeSnippet, InjectionRule } from '@/types'
-import { MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
-import ItemPicker from './ItemPicker.vue'
-import MatchRuleNodeEditor from './MatchRuleNodeEditor.vue'
 import EditorToolbar from './EditorToolbar.vue'
 import EditorFooter from './EditorFooter.vue'
 import FormField from './FormField.vue'
+import RuleFields from './RuleFields.vue'
+import RelationPicker from './RelationPicker.vue'
 import { sortSelectedFirst } from '@/views/composables/util.ts'
 
 const props = defineProps<{
@@ -15,6 +15,7 @@ const props = defineProps<{
   selectedSnippetIds: string[]
   saving: boolean
   dirty: boolean
+  dirtyFields: Partial<Record<keyof InjectionRule | 'snippetIds', boolean>>
 }>()
 
 const emit = defineEmits<{
@@ -22,25 +23,20 @@ const emit = defineEmits<{
   (e: 'delete'): void
   (e: 'toggle-enabled'): void
   (e: 'toggle-snippet', snippetId: string): void
-  (e: 'field-change'): void
+  (e: 'field-change', field: keyof InjectionRule | 'snippetIds'): void
+  (e: 'revert-field', field: keyof InjectionRule | 'snippetIds'): void
+  (e: 'revert-all'): void
   (e: 'update:rule', rule: InjectionRule): void
 }>()
 
 const sortedSnippets = computed(() => sortSelectedFirst(props.snippets, props.selectedSnippetIds))
-
-const needsTarget = computed(() => props.rule?.mode === 'ID' || props.rule?.mode === 'SELECTOR')
-
-function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule[K]) {
-  if (!props.rule) return
-  emit('update:rule', { ...props.rule, [key]: value })
-  emit('field-change')
-}
 </script>
 
 <template>
   <div class=":uno: h-full flex flex-col injector-editor-container">
     <EditorToolbar
       :enabled="rule?.enabled"
+      :display-id="rule?.id"
       :show-actions="!!rule"
       :title="rule ? '编辑规则' : '注入规则'"
       @delete="emit('delete')"
@@ -56,98 +52,35 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
       class=":uno: flex-1 overflow-y-auto px-4 py-4 space-y-4"
       @submit.prevent="emit('save')"
     >
-      <FormField label="ID">
-        <input
-          :value="rule.id"
-          class=":uno: w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-mono text-gray-400 cursor-default"
-          readonly
-        />
-      </FormField>
+      <RuleFields
+        :rule="rule"
+        :dirty-fields="dirtyFields"
+        @change="emit('field-change', 'matchRule')"
+        @revert-field="emit('revert-field', $event)"
+        @update:rule="emit('update:rule', $event)"
+      />
 
-      <FormField label="名称">
-        <input
-          :value="rule.name"
-          class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
-          placeholder="不填默认为 ID"
-          @change="updateField('name', ($event.target as HTMLInputElement).value)"
-        />
-      </FormField>
-
-      <FormField label="描述">
-        <input
-          :value="rule.description"
-          class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
-          placeholder="说明此规则的用途"
-          @change="updateField('description', ($event.target as HTMLInputElement).value)"
-        />
-      </FormField>
-
-      <FormField label="注入模式" required>
-        <select
-          :value="rule.mode"
-          class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
-          @change="
-            updateField('mode', ($event.target as HTMLSelectElement).value as InjectionRule['mode'])
-          "
-        >
-          <option v-for="o in MODE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-        </select>
-      </FormField>
-
-      <template v-if="needsTarget">
-        <FormField :label="rule.mode === 'SELECTOR' ? 'CSS 选择器' : '元素 ID'" required>
-          <input
-            :placeholder="rule.mode === 'SELECTOR' ? 'div[class=content]' : 'main-content'"
-            :value="rule.match"
-            class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm font-mono focus:border-primary focus:outline-none"
-            @change="updateField('match', ($event.target as HTMLInputElement).value)"
-          />
-        </FormField>
-
-        <FormField label="插入位置">
-          <select
-            :value="rule.position"
-            class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
-            @change="
-              updateField(
-                'position',
-                ($event.target as HTMLSelectElement).value as InjectionRule['position'],
-              )
-            "
+      <FormField label="关联代码片段">
+        <template #action>
+          <VButton
+            :class="dirtyFields.snippetIds ? '' : ':uno: invisible pointer-events-none'"
+            size="xs"
+            @click="emit('revert-field', 'snippetIds')"
           >
-            <option v-for="o in POSITION_OPTIONS" :key="o.value" :value="o.value">
-              {{ o.label }}
-            </option>
-          </select>
-        </FormField>
-      </template>
-
-      <FormField label="匹配规则" required>
-        <MatchRuleNodeEditor
-          :model-value="rule.matchRule"
-          @change="emit('field-change')"
-          @update:model-value="updateField('matchRule', $event)"
+            撤销修改
+          </VButton>
+        </template>
+        <RelationPicker
+          label="关联代码片段"
+          :show-label="false"
+          :items="sortedSnippets"
+          :selected-ids="selectedSnippetIds"
+          empty-text="暂无代码片段, 请先创建"
+          @toggle="(id) => emit('toggle-snippet', id)"
         />
       </FormField>
 
-      <FormField label="关联代码块">
-        <template #default>
-          <div class=":uno: flex items-center justify-between mb-1">
-            <span />
-            <span class=":uno: text-xs text-gray-400">
-              {{ selectedSnippetIds.length }} 个已选
-            </span>
-          </div>
-          <ItemPicker
-            :items="sortedSnippets"
-            :selected-ids="selectedSnippetIds"
-            empty-text="暂无代码块, 请先创建"
-            @toggle="(id) => emit('toggle-snippet', id)"
-          />
-        </template>
-      </FormField>
-
-      <EditorFooter :dirty="dirty" :saving="saving" @save="emit('save')" />
+      <EditorFooter :dirty="dirty" :saving="saving" @revert-all="emit('revert-all')" @save="emit('save')" />
     </form>
   </div>
 </template>

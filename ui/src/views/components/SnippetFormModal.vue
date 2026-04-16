@@ -3,8 +3,9 @@ import { onMounted, ref } from 'vue'
 import type { CodeSnippet, InjectionRule } from '@/types'
 import { makeSnippet } from '@/types'
 import BaseFormModal from './BaseFormModal.vue'
-import ItemPicker from './ItemPicker.vue'
+import RelationPicker from './RelationPicker.vue'
 import FormField from './FormField.vue'
+import CodeEditor from './CodeEditor.vue'
 import { rulePreview } from '@/views/composables/util'
 
 defineProps<{
@@ -28,8 +29,7 @@ function reset() {
 }
 
 function toggleRule(id: string) {
-  const ids = snippet.value.ruleIds ?? []
-  const idx = ids.indexOf(id)
+  const idx = selectedRuleIds.value.indexOf(id)
   if (idx === -1) selectedRuleIds.value.push(id)
   else selectedRuleIds.value.splice(idx, 1)
 }
@@ -40,7 +40,7 @@ function handleSubmit() {
 </script>
 
 <template>
-  <BaseFormModal :saving="saving" title="新建代码块" @close="emit('close')" @submit="handleSubmit">
+  <BaseFormModal :saving="saving" title="新建代码片段" @close="emit('close')" @submit="handleSubmit">
     <template #form>
       <FormField label="名称">
         <input
@@ -54,28 +54,25 @@ function handleSubmit() {
         <input
           v-model="snippet.description"
           class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
-          placeholder="说明此代码块的用途"
+          placeholder="说明此代码片段的用途"
         />
       </FormField>
 
       <FormField label="代码内容" required>
-        <textarea
-          v-model="snippet.code"
-          autofocus
-          class=":uno: w-full rounded-md border border-gray-200 px-3 py-2 text-xs font-mono focus:border-primary focus:outline-none resize-none"
+        <CodeEditor
+          :model-value="snippet.code"
+          :invalid="!snippet.code.trim()"
           placeholder="输入 HTML 代码"
-          rows="12"
-          spellcheck="false"
+          :rows="12"
+          autofocus
+          @update:model-value="snippet.code = $event"
         />
       </FormField>
     </template>
 
     <template #picker>
-      <div class=":uno: flex items-center justify-between">
-        <label class=":uno: text-xs font-medium text-gray-600">关联规则</label>
-        <span class=":uno: text-xs text-gray-400">{{ selectedRuleIds.length }} 个已选</span>
-      </div>
-      <ItemPicker
+      <RelationPicker
+        label="关联规则"
         :items="rules"
         :preview-fn="rulePreview"
         :selected-ids="selectedRuleIds"

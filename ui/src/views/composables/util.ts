@@ -12,22 +12,6 @@ export function rulePreview(rule: InjectionRule) {
   return `${modeLabel(rule.mode)} · ${positionLabel(rule.position)}`
 }
 
-export function matchRuleExpression(rule?: MatchRule): string {
-  if (!rule) return ''
-  if (rule.type === 'GROUP') {
-    const op = rule.operator ?? 'AND'
-    const parts = (rule.children ?? []).map((child) => matchRuleExpression(child)).filter(Boolean)
-    if (!parts.length) return '()'
-    if (op === 'NOT') return `NOT (${parts.join(' OR ')})`
-    return `(${parts.join(` ${op} `)})`
-  }
-  const matcher = rule.matcher ?? ''
-  const value = rule.value ?? ''
-  const kind = rule.type === 'PATH' ? 'PATH' : 'UNKNOWN'
-  const leaf = `${kind}[${matcher}](${value})`
-  return rule.operator === 'NOT' ? `NOT ${leaf}` : leaf
-}
-
 export function codePreview(code: string) {
   const t = code.replace(/\s+/g, ' ').trim()
   return t.length > 55 ? t.slice(0, 55) + '...' : t
