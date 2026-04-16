@@ -15,7 +15,7 @@ import static org.springframework.security.web.server.util.matcher.ServerWebExch
  * @author Erzbir
  * @since 1.0.0
  */
-public final class PathMatcherFactory {
+final class PathMatcherFactory {
     private static final String[] INCLUDE_PATHS = {
             "/**"
     };

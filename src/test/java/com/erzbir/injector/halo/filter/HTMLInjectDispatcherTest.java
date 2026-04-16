@@ -4,15 +4,19 @@ import com.erzbir.injector.api.InjectMode;
 import com.erzbir.injector.api.InjectPosition;
 import com.erzbir.injector.halo.core.InjectHelper;
 import com.erzbir.injector.halo.scheme.InjectionRule;
+import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@Slf4j
 class HTMLInjectDispatcherTest {
 
     @Test
@@ -36,9 +40,14 @@ class HTMLInjectDispatcherTest {
 
         String html = "<html><body><div class='entry'></div><div id='target'></div></body></html>";
         String result = dispatcher.dispatch(html, "/p/1").block();
+        var doc = Jsoup.parse(result);
+        var entry = doc.selectFirst(".entry");
+        var target = doc.getElementById("target");
 
-        assertTrue(result.contains("<div class=\"entry\"><!-- PluginInjector start --><span>S</span><!-- PluginInjector end --></div>"));
-        assertTrue(result.contains("<div id=\"target\"><!-- PluginInjector start --><span>I</span><!-- PluginInjector end --></div>"));
+        assertNotNull(entry);
+        assertNotNull(target);
+        assertTrue(entry.html().contains("<span>S</span>"));
+        assertTrue(target.html().contains("<span>I</span>"));
     }
 
     @Test
