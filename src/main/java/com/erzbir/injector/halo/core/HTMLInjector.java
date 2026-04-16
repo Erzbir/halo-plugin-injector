@@ -1,10 +1,10 @@
 package com.erzbir.injector.halo.core;
 
-import com.erzbir.injector.api.Injector;
+import org.jsoup.nodes.Document;
 
 /**
  * @author Erzbir
  * @since 1.0.0
  */
-public interface HTMLInjector extends Injector<String, Void> {
+public interface HTMLInjector extends MarkedInjector<String, Document, Void> {
 }

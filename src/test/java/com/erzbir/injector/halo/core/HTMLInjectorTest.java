@@ -2,16 +2,18 @@ package com.erzbir.injector.halo.core;
 
 import com.erzbir.injector.api.Code;
 import com.erzbir.injector.api.IInjectionRule;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.mock;
 
 class HTMLInjectorTest {
 
     @Test
-    void shouldInheritProcessCodeDefaultMethod_whenUsingHtmlInjectorImplementation() {
-        HTMLInjector injector = (target, code, rule, context) -> target;
+    void shouldWrapCodeWithPluginMarkers_whenUsingDefaultProcessCode() {
+        HTMLInjector injector = (target, code, rule, context) -> target.html();
 
         String result = injector.processCode("<script>x</script>");
 
@@ -19,14 +21,26 @@ class HTMLInjectorTest {
     }
 
     @Test
-    void shouldReturnSameTarget_whenImplementationIsIdentity() {
-        HTMLInjector injector = (target, code, rule, context) -> target;
-        String target = "<html></html>";
+    void shouldKeepInputUnchanged_whenCodeContainsCommentMarkers() {
+        HTMLInjector injector = (target, code, rule, context) -> target.html();
+        String wrapped = "<!-- PluginInjector start --><script>x</script><!-- PluginInjector end -->";
+
+        String result = injector.processCode(wrapped);
+
+        assertEquals(wrapped, result);
+    }
+
+    @Test
+    void shouldReturnInjectedValue_whenImplementationIsIdentity() {
+        HTMLInjector injector = (target, code, rule, context) -> target.html();
+        Document document = new Document("");
+        Element root = document.appendElement("div");
+        root.text("ok");
         Code code = () -> "<script>x</script>";
-        IInjectionRule rule = null;
+        IInjectionRule rule = mock(IInjectionRule.class);
 
-        String result = injector.inject(target, code, rule, null);
+        String result = injector.inject(document, code, rule, null);
 
-        assertSame(target, result);
+        assertEquals(document.html(), result);
     }
 }
