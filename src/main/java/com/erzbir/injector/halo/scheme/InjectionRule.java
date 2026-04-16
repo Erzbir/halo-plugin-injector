@@ -24,7 +24,7 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     private String name = "";
     private String description = "";
     private Boolean enabled = false;
-    private InjectMode mode = InjectMode.FOOTER;
+    private InjectMode mode = InjectMode.HEAD;
     private String match = "";
     private InjectPosition position = InjectPosition.APPEND;
     private MatchRule matchRule = MatchRule.defaultRule();
