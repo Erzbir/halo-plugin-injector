@@ -327,192 +327,213 @@ async function handleSelectRule(id: string) {
 
     <div class=":uno: m-0 md:m-4">
       <VCard :body-class="['injector-view-card-body']" style="height: calc(100vh - 5.5rem)">
-        <div class=":uno: h-full overflow-x-auto">
-          <div class=":uno: h-full min-w-[980px] flex divide-x divide-gray-100">
-            <div class=":uno: aside aside-left h-full flex-none flex flex-col overflow-hidden">
-            <div
-              class=":uno: sticky top-0 z-10 h-12 flex items-center justify-between gap-2 border-b bg-white px-4 shrink-0"
-            >
-              <div class=":uno: flex items-center gap-4">
-                <button
-                  v-for="tab in [
-                    { key: 'snippets', label: '代码片段', count: snippets.length },
-                    { key: 'rules', label: '注入规则', count: rules.length },
-                  ]"
-                  :key="tab.key"
+        <div class=":uno: h-full flex flex-col">
+          <div class=":uno: h-12 shrink-0 border-b bg-gray-100 px-4">
+            <div class=":uno: h-full flex items-center gap-2">
+              <div
+                v-for="tab in [
+                  { key: 'snippets', label: '代码片段', count: snippets.length },
+                  { key: 'rules', label: '注入规则', count: rules.length },
+                ]"
+                :key="tab.key"
+                :class="
+                  activeTab === tab.key
+                    ? ':uno: bg-white text-gray-900'
+                    : ':uno: text-gray-500'
+                "
+                class=":uno: group relative h-9 min-w-24 px-3 flex items-center justify-center text-sm font-medium transition-colors whitespace-nowrap cursor-pointer select-none overflow-hidden"
+                @click="handleSwitchTab(tab.key as ActiveTab)"
+              >
+                <span
                   :class="
                     activeTab === tab.key
-                      ? ':uno: text-primary'
-                      : ':uno: text-gray-500 hover:text-gray-800'
+                      ? ':uno: opacity-0'
+                      : ':uno: opacity-0'
                   "
-                  class=":uno: text-sm font-medium transition-colors whitespace-nowrap"
-                  @click="handleSwitchTab(tab.key as ActiveTab)"
-                >
-                  {{ tab.label }}
-                  <span class=":uno: ml-0.5 text-xs">({{ tab.count }})</span>
-                </button>
+                  class=":uno: absolute inset-1 bg-gray-900/10 pointer-events-none transition-opacity"
+                />
+                <span class=":uno: relative z-1 text-center">{{ tab.label }}</span>
               </div>
-              <div class=":uno: flex items-center gap-1.5">
-                <label
-                  class=":uno: relative h-6 inline-flex items-center rounded-md border border-gray-200 bg-white px-1.5 text-[10px] text-gray-700 hover:border-gray-300"
+            </div>
+          </div>
+          <div class=":uno: flex-1 overflow-x-auto">
+            <div class=":uno: h-full min-w-[980px] flex divide-x divide-gray-100">
+              <div class=":uno: aside aside-left h-full flex-none flex flex-col overflow-hidden">
+                <div
+                  class=":uno: sticky top-0 z-10 h-12 flex items-center justify-between gap-2 border-b bg-white px-4 shrink-0"
                 >
-                  <span class=":uno: pointer-events-none text-[10px] whitespace-nowrap">
-                    {{ activeSortModeLabel }}
-                  </span>
-                  <select
-                    v-model="activeSortMode"
-                    class=":uno: sort-select-native absolute inset-0 opacity-0 cursor-pointer text-[10px]"
-                  >
-                    <option
-                      v-for="option in sortModeOptions"
-                      :key="option.value"
-                      :value="option.value"
+                  <div class=":uno: flex items-center gap-4 text-sm font-semibold text-gray-900">
+                    {{
+                      activeTab === 'snippets'
+                        ? `代码片段列表 (${snippets.length})`
+                        : `注入规则列表 (${rules.length})`
+                    }}
+                  </div>
+                  <div class=":uno: flex items-center gap-1.5">
+                    <label
+                      class=":uno: relative h-6 inline-flex items-center rounded-md border border-gray-200 bg-white px-1.5 text-[10px] text-gray-700 hover:border-gray-300"
                     >
-                      {{ option.label }}
-                    </option>
-                  </select>
-                </label>
+                      <span class=":uno: pointer-events-none text-[10px] whitespace-nowrap">
+                        {{ activeSortModeLabel }}
+                      </span>
+                      <select
+                        v-model="activeSortMode"
+                        class=":uno: sort-select-native absolute inset-0 opacity-0 cursor-pointer text-[10px]"
+                      >
+                        <option
+                          v-for="option in sortModeOptions"
+                          :key="option.value"
+                          :value="option.value"
+                        >
+                          {{ option.label }}
+                        </option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+
+                <VLoading v-if="loading" />
+
+                <div
+                  v-if="batchMode"
+                  class=":uno: h-10 shrink-0 flex items-center justify-between gap-1 border-b bg-gray-50 px-2"
+                >
+                  <VButton size="xs" @click="toggleSelectAll">
+                    {{ allBatchSelected ? '取消全选' : '全选' }}
+                  </VButton>
+                  <div class=":uno: flex items-center gap-1">
+                    <VButton
+                      :disabled="!batchSelectedIds.length || saving"
+                      size="xs"
+                      @click="batchEnableSelected"
+                    >
+                      启用
+                    </VButton>
+                    <VButton
+                      :disabled="!batchSelectedIds.length || saving"
+                      size="xs"
+                      @click="batchDisableSelected"
+                    >
+                      禁用
+                    </VButton>
+                    <VButton
+                      :disabled="!batchSelectedIds.length || saving"
+                      size="xs"
+                      type="danger"
+                      @click="batchDeleteSelected"
+                    >
+                      删除
+                    </VButton>
+                  </div>
+                </div>
+
+                <div class=":uno: flex-1 overflow-y-auto max-h-[calc(100vh-17rem)]">
+                  <ItemListV
+                    v-if="activeTab === 'snippets'"
+                    :batch-mode="batchMode"
+                    :batch-selected-ids="batchSelectedIds"
+                    :items="sortedSnippets"
+                    :selected-id="selectedSnippetId"
+                    empty-text="暂无代码片段"
+                    @create="showSnippetModal = true"
+                    @select="handleSelectSnippet"
+                    @toggle-batch-select="toggleBatchSelect"
+                  />
+
+                  <ItemListV
+                    v-else
+                    :batch-mode="batchMode"
+                    :batch-selected-ids="batchSelectedIds"
+                    :items="sortedRules"
+                    :selected-id="selectedRuleId"
+                    :stretch="true"
+                    empty-text="暂无注入规则"
+                    @create="showRuleModal = true"
+                    @select="handleSelectRule"
+                    @toggle-batch-select="toggleBatchSelect"
+                  >
+                    <template #meta="{ item: r }">
+                      <span class=":uno: text-xs text-gray-500">{{ rulePreview(r) }}</span>
+                    </template>
+                  </ItemListV>
+                </div>
+
+                <div
+                  class=":uno: h-12 flex items-center justify-center gap-2 border-t bg-white shrink-0"
+                >
+                  <VButton v-if="!batchMode" size="sm" @click="toggleBatchMode">批量操作</VButton>
+                  <VButton v-else size="sm" @click="toggleBatchMode">退出批量操作</VButton>
+                  <VButton
+                    :disabled="batchMode"
+                    size="sm"
+                    type="secondary"
+                    @click="
+                      activeTab === 'snippets' ? (showSnippetModal = true) : (showRuleModal = true)
+                    "
+                  >
+                    {{ activeTab === 'snippets' ? '新建代码片段' : '新建规则' }}
+                  </VButton>
+                </div>
               </div>
-            </div>
 
-            <VLoading v-if="loading" />
-
-            <div
-              v-if="batchMode"
-              class=":uno: h-10 shrink-0 flex items-center justify-between gap-1 border-b bg-gray-50 px-2"
-            >
-              <VButton size="xs" @click="toggleSelectAll">
-                {{ allBatchSelected ? '取消全选' : '全选' }}
-              </VButton>
-              <div class=":uno: flex items-center gap-1">
-                <VButton
-                  :disabled="!batchSelectedIds.length || saving"
-                  size="xs"
-                  @click="batchEnableSelected"
-                >
-                  启用
-                </VButton>
-                <VButton
-                  :disabled="!batchSelectedIds.length || saving"
-                  size="xs"
-                  @click="batchDisableSelected"
-                >
-                  禁用
-                </VButton>
-                <VButton
-                  :disabled="!batchSelectedIds.length || saving"
-                  size="xs"
-                  type="danger"
-                  @click="batchDeleteSelected"
-                >
-                  删除
-                </VButton>
+              <div class=":uno: main h-full flex-none flex flex-col overflow-hidden">
+                <div v-if="batchMode" class=":uno: h-full flex flex-col">
+                  <div
+                    class=":uno: sticky top-0 z-10 min-h-12 flex items-center border-b bg-white px-4 py-2 shrink-0"
+                  >
+                    <h2 class=":uno: text-gray-900 font-semibold text-sm">批量操作</h2>
+                  </div>
+                </div>
+                <SnippetEditor
+                  v-else-if="activeTab === 'snippets'"
+                  :dirty="editDirty"
+                  :rules="sortedRules"
+                  :saving="saving"
+                  :selected-rule-ids="editSnippetRuleIds"
+                  :snippet="editSnippet"
+                  :dirty-fields="snippetDirtyFields"
+                  @delete="confirmDeleteSnippet"
+                  @save="saveSnippet"
+                  @field-change="() => undefined"
+                  @revert-field="revertSnippetField"
+                  @revert-all="revertSnippetAll"
+                  @toggle-enabled="toggleSnippetEnabled"
+                  @toggle-rule="toggleRuleInSnippetEditor"
+                  @update:snippet="updateEditSnippet"
+                />
+                <RuleEditor
+                  v-else
+                  :dirty="editDirty"
+                  :rule="editRule"
+                  :saving="saving"
+                  :selected-snippet-ids="editRuleSnippetIds"
+                  :snippets="sortedSnippets"
+                  :dirty-fields="ruleDirtyFields"
+                  @delete="confirmDeleteRule"
+                  @save="saveRule"
+                  @field-change="() => undefined"
+                  @revert-field="revertRuleField"
+                  @revert-all="revertRuleAll"
+                  @toggle-enabled="toggleRuleEnabled"
+                  @toggle-snippet="toggleSnippetInRuleEditor"
+                  @update:rule="updateEditRule"
+                />
               </div>
-            </div>
 
-            <div class=":uno: flex-1 overflow-y-auto max-h-[calc(100vh-17rem)]">
-              <ItemListV
-                v-if="activeTab === 'snippets'"
-                :batch-mode="batchMode"
-                :batch-selected-ids="batchSelectedIds"
-                :items="sortedSnippets"
-                :selected-id="selectedSnippetId"
-                empty-text="暂无代码片段"
-                @create="showSnippetModal = true"
-                @select="handleSelectSnippet"
-                @toggle-batch-select="toggleBatchSelect"
-              />
-
-              <ItemListV
-                v-else
-                :batch-mode="batchMode"
-                :batch-selected-ids="batchSelectedIds"
-                :items="sortedRules"
-                :selected-id="selectedRuleId"
-                :stretch="true"
-                empty-text="暂无注入规则"
-                @create="showRuleModal = true"
-                @select="handleSelectRule"
-                @toggle-batch-select="toggleBatchSelect"
-              >
-                <template #meta="{ item: r }">
-                  <span class=":uno: text-xs text-gray-500">{{ rulePreview(r) }}</span>
-                </template>
-              </ItemListV>
-            </div>
-
-            <div
-              class=":uno: h-12 flex items-center justify-center gap-2 border-t bg-white shrink-0"
-            >
-              <VButton v-if="!batchMode" size="sm" @click="toggleBatchMode">批量操作</VButton>
-              <VButton v-else size="sm" @click="toggleBatchMode">退出批量操作</VButton>
-              <VButton
-                :disabled="batchMode"
-                size="sm"
-                type="secondary"
-                @click="
-                  activeTab === 'snippets' ? (showSnippetModal = true) : (showRuleModal = true)
-                "
-              >
-                {{ activeTab === 'snippets' ? '新建代码片段' : '新建规则' }}
-              </VButton>
-            </div>
-          </div>
-
-            <div class=":uno: main h-full flex-none flex flex-col overflow-hidden">
-            <div v-if="batchMode" class=":uno: h-full flex flex-col">
               <div
-                class=":uno: sticky top-0 z-10 min-h-12 flex items-center border-b bg-white px-4 py-2 shrink-0"
+                v-if="!batchMode"
+                class=":uno: aside aside-right h-full flex-none flex flex-col overflow-hidden"
               >
-                <h2 class=":uno: text-gray-900 font-semibold text-sm">批量操作</h2>
+                <RelationPanel
+                  :mode="activeTab"
+                  :rules-using-snippet="rulesUsingSnippet"
+                  :selected-rule-id="selectedRuleId"
+                  :selected-snippet-id="selectedSnippetId"
+                  :snippets-in-rule="snippetsInRule"
+                  @jump-to-rule="jumpToRule"
+                  @jump-to-snippet="jumpToSnippet"
+                />
               </div>
-            </div>
-            <SnippetEditor
-              v-else-if="activeTab === 'snippets'"
-              :dirty="editDirty"
-              :rules="sortedRules"
-              :saving="saving"
-              :selected-rule-ids="editSnippetRuleIds"
-              :snippet="editSnippet"
-              :dirty-fields="snippetDirtyFields"
-              @delete="confirmDeleteSnippet"
-              @save="saveSnippet"
-              @field-change="() => undefined"
-              @revert-field="revertSnippetField"
-              @revert-all="revertSnippetAll"
-              @toggle-enabled="toggleSnippetEnabled"
-              @toggle-rule="toggleRuleInSnippetEditor"
-              @update:snippet="updateEditSnippet"
-            />
-            <RuleEditor
-              v-else
-              :dirty="editDirty"
-              :rule="editRule"
-              :saving="saving"
-              :selected-snippet-ids="editRuleSnippetIds"
-              :snippets="sortedSnippets"
-              :dirty-fields="ruleDirtyFields"
-              @delete="confirmDeleteRule"
-              @save="saveRule"
-              @field-change="() => undefined"
-              @revert-field="revertRuleField"
-              @revert-all="revertRuleAll"
-              @toggle-enabled="toggleRuleEnabled"
-              @toggle-snippet="toggleSnippetInRuleEditor"
-              @update:rule="updateEditRule"
-            />
-          </div>
-
-            <div v-if="!batchMode" class=":uno: aside aside-right h-full flex-none flex flex-col overflow-hidden">
-              <RelationPanel
-                :mode="activeTab"
-                :rules-using-snippet="rulesUsingSnippet"
-                :selected-rule-id="selectedRuleId"
-                :selected-snippet-id="selectedSnippetId"
-                :snippets-in-rule="snippetsInRule"
-                @jump-to-rule="jumpToRule"
-                @jump-to-snippet="jumpToSnippet"
-              />
             </div>
           </div>
         </div>
