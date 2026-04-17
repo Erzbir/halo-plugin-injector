@@ -4,7 +4,6 @@ import com.erzbir.injector.halo.scheme.CodeSnippet;
 import com.erzbir.injector.halo.scheme.InjectionRule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import run.halo.app.extension.Scheme;
 import run.halo.app.extension.SchemeManager;
 import run.halo.app.plugin.BasePlugin;
 
@@ -33,13 +32,7 @@ public class HaloInjectorPlugin extends BasePlugin {
     }
 
     private void unregisterScheme() {
-        Scheme pushLogScheme = schemeManager.get(CodeSnippet.class);
-        Scheme pushUniqueScheme = schemeManager.get(InjectionRule.class);
-        if (pushLogScheme != null) {
-            schemeManager.unregister(pushLogScheme);
-        }
-        if (pushUniqueScheme != null) {
-            schemeManager.unregister(pushUniqueScheme);
-        }
+        schemeManager.unregister(schemeManager.get(CodeSnippet.class));
+        schemeManager.unregister(schemeManager.get(InjectionRule.class));
     }
 }
