@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { VButton } from '@halo-dev/components'
 import type { MatchRule, MatchRuleMatcher, MatchRuleType } from '@/types'
 import {
@@ -15,11 +15,13 @@ const props = withDefaults(
     depth?: number
     canRemove?: boolean
     hasPrevious?: boolean
+    sortable?: boolean
   }>(),
   {
     depth: 0,
     canRemove: false,
     hasPrevious: false,
+    sortable: false,
   },
 )
 
@@ -35,6 +37,8 @@ const matcherOptions = computed(() => PATH_MATCHER_OPTIONS)
 const currentDepth = computed(() => props.depth ?? 0)
 const canNegatePathRule = computed(() => !isGroup.value)
 const resolvedOperator = computed(() => (props.modelValue.operator === 'OR' ? 'OR' : 'AND'))
+const draggingChildIndex = ref<number | null>(null)
+const dragOverChildIndex = ref<number | null>(null)
 const valueError = computed(() => {
   if (isGroup.value) return ''
   const value = props.modelValue.value?.trim() ?? ''
@@ -87,6 +91,48 @@ function addGroupChild() {
   const children = [...(props.modelValue.children ?? []), makeMatchRuleGroup()]
   update({ children })
 }
+
+function onChildDragStart(index: number, event: DragEvent) {
+  event.stopPropagation()
+  draggingChildIndex.value = index
+  dragOverChildIndex.value = index
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(index))
+  }
+}
+
+function onChildDragOver(index: number, event: DragEvent) {
+  if (draggingChildIndex.value === null) return
+  event.preventDefault()
+  event.stopPropagation()
+  dragOverChildIndex.value = index
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = 'move'
+  }
+}
+
+function onChildDrop(index: number, event: DragEvent) {
+  if (draggingChildIndex.value === null) return
+  event.preventDefault()
+  event.stopPropagation()
+  const fromIndex = draggingChildIndex.value
+  const toIndex = index
+  draggingChildIndex.value = null
+  dragOverChildIndex.value = null
+  if (fromIndex === toIndex) return
+  const children = [...(props.modelValue.children ?? [])]
+  const [moved] = children.splice(fromIndex, 1)
+  if (!moved) return
+  children.splice(toIndex, 0, moved)
+  update({ children })
+}
+
+function onChildDragEnd(event: DragEvent) {
+  event.stopPropagation()
+  draggingChildIndex.value = null
+  dragOverChildIndex.value = null
+}
 </script>
 
 <template>
@@ -134,21 +180,42 @@ function addGroupChild() {
       </label>
 
       <VButton v-if="canRemove" size="xs" type="danger" @click="emit('remove')">删除</VButton>
+      <span
+        v-if="sortable"
+        class=":uno: ml-auto inline-flex items-center text-[11px] text-gray-400 select-none cursor-move"
+        aria-hidden="true"
+      >
+        ⋮⋮
+      </span>
     </div>
 
     <template v-if="isGroup">
       <div class=":uno: space-y-2">
-        <MatchRuleNodeEditor
+        <div
           v-for="(child, index) in modelValue.children ?? []"
           :key="index"
-          :can-remove="true"
-          :depth="currentDepth + 1"
-          :has-previous="index > 0"
-          :model-value="child"
-          @change="emit('change')"
-          @remove="removeChild(index)"
-          @update:model-value="updateChild(index, $event)"
-        />
+          :class="
+            dragOverChildIndex === index && draggingChildIndex !== null
+              ? ':uno: rounded-md ring-2 ring-blue-300'
+              : ':uno: rounded-md'
+          "
+          draggable="true"
+          @dragend="onChildDragEnd($event)"
+          @dragover="onChildDragOver(index, $event)"
+          @dragstart="onChildDragStart(index, $event)"
+          @drop="onChildDrop(index, $event)"
+        >
+          <MatchRuleNodeEditor
+            :can-remove="true"
+            :depth="currentDepth + 1"
+            :has-previous="index > 0"
+            :model-value="child"
+            :sortable="true"
+            @change="emit('change')"
+            @remove="removeChild(index)"
+            @update:model-value="updateChild(index, $event)"
+          />
+        </div>
       </div>
 
       <div class=":uno: flex gap-2">
