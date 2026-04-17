@@ -1,9 +1,9 @@
 import { definePlugin } from '@halo-dev/ui-shared'
 import InjectorView from './views/InjectorView.vue'
-import { IconPlug } from '@halo-dev/components'
 import { markRaw } from 'vue'
 import './styles/main.scss'
 import 'uno.css'
+import PluginIcon from '@/components/PluginIcon.vue'
 
 export default definePlugin({
   components: {},
@@ -21,7 +21,7 @@ export default definePlugin({
           permissions: ['plugin:injector:manage'],
           menu: {
             name: 'Injector',
-            icon: markRaw(IconPlug),
+            icon: markRaw(PluginIcon),
             priority: 0,
           },
         },

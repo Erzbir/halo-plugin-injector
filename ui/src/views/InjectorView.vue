@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Dialog, IconPlug, VButton, VCard, VLoading, VPageHeader } from '@halo-dev/components'
+import { Dialog, VButton, VCard, VLoading, VPageHeader } from '@halo-dev/components'
 
 import type { ActiveTab } from '@/types'
 import { useInjectorData } from './composables/useInjectorData.ts'
@@ -12,6 +12,7 @@ import RuleEditor from './components/RuleEditor.vue'
 import RelationPanel from './components/RelationPanel.vue'
 import SnippetFormModal from './components/SnippetFormModal.vue'
 import RuleFormModal from './components/RuleFormModal.vue'
+import PluginIcon from '@/components/PluginIcon.vue'
 
 const activeTab = ref<ActiveTab>('snippets')
 type SortField = 'name' | 'createdAt'
@@ -322,7 +323,7 @@ async function handleSelectRule(id: string) {
     />
 
     <VPageHeader title="Injector">
-      <template #icon><IconPlug /></template>
+      <template #icon><PluginIcon /></template>
     </VPageHeader>
 
     <div class=":uno: m-0 md:m-4">
@@ -337,19 +338,13 @@ async function handleSelectRule(id: string) {
                 ]"
                 :key="tab.key"
                 :class="
-                  activeTab === tab.key
-                    ? ':uno: bg-white text-gray-900'
-                    : ':uno: text-gray-500'
+                  activeTab === tab.key ? ':uno: bg-white text-gray-900' : ':uno: text-gray-500'
                 "
                 class=":uno: group relative h-9 min-w-24 px-3 flex items-center justify-center text-sm font-medium transition-colors whitespace-nowrap cursor-pointer select-none overflow-hidden"
                 @click="handleSwitchTab(tab.key as ActiveTab)"
               >
                 <span
-                  :class="
-                    activeTab === tab.key
-                      ? ':uno: opacity-0'
-                      : ':uno: opacity-0'
-                  "
+                  :class="activeTab === tab.key ? ':uno: opacity-0' : ':uno: opacity-0'"
                   class=":uno: absolute inset-1 bg-gray-900/10 pointer-events-none transition-opacity"
                 />
                 <span class=":uno: relative z-1 text-center">{{ tab.label }}</span>
