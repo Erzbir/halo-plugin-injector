@@ -75,15 +75,9 @@ export const POSITION_OPTIONS: { value: InjectionPosition; label: string }[] = [
   { value: 'REPLACE', label: '替换元素 (replace)' },
 ]
 
-export const MATCH_RULE_GROUP_OPTIONS: { value: MatchRuleOperator; label: string }[] = [
-  { value: 'AND', label: '全部满足 (AND)' },
-  { value: 'OR', label: '任一满足 (OR)' },
-  { value: 'NOT', label: '全部不满足 (NOT)' },
-]
-
-export const MATCH_RULE_LEAF_OPTIONS: { value: MatchRuleOperator; label: string }[] = [
-  { value: 'AND', label: '匹配 (AND)' },
-  { value: 'NOT', label: '不匹配 (NOT)' },
+export const MATCH_RULE_NODE_OPTIONS: { value: MatchRuleOperator; label: string }[] = [
+  { value: 'AND', label: '与前项 AND' },
+  { value: 'OR', label: '与前项 OR' },
 ]
 
 export const PATH_MATCHER_OPTIONS: { value: MatchRuleMatcher; label: string }[] = [

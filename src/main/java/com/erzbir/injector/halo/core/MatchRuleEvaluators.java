@@ -71,12 +71,28 @@ final class GroupRuleEvaluator implements RuleEvaluator {
         if (children == null || children.isEmpty()) {
             return false;
         }
-        Operator operator =
-                rule.getOperator() == null ? Operator.AND : rule.getOperator();
+        Boolean result = null;
+        for (int i = 0; i < children.size(); i++) {
+            IMatchRule child = children.get(i);
+            boolean matched = recursiveEvaluator.evaluate(child, path);
+            if (result == null) {
+                result = matched;
+                continue;
+            }
+            Operator operator = child.getOperator() == null ? Operator.AND : child.getOperator();
+            result = merge(result, matched, operator);
+        }
+        return result != null && result;
+    }
+
+    private boolean merge(Boolean previous, boolean current, Operator operator) {
+        if (previous == null) {
+            return current;
+        }
         return switch (operator) {
-            case AND -> children.stream().allMatch(c -> recursiveEvaluator.evaluate(c, path));
-            case OR -> children.stream().anyMatch(c -> recursiveEvaluator.evaluate(c, path));
-            case NOT -> children.stream().noneMatch(c -> recursiveEvaluator.evaluate(c, path));
+            case AND -> previous && current;
+            case OR -> previous || current;
+            case NOT -> previous && !current;
         };
     }
 }
@@ -97,12 +113,8 @@ final class PathRuleEvaluator implements RuleEvaluator {
         if (rule.getMatcher() == null || rule.getValue() == null || rule.getValue().isBlank()) {
             return false;
         }
-        boolean matched = StringMatchers.valueOf(rule.getMatcher().name())
+        return StringMatchers.valueOf(rule.getMatcher().name())
                 .getMatcher()
                 .match(path, rule.getValue());
-        Operator operator =
-                rule.getOperator() == null ? Operator.AND : rule.getOperator();
-        return (operator == Operator.NOT) != matched;
     }
 }
-

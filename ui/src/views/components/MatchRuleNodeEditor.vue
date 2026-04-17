@@ -5,8 +5,7 @@ import type { MatchRule, MatchRuleMatcher, MatchRuleType } from '@/types'
 import {
   makeMatchRuleGroup,
   makePathMatchRule,
-  MATCH_RULE_GROUP_OPTIONS,
-  MATCH_RULE_LEAF_OPTIONS,
+  MATCH_RULE_NODE_OPTIONS,
   PATH_MATCHER_OPTIONS,
 } from '@/types'
 
@@ -15,10 +14,12 @@ const props = withDefaults(
     modelValue: MatchRule
     depth?: number
     canRemove?: boolean
+    hasPrevious?: boolean
   }>(),
   {
     depth: 0,
     canRemove: false,
+    hasPrevious: false,
   },
 )
 
@@ -29,8 +30,11 @@ const emit = defineEmits<{
 }>()
 
 const isGroup = computed(() => props.modelValue.type === 'GROUP')
+const showOperatorSelect = computed(() => props.hasPrevious)
 const matcherOptions = computed(() => PATH_MATCHER_OPTIONS)
 const currentDepth = computed(() => props.depth ?? 0)
+const canNegatePathRule = computed(() => !isGroup.value)
+const resolvedOperator = computed(() => (props.modelValue.operator === 'OR' ? 'OR' : 'AND'))
 const valueError = computed(() => {
   if (isGroup.value) return ''
   const value = props.modelValue.value?.trim() ?? ''
@@ -52,12 +56,13 @@ function update(next: Partial<MatchRule>) {
 
 function updateType(type: MatchRuleType) {
   if (type === props.modelValue.type) return
+  const operator = props.modelValue.operator ?? 'AND'
   if (type === 'GROUP') {
-    emit('update:modelValue', makeMatchRuleGroup())
+    emit('update:modelValue', makeMatchRuleGroup({ operator }))
     emit('change')
     return
   }
-  emit('update:modelValue', makePathMatchRule())
+  emit('update:modelValue', makePathMatchRule({ operator }))
   emit('change')
 }
 
@@ -96,33 +101,49 @@ function addGroupChild() {
         <option value="PATH">路径规则</option>
       </select>
 
+      <select
+        v-if="showOperatorSelect"
+        :value="resolvedOperator"
+        class=":uno: w-auto min-w-max shrink-0 rounded-md border border-gray-200 pl-2 pr-6 py-1 text-xs bg-white"
+        @change="
+          update({
+            operator: ($event.target as HTMLSelectElement).value as MatchRule['operator'],
+          })
+        "
+      >
+        <option v-for="o in MATCH_RULE_NODE_OPTIONS" :key="o.value" :value="o.value">
+          {{ o.label }}
+        </option>
+      </select>
+
+      <label
+        v-if="canNegatePathRule"
+        class=":uno: flex items-center gap-1 text-xs text-gray-600 select-none"
+      >
+        <input
+          type="checkbox"
+          class=":uno: rounded border-gray-300"
+          :checked="modelValue.operator === 'NOT'"
+          @change="
+            update({
+              operator: ($event.target as HTMLInputElement).checked ? 'NOT' : 'AND',
+            })
+          "
+        />
+        取反
+      </label>
+
       <VButton v-if="canRemove" size="xs" type="danger" @click="emit('remove')">删除</VButton>
     </div>
 
     <template v-if="isGroup">
-      <div class=":uno: flex items-center gap-2">
-        <span class=":uno: text-xs text-gray-500">组合方式</span>
-        <select
-          :value="modelValue.operator ?? 'AND'"
-          class=":uno: w-auto min-w-max shrink-0 rounded-md border border-gray-200 pl-2 pr-6 py-1 text-xs bg-white"
-          @change="
-            update({
-              operator: ($event.target as HTMLSelectElement).value as MatchRule['operator'],
-            })
-          "
-        >
-          <option v-for="o in MATCH_RULE_GROUP_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </select>
-      </div>
-
       <div class=":uno: space-y-2">
         <MatchRuleNodeEditor
           v-for="(child, index) in modelValue.children ?? []"
           :key="index"
           :can-remove="true"
           :depth="currentDepth + 1"
+          :has-previous="index > 0"
           :model-value="child"
           @change="emit('change')"
           @remove="removeChild(index)"
@@ -139,44 +160,30 @@ function addGroupChild() {
     <template v-else>
       <div class=":uno: space-y-1">
         <div class=":uno: flex flex-wrap items-center gap-2">
-        <select
-          :value="modelValue.operator ?? 'AND'"
-          class=":uno: w-auto min-w-max shrink-0 rounded-md border border-gray-200 pl-2 pr-6 py-1 text-xs bg-white"
-          @change="
-            update({
-              operator: ($event.target as HTMLSelectElement).value as MatchRule['operator'],
-            })
-          "
-        >
-          <option v-for="o in MATCH_RULE_LEAF_OPTIONS" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </select>
+          <select
+            :value="modelValue.matcher ?? 'PATH_PATTERN'"
+            class=":uno: w-auto min-w-max shrink-0 rounded-md border border-gray-200 pl-2 pr-6 py-1 text-xs bg-white"
+            @change="
+              update({
+                matcher: ($event.target as HTMLSelectElement).value as MatchRuleMatcher,
+              })
+            "
+          >
+            <option v-for="o in matcherOptions" :key="o.value" :value="o.value">
+              {{ o.label }}
+            </option>
+          </select>
 
-        <select
-          :value="modelValue.matcher ?? 'PATH_PATTERN'"
-          class=":uno: w-auto min-w-max shrink-0 rounded-md border border-gray-200 pl-2 pr-6 py-1 text-xs bg-white"
-          @change="
-            update({
-              matcher: ($event.target as HTMLSelectElement).value as MatchRuleMatcher,
-            })
-          "
-        >
-          <option v-for="o in matcherOptions" :key="o.value" :value="o.value">
-            {{ o.label }}
-          </option>
-        </select>
-
-        <input
-          :placeholder="modelValue.type === 'PATH' ? '/**' : 'post'"
-          :value="modelValue.value ?? ''"
-          :class="
-            valueError
-              ? ':uno: match-rule-error-input flex-1 min-w-40 rounded-md border px-2 py-1 text-xs font-mono focus:outline-none'
-              : ':uno: flex-1 min-w-40 rounded-md border border-gray-200 px-2 py-1 text-xs font-mono'
-          "
-          @input="update({ value: ($event.target as HTMLInputElement).value })"
-        />
+          <input
+            :placeholder="modelValue.type === 'PATH' ? '/**' : 'post'"
+            :value="modelValue.value ?? ''"
+            :class="
+              valueError
+                ? ':uno: match-rule-error-input flex-1 min-w-40 rounded-md border px-2 py-1 text-xs font-mono focus:outline-none'
+                : ':uno: flex-1 min-w-40 rounded-md border border-gray-200 px-2 py-1 text-xs font-mono'
+            "
+            @input="update({ value: ($event.target as HTMLInputElement).value })"
+          />
         </div>
         <p v-if="valueError" class=":uno: text-xs text-red-500">{{ valueError }}</p>
       </div>

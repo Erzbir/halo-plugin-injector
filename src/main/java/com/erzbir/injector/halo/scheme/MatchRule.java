@@ -79,9 +79,6 @@ public class MatchRule implements IMatchRule {
                 if (matcher == null || value == null || value.isBlank()) {
                     yield false;
                 }
-                if (Operator.OR.equals(operator)) {
-                    yield false;
-                }
                 if (MatcherType.REGEX.equals(matcher)) {
                     try {
                         Pattern.compile(value);

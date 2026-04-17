@@ -36,6 +36,13 @@ class MatchRuleTest {
     }
 
     @Test
+    void shouldAllowOrOperatorOnPathRule() {
+        MatchRule rule = MatchRule.pathRule(Operator.OR, MatcherType.EXACT, "/a");
+
+        assertTrue(rule.valid());
+    }
+
+    @Test
     void shouldAddChildWhenChildrenIsNull() {
         MatchRule parent = new MatchRule();
         parent.setType(MatchRuleType.GROUP);

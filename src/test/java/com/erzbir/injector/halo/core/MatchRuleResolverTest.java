@@ -34,7 +34,7 @@ class MatchRuleResolverTest {
         MatchRule root = MatchRule.groupRule(
                 Operator.OR,
                 MatchRule.pathRule(MatcherType.EXACT, "/a"),
-                MatchRule.pathRule(MatcherType.EXACT, "/b")
+                MatchRule.pathRule(Operator.OR, MatcherType.EXACT, "/b")
         );
 
         assertTrue(evaluator.matches(root, "/a"));
@@ -50,13 +50,15 @@ class MatchRuleResolverTest {
         assertFalse(evaluator.matches(negatedLeaf, "/admin"));
 
         MatchRule group = MatchRule.groupRule(
-                Operator.NOT,
-                MatchRule.pathRule(MatcherType.EXACT, "/a"),
-                MatchRule.pathRule(MatcherType.EXACT, "/b")
+                Operator.AND,
+                MatchRule.pathRule(Operator.AND, MatcherType.EXACT, "/a"),
+                MatchRule.pathRule(Operator.NOT, MatcherType.EXACT, "/b")
         );
 
-        assertTrue(evaluator.matches(group, "/c"));
-        assertFalse(evaluator.matches(group, "/a"));
+        assertTrue(evaluator.matches(group, "/a"));
+        assertFalse(evaluator.matches(group, "/b"));
+        assertFalse(evaluator.matches(group, "/c"));
+
     }
 
     @Test
@@ -87,5 +89,19 @@ class MatchRuleResolverTest {
 
         assertTrue(evaluator.matches(notExact, "/home"));
         assertFalse(evaluator.matches(notExact, "/admin"));
+    }
+
+    @Test
+    void shouldSupportNotOperatorInGroupChain() {
+        MatchRule second = MatchRule.pathRule(Operator.NOT, MatcherType.EXACT, "/b");
+        MatchRule group = MatchRule.groupRule(
+                Operator.AND,
+                MatchRule.pathRule(Operator.AND, MatcherType.EXACT, "/a"),
+                second
+        );
+
+        assertTrue(evaluator.matches(group, "/a"));
+        assertFalse(evaluator.matches(group, "/b"));
+        assertFalse(evaluator.matches(group, "/c"));
     }
 }

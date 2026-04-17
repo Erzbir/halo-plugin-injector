@@ -20,12 +20,12 @@ function emptyList<T>(): ItemList<T> {
 
 function isValidMatchRule(rule?: MatchRule): boolean {
   if (!rule) return false
+  const nodeOperator = rule.operator ?? 'AND'
+  if (nodeOperator !== 'AND' && nodeOperator !== 'OR' && nodeOperator !== 'NOT') return false
   if (rule.type === 'GROUP') {
-    if (rule.operator !== 'AND' && rule.operator !== 'OR' && rule.operator !== 'NOT') return false
     const children = rule.children ?? []
     return children.length > 0 && children.every((child) => isValidMatchRule(child))
   }
-  if (rule.operator && rule.operator !== 'AND' && rule.operator !== 'NOT') return false
   if (!rule.matcher || !rule.value?.trim()) return false
   if (rule.matcher === 'REGEX') {
     try {
