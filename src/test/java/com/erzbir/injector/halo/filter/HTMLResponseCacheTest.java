@@ -1,5 +1,6 @@
 package com.erzbir.injector.halo.filter;
 
+import com.erzbir.injector.halo.util.FingerprintUtil;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -9,21 +10,18 @@ class HTMLResponseCacheTest {
 
     @Test
     void shouldReturnCachedValueWhenPathAndHtmlAreSame() {
-        HTMLResponseCache cache = new HTMLResponseCache();
-
-        assertNull(cache.get("/posts/1", "<html>a</html>"));
-        cache.put("/posts/1", "<html>a</html>", "processed-1");
-        String second = cache.get("/posts/1", "<html>a</html>");
+        long fingerprint = FingerprintUtil.fnv1a64("<html>a</html>");
+        assertNull(HTMLResponseCache.get("/posts/1", fingerprint));
+        HTMLResponseCache.put("/posts/1", fingerprint, "processed-1");
+        String second = HTMLResponseCache.get("/posts/1", fingerprint);
 
         assertEquals("processed-1", second);
     }
 
     @Test
     void shouldRecomputeWhenHtmlChanges() {
-        HTMLResponseCache cache = new HTMLResponseCache();
-
-        cache.put("/posts/1", "<html>a</html>", "processed-1");
-        String second = cache.get("/posts/1", "<html>b</html>");
+        HTMLResponseCache.put("/posts/1", FingerprintUtil.fnv1a64("<html>a</html>"), "processed-1");
+        String second = HTMLResponseCache.get("/posts/1", FingerprintUtil.fnv1a64("<html>b</html>"));
 
         assertNull(second);
     }

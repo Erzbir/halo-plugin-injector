@@ -97,6 +97,6 @@ class InjectorResponseDecoratorTest {
 
         assertEquals("<html>changed</html>", exchange1.getResponse().getBodyAsString().block());
         assertEquals("<html>changed</html>", exchange2.getResponse().getBodyAsString().block());
-        verify(dispatcher, times(1)).dispatch("<html>origin</html>", "/posts/cache-reuse");
+        verify(dispatcher, times(2)).dispatch("<html>origin</html>", "/posts/cache-reuse");
     }
 }

@@ -4,11 +4,14 @@ import com.erzbir.injector.api.InjectMode;
 import com.erzbir.injector.api.InjectPosition;
 import com.erzbir.injector.halo.core.InjectHelper;
 import com.erzbir.injector.halo.scheme.InjectionRule;
+import com.erzbir.injector.halo.scheme.MatchRule;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
@@ -26,10 +29,16 @@ class HTMLInjectDispatcherTest {
         InjectionRule idRule = mock(InjectionRule.class);
         when(selectorRule.getId()).thenReturn("selector-rule");
         when(idRule.getId()).thenReturn("id-rule");
+        when(selectorRule.getMode()).thenReturn(InjectMode.SELECTOR);
+        when(idRule.getMode()).thenReturn(InjectMode.ID);
         when(selectorRule.getMatch()).thenReturn(".entry");
         when(idRule.getMatch()).thenReturn("target");
         when(selectorRule.getPosition()).thenReturn(InjectPosition.APPEND);
         when(idRule.getPosition()).thenReturn(InjectPosition.APPEND);
+        when(selectorRule.getMatchRule()).thenReturn(MatchRule.defaultRule());
+        when(idRule.getMatchRule()).thenReturn(MatchRule.defaultRule());
+        when(selectorRule.getSnippetIds()).thenReturn(Set.of("s1"));
+        when(idRule.getSnippetIds()).thenReturn(Set.of("s2"));
 
         when(injectHelper.getMatchedRules("/p/1", InjectMode.SELECTOR)).thenReturn(Flux.just(selectorRule));
         when(injectHelper.getMatchedRules("/p/1", InjectMode.ID)).thenReturn(Flux.just(idRule));
@@ -80,8 +89,11 @@ class HTMLInjectDispatcherTest {
 
         InjectionRule selectorRule = mock(InjectionRule.class);
         when(selectorRule.getId()).thenReturn("selector-rule");
+        when(selectorRule.getMode()).thenReturn(InjectMode.SELECTOR);
         when(selectorRule.getMatch()).thenReturn("[");
         when(selectorRule.getPosition()).thenReturn(InjectPosition.APPEND);
+        when(selectorRule.getMatchRule()).thenReturn(MatchRule.defaultRule());
+        when(selectorRule.getSnippetIds()).thenReturn(Set.of("s1"));
         when(injectHelper.getMatchedRules("/p/1", InjectMode.SELECTOR)).thenReturn(Flux.just(selectorRule));
         when(injectHelper.getMatchedRules("/p/1", InjectMode.ID)).thenReturn(Flux.empty());
         when(injectHelper.getConcatCode(selectorRule)).thenReturn(Mono.just("S"));

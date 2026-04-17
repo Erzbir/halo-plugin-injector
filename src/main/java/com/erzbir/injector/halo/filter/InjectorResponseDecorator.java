@@ -1,6 +1,4 @@
 package com.erzbir.injector.halo.filter;
-
-import com.erzbir.injector.halo.util.FingerprintUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.reactivestreams.Publisher;
@@ -22,9 +20,6 @@ import java.nio.charset.StandardCharsets;
  */
 @Slf4j
 class InjectorResponseDecorator extends ServerHttpResponseDecorator {
-
-    private static final HTMLResponseCache RESPONSE_CACHE = new HTMLResponseCache();
-
     private final ServerWebExchange exchange;
     private final HTMLInjectDispatcher dispatcher;
 
@@ -69,13 +64,8 @@ class InjectorResponseDecorator extends ServerHttpResponseDecorator {
         if (html.isBlank()) {
             return Mono.just(response.bufferFactory().wrap(html.getBytes(StandardCharsets.UTF_8)));
         }
-        long htmlFingerprint = FingerprintUtil.fnv1a64(html);
-        String cached = RESPONSE_CACHE.get(path, htmlFingerprint);
-        if (cached != null) {
-            return Mono.just(response.bufferFactory().wrap(cached.getBytes(StandardCharsets.UTF_8)));
-        }
+
         return dispatcher.dispatch(html, path)
-                .doOnNext(processed -> RESPONSE_CACHE.put(path, htmlFingerprint, processed))
                 .onErrorResume(e -> {
                     log.warn("Injection failed for path [{}], returning original HTML", path, e);
                     return Mono.just(html);
