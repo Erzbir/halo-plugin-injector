@@ -1,26 +1,28 @@
 package com.erzbir.injector.halo.core;
 
-import com.erzbir.injector.api.MatchRule;
+import com.erzbir.injector.api.MatcherType;
+import com.erzbir.injector.api.Operator;
+import com.erzbir.injector.halo.scheme.MatchRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class MatchRuleEvaluatorTest {
-    private MatchRuleEvaluator evaluator;
+class MatchRuleResolverTest {
+    private MatchRuleResolver evaluator;
 
     @BeforeEach
     void setUp() {
-        evaluator = new MatchRuleEvaluator();
+        evaluator = new MatchRuleResolver();
     }
 
     @Test
     void shouldMatchAndGroup() {
         MatchRule root = MatchRule.groupRule(
-                MatchRule.Operator.AND,
-                MatchRule.pathRule(MatchRule.Matcher.ANT, "/posts/**"),
-                MatchRule.pathRule(MatchRule.Matcher.REGEX, "^/posts/[0-9]+$")
+                Operator.AND,
+                MatchRule.pathRule(MatcherType.ANT, "/posts/**"),
+                MatchRule.pathRule(MatcherType.REGEX, "^/posts/[0-9]+$")
         );
 
         assertTrue(evaluator.matches(root, "/posts/123"));
@@ -30,9 +32,9 @@ class MatchRuleEvaluatorTest {
     @Test
     void shouldMatchOrGroup() {
         MatchRule root = MatchRule.groupRule(
-                MatchRule.Operator.OR,
-                MatchRule.pathRule(MatchRule.Matcher.EXACT, "/a"),
-                MatchRule.pathRule(MatchRule.Matcher.EXACT, "/b")
+                Operator.OR,
+                MatchRule.pathRule(MatcherType.EXACT, "/a"),
+                MatchRule.pathRule(MatcherType.EXACT, "/b")
         );
 
         assertTrue(evaluator.matches(root, "/a"));
@@ -42,15 +44,15 @@ class MatchRuleEvaluatorTest {
 
     @Test
     void shouldApplyNotOperatorOnLeafAndGroup() {
-        MatchRule negatedLeaf = MatchRule.pathRule(MatchRule.Operator.NOT, MatchRule.Matcher.EXACT, "/admin");
+        MatchRule negatedLeaf = MatchRule.pathRule(Operator.NOT, MatcherType.EXACT, "/admin");
 
         assertTrue(evaluator.matches(negatedLeaf, "/home"));
         assertFalse(evaluator.matches(negatedLeaf, "/admin"));
 
         MatchRule group = MatchRule.groupRule(
-                MatchRule.Operator.NOT,
-                MatchRule.pathRule(MatchRule.Matcher.EXACT, "/a"),
-                MatchRule.pathRule(MatchRule.Matcher.EXACT, "/b")
+                Operator.NOT,
+                MatchRule.pathRule(MatcherType.EXACT, "/a"),
+                MatchRule.pathRule(MatcherType.EXACT, "/b")
         );
 
         assertTrue(evaluator.matches(group, "/c"));
@@ -66,14 +68,14 @@ class MatchRuleEvaluatorTest {
 
     @Test
     void shouldReturnFalseForInvalidRegexPattern() {
-        MatchRule invalidRegex = MatchRule.pathRule(MatchRule.Matcher.REGEX, "*invalid");
+        MatchRule invalidRegex = MatchRule.pathRule(MatcherType.REGEX, "*invalid");
 
         assertFalse(evaluator.matches(invalidRegex, "/posts/1"));
     }
 
     @Test
     void shouldSupportPathPatternMatcher() {
-        MatchRule pathPattern = MatchRule.pathRule(MatchRule.Matcher.PATH_PATTERN, "/posts/{id}");
+        MatchRule pathPattern = MatchRule.pathRule(MatcherType.PATH_PATTERN, "/posts/{id}");
 
         assertTrue(evaluator.matches(pathPattern, "/posts/1"));
         assertFalse(evaluator.matches(pathPattern, "/posts/1/2"));
@@ -81,7 +83,7 @@ class MatchRuleEvaluatorTest {
 
     @Test
     void shouldApplyNotOnPathRule() {
-        MatchRule notExact = MatchRule.pathRule(MatchRule.Operator.NOT, MatchRule.Matcher.EXACT, "/admin");
+        MatchRule notExact = MatchRule.pathRule(Operator.NOT, MatcherType.EXACT, "/admin");
 
         assertTrue(evaluator.matches(notExact, "/home"));
         assertFalse(evaluator.matches(notExact, "/admin"));

@@ -23,6 +23,6 @@ public interface IInjectionRule {
 
     Set<String> getSnippetIds();
 
-    MatchRule getMatchRule();
+    IMatchRule getMatchRule();
 
 }

@@ -107,7 +107,7 @@ export function makeMatchRuleGroup(override: Partial<MatchRule> = {}): MatchRule
   return {
     type: 'GROUP',
     operator: 'AND',
-    children: [makePathMatchRule()],
+    children: [],
     ...override,
   }
 }
@@ -139,7 +139,7 @@ export function makeRule(override: Partial<InjectionRule> = {}): InjectionRule {
     mode: 'HEAD',
     match: '',
     position: 'APPEND',
-    matchRule: makeMatchRuleGroup(),
+    matchRule: makePathMatchRule(),
     snippetIds: [],
     ...override,
   }

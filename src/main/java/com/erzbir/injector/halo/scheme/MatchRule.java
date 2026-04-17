@@ -1,10 +1,13 @@
-package com.erzbir.injector.api;
+package com.erzbir.injector.halo.scheme;
 
+import com.erzbir.injector.api.IMatchRule;
+import com.erzbir.injector.api.MatchRuleType;
+import com.erzbir.injector.api.MatcherType;
+import com.erzbir.injector.api.Operator;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,20 +20,19 @@ import java.util.regex.PatternSyntaxException;
  * @since 1.0.0
  */
 @Data
-public class MatchRule {
+public class MatchRule implements IMatchRule {
     @NotNull(message = "MatchRule type must not be null")
-    private Type type = Type.GROUP;
+    private MatchRuleType type = MatchRuleType.GROUP;
     @NotNull(message = "MatchRule operator must not be null")
     private Operator operator = Operator.AND;
     @NotNull(message = "MatchRule matcher must not be null")
-    private Matcher matcher = Matcher.PATH_PATTERN;
-    @NotNull(message = "MatchRule value must not be null")
+    private MatcherType matcher = MatcherType.PATH_PATTERN;
     private String value = "";
     @Valid
     private List<MatchRule> children = new ArrayList<>();
 
     public static MatchRule defaultRule() {
-        return groupRule(Operator.AND, pathRule(Matcher.PATH_PATTERN, "/**"));
+        return pathRule(MatcherType.PATH_PATTERN, "/**");
     }
 
     public static MatchRule groupRule(Operator operator, MatchRule... children) {
@@ -39,22 +41,22 @@ public class MatchRule {
 
     public static MatchRule groupRule(Operator operator, List<MatchRule> children) {
         MatchRule rule = new MatchRule();
-        rule.setType(Type.GROUP);
+        rule.setType(MatchRuleType.GROUP);
         rule.setOperator(operator == null ? Operator.AND : operator);
         rule.setChildren(new ArrayList<>(children == null ? List.of() : children));
         return rule;
     }
 
-    public static MatchRule pathRule(Matcher matcher, String value) {
+    public static MatchRule pathRule(MatcherType matcher, String value) {
         return pathRule(Operator.AND, matcher, value);
     }
 
-    public static MatchRule pathRule(Operator operator, Matcher matcher, String value) {
+    public static MatchRule pathRule(Operator operator, MatcherType matcher, String value) {
         MatchRule rule = new MatchRule();
-        rule.setType(Type.PATH);
+        rule.setType(MatchRuleType.PATH);
         rule.setOperator(operator == null ? Operator.AND : operator);
-        rule.setMatcher(matcher);
-        rule.setValue(value);
+        rule.setMatcher(matcher == null ? MatcherType.PATH_PATTERN : matcher);
+        rule.setValue(value == null ? "" : value);
         return rule;
     }
 
@@ -74,13 +76,13 @@ public class MatchRule {
                     && !children.isEmpty()
                     && children.stream().allMatch(child -> child != null && child.valid());
             case PATH -> {
-                if (matcher == null || !StringUtils.hasText(value)) {
+                if (matcher == null || value == null || value.isBlank()) {
                     yield false;
                 }
                 if (Operator.OR.equals(operator)) {
                     yield false;
                 }
-                if (Matcher.REGEX.equals(matcher)) {
+                if (MatcherType.REGEX.equals(matcher)) {
                     try {
                         Pattern.compile(value);
                     } catch (PatternSyntaxException e) {
@@ -98,15 +100,4 @@ public class MatchRule {
         return valid();
     }
 
-    public enum Type {
-        GROUP, PATH
-    }
-
-    public enum Operator {
-        AND, OR, NOT
-    }
-
-    public enum Matcher {
-        ANT, REGEX, EXACT, PATH_PATTERN
-    }
 }

@@ -1,11 +1,13 @@
 package com.erzbir.injector.halo.core;
 
 import com.erzbir.injector.api.InjectMode;
-import com.erzbir.injector.api.MatchRule;
+import com.erzbir.injector.api.MatcherType;
+import com.erzbir.injector.api.Operator;
 import com.erzbir.injector.halo.manager.CodeSnippetManager;
 import com.erzbir.injector.halo.manager.InjectionRuleManager;
 import com.erzbir.injector.halo.scheme.CodeSnippet;
 import com.erzbir.injector.halo.scheme.InjectionRule;
+import com.erzbir.injector.halo.scheme.MatchRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,10 +66,10 @@ class InjectHelperTest {
 
     @Test
     void shouldFilterOutDisabledInvalidAndUnmatchedRules() {
-        InjectionRule matched = createRule(true, InjectMode.HEAD, MatchRule.pathRule(MatchRule.Matcher.ANT, "/posts/**"));
-        InjectionRule disabled = createRule(false, InjectMode.HEAD, MatchRule.pathRule(MatchRule.Matcher.ANT, "/posts/**"));
-        InjectionRule invalid = createRule(true, InjectMode.HEAD, MatchRule.groupRule(MatchRule.Operator.AND));
-        InjectionRule unmatched = createRule(true, InjectMode.HEAD, MatchRule.pathRule(MatchRule.Matcher.ANT, "/archives/**"));
+        InjectionRule matched = createRule(true, InjectMode.HEAD, MatchRule.pathRule(MatcherType.ANT, "/posts/**"));
+        InjectionRule disabled = createRule(false, InjectMode.HEAD, MatchRule.pathRule(MatcherType.ANT, "/posts/**"));
+        InjectionRule invalid = createRule(true, InjectMode.HEAD, MatchRule.groupRule(Operator.AND));
+        InjectionRule unmatched = createRule(true, InjectMode.HEAD, MatchRule.pathRule(MatcherType.ANT, "/archives/**"));
 
         when(ruleManager.listRuleByMode(InjectMode.HEAD))
                 .thenReturn(Flux.just(matched, disabled, invalid, unmatched));

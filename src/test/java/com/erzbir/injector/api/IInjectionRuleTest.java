@@ -1,5 +1,6 @@
 package com.erzbir.injector.api;
 
+import com.erzbir.injector.halo.scheme.MatchRule;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -12,7 +13,7 @@ class IInjectionRuleTest {
     @Test
     void shouldExposeAllValues_whenImplementationReturnsRegularValues() {
         Set<String> snippetIds = Set.of("snippet-1", "snippet-2");
-        MatchRule matchRule = MatchRule.pathRule(MatchRule.Matcher.PATH_PATTERN, "/**");
+        MatchRule matchRule = MatchRule.pathRule(MatcherType.PATH_PATTERN, "/**");
         IInjectionRule rule = new FixedInjectionRule(
                 "rule-1",
                 "name",

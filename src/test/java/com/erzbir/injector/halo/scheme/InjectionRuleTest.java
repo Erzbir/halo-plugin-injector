@@ -1,7 +1,8 @@
 package com.erzbir.injector.halo.scheme;
 
 import com.erzbir.injector.api.InjectMode;
-import com.erzbir.injector.api.MatchRule;
+import com.erzbir.injector.api.MatcherType;
+import com.erzbir.injector.api.Operator;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -12,6 +13,7 @@ class InjectionRuleTest {
     void shouldRequireNonBlankMatchWhenModeIsId() {
         InjectionRule rule = new InjectionRule();
         rule.setMode(InjectMode.ID);
+        rule.setMatchRule(MatchRule.pathRule(Operator.AND, MatcherType.PATH_PATTERN, "/**"));
         rule.setMatch(" ");
 
         assertFalse(rule.valid());
@@ -22,9 +24,20 @@ class InjectionRuleTest {
     }
 
     @Test
+    void shouldRequireValidMatchRuleWhenModeIsId() {
+        InjectionRule rule = new InjectionRule();
+        rule.setMode(InjectMode.ID);
+        rule.setMatch("content-root");
+        rule.setMatchRule(MatchRule.groupRule(Operator.AND));
+
+        assertFalse(rule.valid());
+    }
+
+    @Test
     void shouldRequireNonBlankMatchWhenModeIsSelector() {
         InjectionRule rule = new InjectionRule();
         rule.setMode(InjectMode.SELECTOR);
+        rule.setMatchRule(MatchRule.pathRule(Operator.AND, MatcherType.PATH_PATTERN, "/**"));
         rule.setMatch("");
 
         assertFalse(rule.valid());
@@ -35,10 +48,20 @@ class InjectionRuleTest {
     }
 
     @Test
+    void shouldRequireValidMatchRuleWhenModeIsSelector() {
+        InjectionRule rule = new InjectionRule();
+        rule.setMode(InjectMode.SELECTOR);
+        rule.setMatch(".article-body");
+        rule.setMatchRule(MatchRule.groupRule(Operator.AND));
+
+        assertFalse(rule.valid());
+    }
+
+    @Test
     void shouldValidateByMatchRuleWhenModeIsHeadOrFooter() {
         InjectionRule rule = new InjectionRule();
         rule.setMode(InjectMode.HEAD);
-        rule.setMatchRule(MatchRule.groupRule(MatchRule.Operator.AND));
+        rule.setMatchRule(MatchRule.groupRule(Operator.AND));
 
         assertFalse(rule.valid());
 

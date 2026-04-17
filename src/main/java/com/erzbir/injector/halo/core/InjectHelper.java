@@ -21,7 +21,7 @@ import reactor.core.publisher.Mono;
 public class InjectHelper {
     private final InjectionRuleManager ruleManager;
     private final CodeSnippetManager snippetManager;
-    private final MatchRuleEvaluator matchRuleEvaluator = new MatchRuleEvaluator();
+    private final MatchRuleResolver matchRuleResolver = new MatchRuleResolver();
 
     public Flux<InjectionRule> getMatchedRules(String targetPath,
                                                InjectMode mode) {
@@ -31,7 +31,7 @@ public class InjectHelper {
 
         return ruleManager.listRuleByMode(mode)
                 .filter(InjectionRule::isEnabled)
-                .filter(rule -> matchRuleEvaluator.matches(rule.getMatchRule(), targetPath))
+                .filter(rule -> matchRuleResolver.matches(rule.getMatchRule(), targetPath))
                 .onErrorResume(e -> {
                     log.error("Failed to get matched rules for mode: {}", mode, e);
                     return Flux.empty();

@@ -1,5 +1,6 @@
 package com.erzbir.injector.api;
 
+import com.erzbir.injector.halo.scheme.MatchRule;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -9,14 +10,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class MatchRuleTest {
 
     @Test
-    void shouldCreateValidDefaultRule() {
+    void shouldCreateDefaultPathRuleWithoutChildren() {
         MatchRule rule = MatchRule.defaultRule();
 
-        assertEquals(MatchRule.Type.GROUP, rule.getType());
-        assertEquals(1, rule.getChildren().size());
-        MatchRule child = rule.getChildren().getFirst();
-        assertEquals(MatchRule.Matcher.PATH_PATTERN, child.getMatcher());
-        assertEquals("/**", child.getValue());
+        assertEquals(MatchRuleType.PATH, rule.getType());
+        assertEquals(MatcherType.PATH_PATTERN, rule.getMatcher());
+        assertEquals("/**", rule.getValue());
+        assertNotNull(rule.getChildren());
+        assertTrue(rule.getChildren().isEmpty());
         assertTrue(rule.valid());
     }
 
@@ -24,22 +25,22 @@ class MatchRuleTest {
     void shouldFallbackToAndWhenGroupOperatorIsNull() {
         MatchRule rule = MatchRule.groupRule(null, List.of());
 
-        assertEquals(MatchRule.Operator.AND, rule.getOperator());
+        assertEquals(Operator.AND, rule.getOperator());
     }
 
     @Test
     void shouldFallbackToAndWhenPathOperatorIsNull() {
-        MatchRule rule = MatchRule.pathRule(null, MatchRule.Matcher.EXACT, "/a");
+        MatchRule rule = MatchRule.pathRule(null, MatcherType.EXACT, "/a");
 
-        assertEquals(MatchRule.Operator.AND, rule.getOperator());
+        assertEquals(Operator.AND, rule.getOperator());
     }
 
     @Test
     void shouldAddChildWhenChildrenIsNull() {
         MatchRule parent = new MatchRule();
-        parent.setType(MatchRule.Type.GROUP);
+        parent.setType(MatchRuleType.GROUP);
         parent.setChildren(null);
-        MatchRule child = MatchRule.pathRule(MatchRule.Matcher.EXACT, "/a");
+        MatchRule child = MatchRule.pathRule(MatcherType.EXACT, "/a");
 
         parent.addChild(child);
 
@@ -58,23 +59,23 @@ class MatchRuleTest {
 
     @Test
     void shouldBeInvalidWhenGroupHasEmptyChildren() {
-        MatchRule rule = MatchRule.groupRule(MatchRule.Operator.AND);
+        MatchRule rule = MatchRule.groupRule(Operator.AND);
 
         assertFalse(rule.valid());
     }
 
     @Test
     void shouldBeInvalidWhenGroupHasInvalidChild() {
-        MatchRule validChild = MatchRule.pathRule(MatchRule.Matcher.EXACT, "/a");
-        MatchRule invalidChild = MatchRule.pathRule(MatchRule.Matcher.EXACT, " ");
-        MatchRule parent = MatchRule.groupRule(MatchRule.Operator.AND, validChild, invalidChild);
+        MatchRule validChild = MatchRule.pathRule(MatcherType.EXACT, "/a");
+        MatchRule invalidChild = MatchRule.pathRule(MatcherType.EXACT, " ");
+        MatchRule parent = MatchRule.groupRule(Operator.AND, validChild, invalidChild);
 
         assertFalse(parent.valid());
     }
 
     @Test
     void shouldBeInvalidWhenRegexIsMalformed() {
-        MatchRule rule = MatchRule.pathRule(MatchRule.Matcher.REGEX, "*bad");
+        MatchRule rule = MatchRule.pathRule(MatcherType.REGEX, "*bad");
 
         assertFalse(rule.valid());
     }

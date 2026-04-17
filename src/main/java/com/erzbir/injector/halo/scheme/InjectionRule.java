@@ -3,7 +3,6 @@ package com.erzbir.injector.halo.scheme;
 import com.erzbir.injector.api.IInjectionRule;
 import com.erzbir.injector.api.InjectMode;
 import com.erzbir.injector.api.InjectPosition;
-import com.erzbir.injector.api.MatchRule;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
@@ -58,7 +57,7 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
     }
 
     public boolean valid() {
-        if (!getMatchRule().valid()) {
+        if (getMatchRule() == null || !getMatchRule().valid()) {
             return false;
         }
 
