@@ -2,7 +2,8 @@
 
 一个用于 **按规则将 HTML 代码注入指定页面** 的 Halo 插件
 
-相比 Halo 的全局注入方式, 本插件支持 "代码片段 + 规则" 组合管理, 可精细控制注入范围与位置
+相比 Halo 的默认的全局注入功能, 本插件支持 "代码片段 + 注入规则" 组合管理, 可精细控制注入范围与位置,
+可根据注入规则在指定页面的指定位置注入指定代码
 
 ![preview](assets/images/preview.png)
 
@@ -41,9 +42,11 @@
 | `ID`       | 按元素 `id` 定位注入     |
 | `SELECTOR` | 按 CSS 选择器定位注入     |
 
-> `ID` / `SELECTOR` 模式虽是一种更便利的方式, 但服务端需要处理完整 HTML, 性能开销通常高于 `HEAD` / `FOOTER`.
-> 
-> 常规场景建议优先使用 `HEAD` / `FOOTER`.
+> `ID` / `SELECTOR` 模式虽是一种更便利的方式, 但服务端需要处理完整 HTML, 性能开销通常高于 `HEAD` / `FOOTER`
+>
+> 为了提升速度, 对于这个情况在内部构建了缓存策略, 但仍可能会带来较大开销
+>
+> 常规场景建议优先使用 `HEAD` / `FOOTER`
 
 #### 路径匹配
 
@@ -56,46 +59,13 @@
 
 #### 规则组
 
-规则采用树结构:
-
 - 节点类型: `GROUP`, `PATH`
 - 逻辑操作: `AND`, `OR`, `NOT`
 - 路径匹配器: `PATH_PATTERN`, `ANT`, `REGEX`, `EXACT`
 
-示例: `(PATH('/posts/**') OR PATH('/archives/**')) AND NOT PATH('/admin/**')`
+可以在一个 **规则组** 内添加多个 **路径匹配规则** 以及嵌套多个 **规则组**, 并且可根据 **逻辑操作符** 与前一项连接起来
 
-```json
-{
-  "type": "GROUP",
-  "operator": "AND",
-  "children": [
-    {
-      "type": "GROUP",
-      "operator": "OR",
-      "children": [
-        {
-          "type": "PATH",
-          "operator": "AND",
-          "matcher": "PATH_PATTERN",
-          "value": "/posts/**"
-        },
-        {
-          "type": "PATH",
-          "operator": "AND",
-          "matcher": "PATH_PATTERN",
-          "value": "/archives/**"
-        }
-      ]
-    },
-    {
-      "type": "PATH",
-      "operator": "NOT",
-      "matcher": "PATH_PATTERN",
-      "value": "/admin/**"
-    }
-  ]
-}
-```
+可得到类似的结构:`GROUP(PATH('/posts/**') OR PATH('/archives/**') AND NOT(PATH('/admin/**')))`
 
 ## 开发环境
 
