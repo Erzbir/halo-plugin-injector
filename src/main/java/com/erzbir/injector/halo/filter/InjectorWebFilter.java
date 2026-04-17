@@ -1,6 +1,5 @@
 package com.erzbir.injector.halo.filter;
 
-import com.erzbir.injector.api.InjectMode;
 import com.erzbir.injector.halo.core.InjectHelper;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
@@ -17,13 +16,11 @@ import run.halo.app.security.AdditionalWebFilter;
 @Component
 public class InjectorWebFilter implements AdditionalWebFilter {
 
-    private final InjectHelper injectHelper;
     private final HTMLInjectDispatcher dispatcher;
     private final ServerWebExchangeMatcher pathMatcher;
 
-    public InjectorWebFilter(InjectHelper injectHelper, HTMLInjectDispatcher dispatcher) {
-        this.injectHelper = injectHelper;
-        this.dispatcher = dispatcher;
+    public InjectorWebFilter(InjectHelper injectHelper) {
+        this.dispatcher = new HTMLInjectDispatcher(injectHelper);
         this.pathMatcher = PathMatcherFactory.create();
     }
 
@@ -35,26 +32,10 @@ public class InjectorWebFilter implements AdditionalWebFilter {
                     if (!matchResult.isMatch()) {
                         return chain.filter(exchange);
                     }
-                    String path = exchange.getRequest().getPath().value();
-                    return hasMatchingRules(path).flatMap(hasRules -> {
-                        if (!hasRules) {
-                            return chain.filter(exchange);
-                        }
-                        var decorated = exchange.mutate()
-                                .response(new InjectorResponseDecorator(exchange, dispatcher))
-                                .build();
-                        return chain.filter(decorated);
-                    });
+                    ServerWebExchange decorated = exchange.mutate()
+                            .response(new InjectorResponseDecorator(exchange, dispatcher))
+                            .build();
+                    return chain.filter(decorated);
                 });
     }
-
-    private Mono<Boolean> hasMatchingRules(String path) {
-        return Mono.zip(
-                        injectHelper.getMatchedRules(path, InjectMode.SELECTOR).hasElements(),
-                        injectHelper.getMatchedRules(path, InjectMode.ID).hasElements()
-                )
-                .map(tuple -> tuple.getT1() || tuple.getT2())
-                .defaultIfEmpty(false);
-    }
-
 }

@@ -6,7 +6,6 @@ import com.erzbir.injector.halo.scheme.InjectionRule;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -15,8 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-@Component
-public class HTMLInjectDispatcher {
+class HTMLInjectDispatcher {
     private final InjectHelper injectHelper;
     private final Map<InjectMode, HTMLInjector> injectorMap;
 
