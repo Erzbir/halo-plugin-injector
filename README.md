@@ -11,7 +11,6 @@
 - <a href="assets/images/config_rule_1.png">规则配置 1</a>
 - <a href="assets/images/config_rule_2.png">规则配置 2</a>
 
-
 界面入口: Halo 管理后台 -> 工具 -> Injector
 
 ## 功能特性
@@ -52,6 +51,18 @@
 > 为了提升速度, 对于这个情况在内部构建了缓存策略, 但仍可能会带来较大开销
 >
 > 常规场景建议优先使用 `HEAD` / `FOOTER`
+
+#### 注入位置选项
+
+在 id 或 selector 模式下, 可以选择注入到目标元素的相对位置:
+
+- append: 追加为目标元素的子元素
+- prepend: 插入到目标元素第一个子元素之前
+- before: 插入到目标元素之前
+- after: 插入到目标元素之后
+- replace: 替换目标元素
+
+> 注入到 <head> 时需注意 HTML 合法性. 例如 <div> 等块级标签不会被放入 <head>, 而是自动插入到 <body> 的第一个子元素位置
 
 #### 路径匹配
 
