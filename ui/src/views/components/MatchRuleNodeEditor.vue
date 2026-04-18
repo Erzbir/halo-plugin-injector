@@ -210,6 +210,7 @@ function onChildDragEnd(event: DragEvent) {
       <span
         v-if="sortable"
         class=":uno: ml-auto inline-flex items-center text-[11px] text-gray-400 select-none cursor-move"
+        :draggable="true"
         aria-hidden="true"
       >
         ⋮⋮
@@ -226,7 +227,6 @@ function onChildDragEnd(event: DragEvent) {
               ? ':uno: rounded-md ring-2 ring-blue-300'
               : ':uno: rounded-md'
           "
-          draggable="true"
           @dragend="onChildDragEnd($event)"
           @dragover="onChildDragOver(index, $event)"
           @dragstart="onChildDragStart(index, $event)"
