@@ -21,7 +21,14 @@ function emptyList<T>(): ItemList<T> {
 function isValidMatchRule(rule?: MatchRule): boolean {
   if (!rule) return false
   const nodeOperator = rule.operator ?? 'AND'
-  if (nodeOperator !== 'AND' && nodeOperator !== 'OR' && nodeOperator !== 'NOT') return false
+  if (
+    nodeOperator !== 'AND' &&
+    nodeOperator !== 'OR' &&
+    nodeOperator !== 'NOT' &&
+    nodeOperator !== 'AND_NOT' &&
+    nodeOperator !== 'OR_NOT'
+  )
+    return false
   if (rule.type === 'GROUP') {
     const children = rule.children ?? []
     return children.length > 0 && children.every((child) => isValidMatchRule(child))

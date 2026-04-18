@@ -36,7 +36,8 @@ const showOperatorSelect = computed(() => props.hasPrevious)
 const matcherOptions = computed(() => PATH_MATCHER_OPTIONS)
 const currentDepth = computed(() => props.depth ?? 0)
 const canNegatePathRule = computed(() => !isGroup.value)
-const resolvedOperator = computed(() => (props.modelValue.operator === 'OR' ? 'OR' : 'AND'))
+const resolvedOperator = computed(() => connectorOf(props.modelValue.operator))
+const checkedNegation = computed(() => isNegated(props.modelValue.operator))
 const draggingChildIndex = ref<number | null>(null)
 const dragOverChildIndex = ref<number | null>(null)
 const valueError = computed(() => {
@@ -56,6 +57,24 @@ const valueError = computed(() => {
 function update(next: Partial<MatchRule>) {
   emit('update:modelValue', { ...props.modelValue, ...next })
   emit('change')
+}
+
+function isNegated(operator?: MatchRule['operator']) {
+  return operator === 'NOT' || operator === 'AND_NOT' || operator === 'OR_NOT'
+}
+
+function connectorOf(operator?: MatchRule['operator']): 'AND' | 'OR' {
+  return operator === 'OR' || operator === 'OR_NOT' ? 'OR' : 'AND'
+}
+
+function combineOperator(
+  connector: 'AND' | 'OR',
+  negated: boolean,
+  hasPrevious: boolean,
+): MatchRule['operator'] {
+  if (!negated) return connector
+  if (connector === 'OR') return 'OR_NOT'
+  return hasPrevious ? 'AND_NOT' : 'NOT'
 }
 
 function updateType(type: MatchRuleType) {
@@ -153,7 +172,11 @@ function onChildDragEnd(event: DragEvent) {
         class=":uno: w-auto min-w-max shrink-0 rounded-md border border-gray-200 pl-2 pr-6 py-1 text-xs bg-white"
         @change="
           update({
-            operator: ($event.target as HTMLSelectElement).value as MatchRule['operator'],
+            operator: combineOperator(
+              ($event.target as HTMLSelectElement).value as 'AND' | 'OR',
+              checkedNegation,
+              hasPrevious,
+            ),
           })
         "
       >
@@ -169,10 +192,14 @@ function onChildDragEnd(event: DragEvent) {
         <input
           type="checkbox"
           class=":uno: rounded border-gray-300"
-          :checked="modelValue.operator === 'NOT'"
+          :checked="checkedNegation"
           @change="
             update({
-              operator: ($event.target as HTMLInputElement).checked ? 'NOT' : 'AND',
+              operator: combineOperator(
+                resolvedOperator,
+                ($event.target as HTMLInputElement).checked,
+                hasPrevious,
+              ),
             })
           "
         />

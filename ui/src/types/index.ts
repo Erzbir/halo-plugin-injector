@@ -15,7 +15,7 @@ export interface CodeSnippet {
 export type InjectionMode = 'HEAD' | 'FOOTER' | 'ID' | 'SELECTOR'
 export type InjectionPosition = 'APPEND' | 'PREPEND' | 'BEFORE' | 'AFTER' | 'REPLACE'
 export type MatchRuleType = 'GROUP' | 'PATH'
-export type MatchRuleOperator = 'AND' | 'OR' | 'NOT'
+export type MatchRuleOperator = 'AND' | 'OR' | 'NOT' | 'AND_NOT' | 'OR_NOT'
 export type MatchRuleMatcher = 'PATH_PATTERN' | 'ANT' | 'REGEX' | 'EXACT'
 
 export interface MatchRule {

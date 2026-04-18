@@ -18,7 +18,9 @@ public class MatchRuleResolver {
             return false;
         }
         boolean matched = evaluator.evaluate(rule, path);
-        if (MatchRuleType.PATH.equals(rule.getType()) && Operator.NOT.equals(rule.getOperator())) {
+        if (MatchRuleType.PATH.equals(rule.getType())
+                && rule.getOperator() != null
+                && rule.getOperator().isNegated()) {
             return !matched;
         }
         return matched;

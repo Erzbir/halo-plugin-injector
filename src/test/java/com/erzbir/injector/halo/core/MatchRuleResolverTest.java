@@ -104,4 +104,48 @@ class MatchRuleResolverTest {
         assertFalse(evaluator.matches(group, "/b"));
         assertFalse(evaluator.matches(group, "/c"));
     }
+
+    @Test
+    void shouldEvaluateOrAndNotCombinationAsExpected() {
+        MatchRule rule = MatchRule.groupRule(
+                Operator.AND,
+                MatchRule.pathRule(Operator.AND, MatcherType.PATH_PATTERN, "/posts/**"),
+                MatchRule.pathRule(Operator.OR, MatcherType.PATH_PATTERN, "/archives/**"),
+                MatchRule.groupRule(
+                        Operator.AND,
+                        MatchRule.pathRule(Operator.NOT, MatcherType.PATH_PATTERN, "/admin/**")
+                )
+        );
+
+        assertTrue(evaluator.matches(rule, "/posts/1"));
+        assertTrue(evaluator.matches(rule, "/archives/2024"));
+        assertFalse(evaluator.matches(rule, "/admin/1"));
+        assertFalse(evaluator.matches(rule, "/tags/halo"));
+    }
+
+    @Test
+    void shouldSupportCombinedAndNotOperator() {
+        MatchRule rule = MatchRule.groupRule(
+                Operator.AND,
+                MatchRule.pathRule(Operator.AND, MatcherType.EXACT, "/a"),
+                MatchRule.pathRule(Operator.AND_NOT, MatcherType.EXACT, "/b")
+        );
+
+        assertTrue(evaluator.matches(rule, "/a"));
+        assertFalse(evaluator.matches(rule, "/b"));
+        assertFalse(evaluator.matches(rule, "/c"));
+    }
+
+    @Test
+    void shouldSupportCombinedOrNotOperator() {
+        MatchRule rule = MatchRule.groupRule(
+                Operator.AND,
+                MatchRule.pathRule(Operator.AND, MatcherType.EXACT, "/a"),
+                MatchRule.pathRule(Operator.OR_NOT, MatcherType.EXACT, "/b")
+        );
+
+        assertTrue(evaluator.matches(rule, "/a"));
+        assertTrue(evaluator.matches(rule, "/c"));
+        assertFalse(evaluator.matches(rule, "/b"));
+    }
 }

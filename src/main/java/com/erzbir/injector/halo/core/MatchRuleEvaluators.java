@@ -72,17 +72,19 @@ final class GroupRuleEvaluator implements RuleEvaluator {
             return false;
         }
         Boolean result = null;
-        for (int i = 0; i < children.size(); i++) {
-            IMatchRule child = children.get(i);
+        for (IMatchRule child : children) {
+            Operator operator = child.getOperator() == null ? Operator.AND : child.getOperator();
             boolean matched = recursiveEvaluator.evaluate(child, path);
+            if (operator.isNegated()) {
+                matched = !matched;
+            }
             if (result == null) {
                 result = matched;
                 continue;
             }
-            Operator operator = child.getOperator() == null ? Operator.AND : child.getOperator();
-            result = merge(result, matched, operator);
+            result = merge(result, matched, operator.getConnector());
         }
-        return result != null && result;
+        return result;
     }
 
     private boolean merge(Boolean previous, boolean current, Operator operator) {
@@ -90,9 +92,8 @@ final class GroupRuleEvaluator implements RuleEvaluator {
             return current;
         }
         return switch (operator) {
-            case AND -> previous && current;
+            case AND, NOT, AND_NOT, OR_NOT -> previous && current;
             case OR -> previous || current;
-            case NOT -> previous && !current;
         };
     }
 }
