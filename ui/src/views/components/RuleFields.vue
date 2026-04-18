@@ -60,12 +60,13 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
         撤销修改
       </VButton>
     </template>
-    <input
+    <textarea
+      rows="1"
       :value="rule.description"
-      class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+      class=":uno: w-full min-h-[34px] resize-y rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
       placeholder="说明此规则的用途"
-      @change="updateField('description', ($event.target as HTMLInputElement).value)"
-    />
+      @change="updateField('description', ($event.target as HTMLTextAreaElement).value)"
+    ></textarea>
   </FormField>
 
   <FormField label="注入模式" required>
@@ -106,16 +107,17 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
           撤销修改
         </VButton>
       </template>
-      <input
+      <textarea
+        rows="1"
         :placeholder="rule.mode === 'SELECTOR' ? 'div[class=content]' : 'main-content'"
         :value="rule.match"
         :class="
           rule.match.trim()
-            ? ':uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm font-mono focus:border-primary focus:outline-none'
-            : ':uno: w-full rounded-md border border-red-400 px-3 py-1.5 text-sm font-mono focus:border-red-500 focus:outline-none'
+            ? ':uno: w-full min-h-[34px] resize-y rounded-md border border-gray-200 px-3 py-1.5 text-sm font-mono focus:border-primary focus:outline-none'
+            : ':uno: w-full min-h-[34px] resize-y rounded-md border border-red-400 px-3 py-1.5 text-sm font-mono focus:border-red-500 focus:outline-none'
         "
-        @change="updateField('match', ($event.target as HTMLInputElement).value)"
-      />
+        @change="updateField('match', ($event.target as HTMLTextAreaElement).value)"
+      ></textarea>
     </FormField>
 
     <FormField label="插入位置">

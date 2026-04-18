@@ -51,11 +51,12 @@ function handleSubmit() {
       </FormField>
 
       <FormField label="描述">
-        <input
+        <textarea
+          rows="1"
           v-model="snippet.description"
-          class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          class=":uno: w-full min-h-[34px] resize-y rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
           placeholder="说明此代码片段的用途"
-        />
+        ></textarea>
       </FormField>
 
       <FormField label="代码内容" required>

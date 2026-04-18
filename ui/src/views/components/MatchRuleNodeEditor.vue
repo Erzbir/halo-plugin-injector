@@ -268,16 +268,17 @@ function onChildDragEnd(event: DragEvent) {
             </option>
           </select>
 
-          <input
+          <textarea
+            rows="1"
             :placeholder="modelValue.type === 'PATH' ? '/**' : 'post'"
             :value="modelValue.value ?? ''"
             :class="
               valueError
-                ? ':uno: match-rule-error-input flex-1 min-w-40 rounded-md border px-2 py-1 text-xs font-mono focus:outline-none'
-                : ':uno: flex-1 min-w-40 rounded-md border border-gray-200 px-2 py-1 text-xs font-mono'
+                ? ':uno: match-rule-error-input flex-1 min-w-40 min-h-[34px] resize-y rounded-md border px-2 py-1 text-xs font-mono focus:outline-none'
+                : ':uno: flex-1 min-w-40 min-h-[34px] resize-y rounded-md border border-gray-200 px-2 py-1 text-xs font-mono'
             "
-            @input="update({ value: ($event.target as HTMLInputElement).value })"
-          />
+            @input="update({ value: ($event.target as HTMLTextAreaElement).value })"
+          ></textarea>
         </div>
         <p v-if="valueError" class=":uno: text-xs text-red-500">{{ valueError }}</p>
       </div>

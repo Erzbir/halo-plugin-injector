@@ -86,12 +86,13 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
             撤销修改
           </VButton>
         </template>
-        <input
+        <textarea
+          rows="1"
           :value="snippet.description"
-          class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          class=":uno: w-full min-h-[34px] resize-y rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
           placeholder="说明此代码片段的用途"
-          @change="updateField('description', ($event.target as HTMLInputElement).value)"
-        />
+          @change="updateField('description', ($event.target as HTMLTextAreaElement).value)"
+        ></textarea>
       </FormField>
 
       <FormField label="关联规则">
