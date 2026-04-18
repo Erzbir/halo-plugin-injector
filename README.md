@@ -5,7 +5,12 @@
 相比 Halo 的默认的全局注入功能, 本插件支持 "代码片段 + 注入规则" 组合管理, 可精细控制注入范围与位置,
 可根据注入规则在指定页面的指定位置注入指定代码
 
-![preview](assets/images/preview.png)
+## 示例配置
+
+- <a href="assets/images/config_code.png">代码块配置</a>
+- <a href="assets/images/config_rule_1.png">规则配置 1</a>
+- <a href="assets/images/config_rule_2.png">规则配置 2</a>
+
 
 界面入口: Halo 管理后台 -> 工具 -> Injector
 
