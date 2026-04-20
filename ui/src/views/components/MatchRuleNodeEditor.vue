@@ -8,6 +8,7 @@ import {
   MATCH_RULE_NODE_OPTIONS,
   PATH_MATCHER_OPTIONS,
 } from '@/types'
+import SelectDropdown from './SelectDropdown.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -34,6 +35,10 @@ const emit = defineEmits<{
 const isGroup = computed(() => props.modelValue.type === 'GROUP')
 const showOperatorSelect = computed(() => props.hasPrevious)
 const matcherOptions = computed(() => PATH_MATCHER_OPTIONS)
+const typeOptions: Array<{ value: MatchRuleType; label: string }> = [
+  { value: 'GROUP', label: '规则组' },
+  { value: 'PATH', label: '路径规则' },
+]
 const currentDepth = computed(() => props.depth ?? 0)
 const canNegatePathRule = computed(() => !isGroup.value)
 const resolvedOperator = computed(() => connectorOf(props.modelValue.operator))
@@ -75,6 +80,18 @@ function combineOperator(
   if (!negated) return connector
   if (connector === 'OR') return 'OR_NOT'
   return hasPrevious ? 'AND_NOT' : 'NOT'
+}
+
+function updateConnector(connector: 'AND' | 'OR') {
+  update({
+    operator: combineOperator(connector, checkedNegation.value, props.hasPrevious ?? false),
+  })
+}
+
+function updateNegation(negated: boolean) {
+  update({
+    operator: combineOperator(resolvedOperator.value, negated, props.hasPrevious ?? false),
+  })
 }
 
 function updateType(type: MatchRuleType) {
@@ -157,33 +174,22 @@ function onChildDragEnd(event: DragEvent) {
 <template>
   <div class=":uno: rounded-md border border-gray-200 p-3 space-y-2 bg-white">
     <div class=":uno: flex flex-wrap items-center gap-2">
-      <select
-        :value="modelValue.type"
-        class=":uno: w-auto min-w-max shrink-0 rounded-md border border-gray-200 pl-2 pr-6 py-1 text-xs bg-white"
-        @change="updateType(($event.target as HTMLSelectElement).value as MatchRuleType)"
-      >
-        <option value="GROUP">规则组</option>
-        <option value="PATH">路径规则</option>
-      </select>
+      <SelectDropdown
+        :model-value="modelValue.type"
+        :options="typeOptions"
+        :full-width="false"
+        size="xs"
+        @update:model-value="updateType($event as MatchRuleType)"
+      />
 
-      <select
+      <SelectDropdown
         v-if="showOperatorSelect"
-        :value="resolvedOperator"
-        class=":uno: w-auto min-w-max shrink-0 rounded-md border border-gray-200 pl-2 pr-6 py-1 text-xs bg-white"
-        @change="
-          update({
-            operator: combineOperator(
-              ($event.target as HTMLSelectElement).value as 'AND' | 'OR',
-              checkedNegation,
-              hasPrevious,
-            ),
-          })
-        "
-      >
-        <option v-for="o in MATCH_RULE_NODE_OPTIONS" :key="o.value" :value="o.value">
-          {{ o.label }}
-        </option>
-      </select>
+        :model-value="resolvedOperator"
+        :options="MATCH_RULE_NODE_OPTIONS"
+        :full-width="false"
+        size="xs"
+        @update:model-value="updateConnector($event as 'AND' | 'OR')"
+      />
 
       <label
         v-if="canNegatePathRule"
@@ -193,15 +199,7 @@ function onChildDragEnd(event: DragEvent) {
           type="checkbox"
           class=":uno: rounded border-gray-300"
           :checked="checkedNegation"
-          @change="
-            update({
-              operator: combineOperator(
-                resolvedOperator,
-                ($event.target as HTMLInputElement).checked,
-                hasPrevious,
-              ),
-            })
-          "
+          @change="updateNegation(($event.target as HTMLInputElement).checked)"
         />
         取反
       </label>
@@ -254,19 +252,13 @@ function onChildDragEnd(event: DragEvent) {
     <template v-else>
       <div class=":uno: space-y-1">
         <div class=":uno: flex flex-wrap items-center gap-2">
-          <select
-            :value="modelValue.matcher ?? 'PATH_PATTERN'"
-            class=":uno: w-auto min-w-max shrink-0 rounded-md border border-gray-200 pl-2 pr-6 py-1 text-xs bg-white"
-            @change="
-              update({
-                matcher: ($event.target as HTMLSelectElement).value as MatchRuleMatcher,
-              })
-            "
-          >
-            <option v-for="o in matcherOptions" :key="o.value" :value="o.value">
-              {{ o.label }}
-            </option>
-          </select>
+          <SelectDropdown
+            :model-value="modelValue.matcher ?? 'PATH_PATTERN'"
+            :options="matcherOptions"
+            :full-width="false"
+            size="xs"
+            @update:model-value="update({ matcher: $event as MatchRuleMatcher })"
+          />
 
           <textarea
             rows="1"

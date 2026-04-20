@@ -6,11 +6,15 @@ defineProps<{
   displayId?: string
   enabled?: boolean
   showActions?: boolean
+  dirty?: boolean
+  saving?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'toggle-enabled'): void
   (e: 'delete'): void
+  (e: 'revert-all'): void
+  (e: 'save'): void
 }>()
 </script>
 
@@ -35,6 +39,10 @@ const emit = defineEmits<{
         {{ enabled ? '禁用' : '启用' }}
       </VButton>
       <VButton size="sm" type="danger" @click="emit('delete')">删除</VButton>
+      <VButton :disabled="!dirty || saving" size="sm" @click="emit('revert-all')">撤销全部</VButton>
+      <VButton :disabled="!dirty || saving" size="sm" type="secondary" @click="emit('save')">
+        {{ saving ? '保存中...' : '保存' }}
+      </VButton>
     </VSpace>
   </div>
 </template>

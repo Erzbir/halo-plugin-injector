@@ -51,12 +51,6 @@ importers:
       '@types/node':
         specifier: ^20.19.1
         version: 20.19.37
-      '@unocss/eslint-config':
-        specifier: ^66.5.6
-        version: 66.6.7(eslint@9.39.4(jiti@2.6.1))(typescript@5.8.3)
-      '@unocss/postcss':
-        specifier: ^66.5.6
-        version: 66.6.7(postcss@8.5.8)
       '@unocss/webpack':
         specifier: ^66.5.6
         version: 66.6.7(webpack@5.105.4)
@@ -1134,14 +1128,6 @@ packages:
 
   '@unocss/core@66.6.7':
     resolution: {integrity: sha512-Q8456iWFtdwrUNYKVOQY8ygRggjZOVtLc6Jc8KIkxig7OiNlUWOgXJTfCh4I8g6jBYzC5eHaHFDLgJOmOrxBsg==}
-
-  '@unocss/eslint-config@66.6.7':
-    resolution: {integrity: sha512-l33NbugpKr5twWmRbFwQcvAuD/lWAqT9Nrnguga75geeUBENOVNQialeyEFcZAmR7/eYOeILIrhM8XtFUmtf2g==}
-    engines: {node: '>=14'}
-
-  '@unocss/eslint-plugin@66.6.7':
-    resolution: {integrity: sha512-0pNFT918CUOiWSlr3ZmePL5Bb06/g/mmP8zP+/dpl2+Vc/GuW6wHVsP+qn5hT2c5FwCPRZ3CUm0HprTru2/sGA==}
-    engines: {node: '>=14'}
 
   '@unocss/extractor-arbitrary-variants@66.6.7':
     resolution: {integrity: sha512-PQiBHK0yUJ0BR+3GYnTPU6va6HVSRPV+O+s1zZmt23TWbyIeucoKCNR47TDtv+Z1xuksY8krIjtDYtufdrVWKw==}
@@ -4283,27 +4269,6 @@ snapshots:
 
   '@unocss/core@66.6.7': {}
 
-  '@unocss/eslint-config@66.6.7(eslint@9.39.4(jiti@2.6.1))(typescript@5.8.3)':
-    dependencies:
-      '@unocss/eslint-plugin': 66.6.7(eslint@9.39.4(jiti@2.6.1))(typescript@5.8.3)
-    transitivePeerDependencies:
-      - eslint
-      - supports-color
-      - typescript
-
-  '@unocss/eslint-plugin@66.6.7(eslint@9.39.4(jiti@2.6.1))(typescript@5.8.3)':
-    dependencies:
-      '@typescript-eslint/utils': 8.58.0(eslint@9.39.4(jiti@2.6.1))(typescript@5.8.3)
-      '@unocss/config': 66.6.7
-      '@unocss/core': 66.6.7
-      '@unocss/rule-utils': 66.6.7
-      magic-string: 0.30.21
-      synckit: 0.11.12
-    transitivePeerDependencies:
-      - eslint
-      - supports-color
-      - typescript
-
   '@unocss/extractor-arbitrary-variants@66.6.7':
     dependencies:
       '@unocss/core': 66.6.7
@@ -4324,6 +4289,7 @@ snapshots:
       css-tree: 3.2.1
       postcss: 8.5.8
       tinyglobby: 0.2.15
+    optional: true
 
   '@unocss/preset-attributify@66.6.7':
     dependencies:

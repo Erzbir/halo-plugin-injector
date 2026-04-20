@@ -2,10 +2,9 @@
 import type { CodeSnippet, InjectionRule } from '@/types'
 import { VButton } from '@halo-dev/components'
 import EditorToolbar from './EditorToolbar.vue'
-import EditorFooter from './EditorFooter.vue'
 import FormField from './FormField.vue'
 import RelationPicker from './RelationPicker.vue'
-import CodeEditor from './CodeEditor.vue'
+import SnippetFields from './SnippetFields.vue'
 import { rulePreview, sortSelectedFirst } from '@/views/composables/util'
 import { computed } from 'vue'
 
@@ -30,12 +29,6 @@ const emit = defineEmits<{
 }>()
 
 const sortedRules = computed(() => sortSelectedFirst(props.rules, props.selectedRuleIds))
-
-function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K]) {
-  if (!props.snippet) return
-  emit('update:snippet', { ...props.snippet, [key]: value })
-  emit('field-change', key)
-}
 </script>
 
 <template>
@@ -45,7 +38,11 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
       :display-id="snippet?.id"
       :show-actions="!!snippet"
       :title="snippet ? '编辑代码片段' : '代码片段'"
+      :dirty="dirty"
+      :saving="saving"
       @delete="emit('delete')"
+      @revert-all="emit('revert-all')"
+      @save="emit('save')"
       @toggle-enabled="emit('toggle-enabled')"
     />
 
@@ -58,42 +55,15 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
       class=":uno: flex-1 overflow-y-auto px-4 py-4 space-y-4"
       @submit.prevent="emit('save')"
     >
-      <FormField label="名称">
-        <template #action>
-          <VButton
-            :class="dirtyFields.name ? '' : ':uno: invisible pointer-events-none'"
-            size="xs"
-            @click="emit('revert-field', 'name')"
-          >
-            撤销修改
-          </VButton>
-        </template>
-        <input
-          :value="snippet.name"
-          class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
-          placeholder="不填默认为 ID"
-          @change="updateField('name', ($event.target as HTMLInputElement).value)"
-        />
-      </FormField>
-
-      <FormField label="描述">
-        <template #action>
-          <VButton
-            :class="dirtyFields.description ? '' : ':uno: invisible pointer-events-none'"
-            size="xs"
-            @click="emit('revert-field', 'description')"
-          >
-            撤销修改
-          </VButton>
-        </template>
-        <textarea
-          rows="1"
-          :value="snippet.description"
-          class=":uno: w-full min-h-[34px] resize-y rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
-          placeholder="说明此代码片段的用途"
-          @change="updateField('description', ($event.target as HTMLTextAreaElement).value)"
-        ></textarea>
-      </FormField>
+      <SnippetFields
+        :snippet="snippet"
+        :dirty-fields="dirtyFields"
+        :show-revert="true"
+        :code-rows="8"
+        @field-change="emit('field-change', $event)"
+        @revert-field="emit('revert-field', $event)"
+        @update:snippet="emit('update:snippet', $event)"
+      />
 
       <FormField label="关联规则">
         <template #action>
@@ -116,26 +86,6 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
         />
       </FormField>
 
-      <FormField label="代码内容" required>
-        <template #action>
-          <VButton
-            :class="dirtyFields.code ? '' : ':uno: invisible pointer-events-none'"
-            size="xs"
-            @click="emit('revert-field', 'code')"
-          >
-            撤销修改
-          </VButton>
-        </template>
-        <CodeEditor
-          :model-value="snippet.code"
-          :invalid="!snippet.code.trim()"
-          placeholder="输入 HTML 代码"
-          :rows="10"
-          @update:model-value="updateField('code', $event)"
-        />
-      </FormField>
-
-      <EditorFooter :dirty="dirty" :saving="saving" @revert-all="emit('revert-all')" @save="emit('save')" />
     </form>
   </div>
 </template>

@@ -4,8 +4,7 @@ import type { CodeSnippet, InjectionRule } from '@/types'
 import { makeSnippet } from '@/types'
 import BaseFormModal from './BaseFormModal.vue'
 import RelationPicker from './RelationPicker.vue'
-import FormField from './FormField.vue'
-import CodeEditor from './CodeEditor.vue'
+import SnippetFields from './SnippetFields.vue'
 import { rulePreview } from '@/views/composables/util'
 
 defineProps<{
@@ -40,35 +39,20 @@ function handleSubmit() {
 </script>
 
 <template>
-  <BaseFormModal :saving="saving" title="新建代码片段" @close="emit('close')" @submit="handleSubmit">
+  <BaseFormModal
+    :saving="saving"
+    title="新建代码片段"
+    @close="emit('close')"
+    @submit="handleSubmit"
+  >
     <template #form>
-      <FormField label="名称">
-        <input
-          v-model="snippet.name"
-          class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
-          placeholder="不填默认为 ID"
-        />
-      </FormField>
-
-      <FormField label="描述">
-        <textarea
-          rows="1"
-          v-model="snippet.description"
-          class=":uno: w-full min-h-[34px] resize-y rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
-          placeholder="说明此代码片段的用途"
-        ></textarea>
-      </FormField>
-
-      <FormField label="代码内容" required>
-        <CodeEditor
-          :model-value="snippet.code"
-          :invalid="!snippet.code.trim()"
-          placeholder="输入 HTML 代码"
-          :rows="12"
-          autofocus
-          @update:model-value="snippet.code = $event"
-        />
-      </FormField>
+      <SnippetFields
+        :snippet="snippet"
+        :show-revert="false"
+        :code-rows="12"
+        :autofocus-code="true"
+        @update:snippet="snippet = $event"
+      />
     </template>
 
     <template #picker>

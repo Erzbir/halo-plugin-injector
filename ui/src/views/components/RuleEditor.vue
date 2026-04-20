@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import { VButton } from '@halo-dev/components'
 import type { CodeSnippet, InjectionRule } from '@/types'
 import EditorToolbar from './EditorToolbar.vue'
-import EditorFooter from './EditorFooter.vue'
 import FormField from './FormField.vue'
 import RuleFields from './RuleFields.vue'
 import RelationPicker from './RelationPicker.vue'
@@ -39,7 +38,11 @@ const sortedSnippets = computed(() => sortSelectedFirst(props.snippets, props.se
       :display-id="rule?.id"
       :show-actions="!!rule"
       :title="rule ? '编辑规则' : '注入规则'"
+      :dirty="dirty"
+      :saving="saving"
       @delete="emit('delete')"
+      @revert-all="emit('revert-all')"
+      @save="emit('save')"
       @toggle-enabled="emit('toggle-enabled')"
     />
 
@@ -79,8 +82,6 @@ const sortedSnippets = computed(() => sortSelectedFirst(props.snippets, props.se
           @toggle="(id) => emit('toggle-snippet', id)"
         />
       </FormField>
-
-      <EditorFooter :dirty="dirty" :saving="saving" @revert-all="emit('revert-all')" @save="emit('save')" />
     </form>
   </div>
 </template>

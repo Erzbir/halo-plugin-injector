@@ -1,17 +1,18 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Dialog, VButton, VCard, VLoading, VPageHeader } from '@halo-dev/components'
+import { Dialog, VCard, VPageHeader } from '@halo-dev/components'
 
 import type { ActiveTab } from '@/types'
 import { useInjectorData } from './composables/useInjectorData.ts'
 import { rulePreview } from './composables/util.ts'
 
-import ItemListV from './components/ItemListV.vue'
 import SnippetEditor from './components/SnippetEditor.vue'
 import RuleEditor from './components/RuleEditor.vue'
 import RelationPanel from './components/RelationPanel.vue'
 import SnippetFormModal from './components/SnippetFormModal.vue'
 import RuleFormModal from './components/RuleFormModal.vue'
+import InjectorTopTabs from './components/InjectorTopTabs.vue'
+import InjectorSidebar from './components/InjectorSidebar.vue'
 import PluginIcon from '@/components/PluginIcon.vue'
 
 const activeTab = ref<ActiveTab>('snippets')
@@ -34,6 +35,10 @@ const showSnippetModal = ref(false)
 const showRuleModal = ref(false)
 const batchMode = ref(false)
 const batchSelectedIds = ref<string[]>([])
+const topTabs: Array<{ key: ActiveTab; label: string }> = [
+  { key: 'snippets', label: '代码片段' },
+  { key: 'rules', label: '注入规则' },
+]
 
 const {
   loading,
@@ -112,9 +117,6 @@ const activeSortMode = computed<SortMode>({
     ruleSortOrder.value = order
   },
 })
-const activeSortModeLabel = computed(
-  () => sortModeOptions.find((o) => o.value === activeSortMode.value)?.label ?? '按创建时间降序',
-)
 const currentItems = computed(() =>
   activeTab.value === 'snippets' ? sortedSnippets.value : sortedRules.value,
 )
@@ -329,147 +331,36 @@ async function handleSelectRule(id: string) {
     <div class=":uno: m-0 md:m-4">
       <VCard :body-class="['injector-view-card-body']" style="height: calc(100vh - 5.5rem)">
         <div class=":uno: h-full flex flex-col">
-          <div class=":uno: h-12 shrink-0 border-b bg-gray-100 px-4">
-            <div class=":uno: h-full flex items-center gap-2">
-              <div
-                v-for="tab in [
-                  { key: 'snippets', label: '代码片段', count: snippets.length },
-                  { key: 'rules', label: '注入规则', count: rules.length },
-                ]"
-                :key="tab.key"
-                :class="
-                  activeTab === tab.key ? ':uno: bg-white text-gray-900' : ':uno: text-gray-500'
-                "
-                class=":uno: group relative h-9 min-w-24 px-3 flex items-center justify-center text-sm font-medium transition-colors whitespace-nowrap cursor-pointer select-none overflow-hidden"
-                @click="handleSwitchTab(tab.key as ActiveTab)"
-              >
-                <span
-                  :class="activeTab === tab.key ? ':uno: opacity-0' : ':uno: opacity-0'"
-                  class=":uno: absolute inset-1 bg-gray-900/10 pointer-events-none transition-opacity"
-                />
-                <span class=":uno: relative z-1 text-center">{{ tab.label }}</span>
-              </div>
-            </div>
-          </div>
+          <InjectorTopTabs :active-tab="activeTab" :tabs="topTabs" @switch="handleSwitchTab" />
           <div class=":uno: flex-1 overflow-x-auto">
             <div class=":uno: h-full min-w-[980px] flex divide-x divide-gray-100">
-              <div class=":uno: aside aside-left h-full flex-none flex flex-col overflow-hidden">
-                <div
-                  class=":uno: sticky top-0 z-10 h-12 flex items-center justify-between gap-2 border-b bg-white px-4 shrink-0"
-                >
-                  <div class=":uno: flex items-center gap-4 text-sm font-semibold text-gray-900">
-                    {{
-                      activeTab === 'snippets'
-                        ? `代码片段列表 (${snippets.length})`
-                        : `注入规则列表 (${rules.length})`
-                    }}
-                  </div>
-                  <div class=":uno: flex items-center gap-1.5">
-                    <label
-                      class=":uno: relative h-6 inline-flex items-center rounded-md border border-gray-200 bg-white px-1.5 text-[10px] text-gray-700 hover:border-gray-300"
-                    >
-                      <span class=":uno: pointer-events-none text-[10px] whitespace-nowrap">
-                        {{ activeSortModeLabel }}
-                      </span>
-                      <select
-                        v-model="activeSortMode"
-                        class=":uno: sort-select-native absolute inset-0 opacity-0 cursor-pointer text-[10px]"
-                      >
-                        <option
-                          v-for="option in sortModeOptions"
-                          :key="option.value"
-                          :value="option.value"
-                        >
-                          {{ option.label }}
-                        </option>
-                      </select>
-                    </label>
-                  </div>
-                </div>
-
-                <VLoading v-if="loading" />
-
-                <div
-                  v-if="batchMode"
-                  class=":uno: h-10 shrink-0 flex items-center justify-between gap-1 border-b bg-gray-50 px-2"
-                >
-                  <VButton size="xs" @click="toggleSelectAll">
-                    {{ allBatchSelected ? '取消全选' : '全选' }}
-                  </VButton>
-                  <div class=":uno: flex items-center gap-1">
-                    <VButton
-                      :disabled="!batchSelectedIds.length || saving"
-                      size="xs"
-                      @click="batchEnableSelected"
-                    >
-                      启用
-                    </VButton>
-                    <VButton
-                      :disabled="!batchSelectedIds.length || saving"
-                      size="xs"
-                      @click="batchDisableSelected"
-                    >
-                      禁用
-                    </VButton>
-                    <VButton
-                      :disabled="!batchSelectedIds.length || saving"
-                      size="xs"
-                      type="danger"
-                      @click="batchDeleteSelected"
-                    >
-                      删除
-                    </VButton>
-                  </div>
-                </div>
-
-                <div class=":uno: flex-1 overflow-y-auto max-h-[calc(100vh-17rem)]">
-                  <ItemListV
-                    v-if="activeTab === 'snippets'"
-                    :batch-mode="batchMode"
-                    :batch-selected-ids="batchSelectedIds"
-                    :items="sortedSnippets"
-                    :selected-id="selectedSnippetId"
-                    empty-text="暂无代码片段"
-                    @create="showSnippetModal = true"
-                    @select="handleSelectSnippet"
-                    @toggle-batch-select="toggleBatchSelect"
-                  />
-
-                  <ItemListV
-                    v-else
-                    :batch-mode="batchMode"
-                    :batch-selected-ids="batchSelectedIds"
-                    :items="sortedRules"
-                    :selected-id="selectedRuleId"
-                    :stretch="true"
-                    empty-text="暂无注入规则"
-                    @create="showRuleModal = true"
-                    @select="handleSelectRule"
-                    @toggle-batch-select="toggleBatchSelect"
-                  >
-                    <template #meta="{ item: r }">
-                      <span class=":uno: text-xs text-gray-500">{{ rulePreview(r) }}</span>
-                    </template>
-                  </ItemListV>
-                </div>
-
-                <div
-                  class=":uno: h-12 flex items-center justify-center gap-2 border-t bg-white shrink-0"
-                >
-                  <VButton v-if="!batchMode" size="sm" @click="toggleBatchMode">批量操作</VButton>
-                  <VButton v-else size="sm" @click="toggleBatchMode">退出批量操作</VButton>
-                  <VButton
-                    :disabled="batchMode"
-                    size="sm"
-                    type="secondary"
-                    @click="
-                      activeTab === 'snippets' ? (showSnippetModal = true) : (showRuleModal = true)
-                    "
-                  >
-                    {{ activeTab === 'snippets' ? '新建代码片段' : '新建规则' }}
-                  </VButton>
-                </div>
-              </div>
+              <InjectorSidebar
+                :active-tab="activeTab"
+                :active-sort-mode="activeSortMode"
+                :all-batch-selected="allBatchSelected"
+                :batch-mode="batchMode"
+                :batch-selected-ids="batchSelectedIds"
+                :loading="loading"
+                :rule-preview="rulePreview"
+                :rules="sortedRules"
+                :saving="saving"
+                :selected-rule-id="selectedRuleId"
+                :selected-snippet-id="selectedSnippetId"
+                :snippets="sortedSnippets"
+                :sort-mode-options="sortModeOptions"
+                @batch-delete="batchDeleteSelected"
+                @batch-disable="batchDisableSelected"
+                @batch-enable="batchEnableSelected"
+                @open-create="
+                  activeTab === 'snippets' ? (showSnippetModal = true) : (showRuleModal = true)
+                "
+                @select-rule="handleSelectRule"
+                @select-snippet="handleSelectSnippet"
+                @toggle-batch-mode="toggleBatchMode"
+                @toggle-batch-select="toggleBatchSelect"
+                @toggle-select-all="toggleSelectAll"
+                @update:sort-mode="activeSortMode = $event as SortMode"
+              />
 
               <div class=":uno: main h-full flex-none flex flex-col overflow-hidden">
                 <div v-if="batchMode" class=":uno: h-full flex flex-col">
@@ -536,10 +427,3 @@ async function handleSelectRule(id: string) {
     </div>
   </div>
 </template>
-
-<style scoped>
-.sort-select-native,
-.sort-select-native option {
-  font-size: 11px;
-}
-</style>

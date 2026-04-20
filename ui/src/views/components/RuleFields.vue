@@ -5,6 +5,7 @@ import type { InjectionRule } from '@/types'
 import { MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
 import MatchRuleNodeEditor from './MatchRuleNodeEditor.vue'
 import FormField from './FormField.vue'
+import SelectDropdown from './SelectDropdown.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -79,15 +80,11 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
         撤销修改
       </VButton>
     </template>
-    <select
-      :value="rule.mode"
-      class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
-      @change="
-        updateField('mode', ($event.target as HTMLSelectElement).value as InjectionRule['mode'])
-      "
-    >
-      <option v-for="o in MODE_OPTIONS" :key="o.value" :value="o.value">{{ o.label }}</option>
-    </select>
+    <SelectDropdown
+      :model-value="rule.mode"
+      :options="MODE_OPTIONS"
+      @update:model-value="updateField('mode', $event as InjectionRule['mode'])"
+    />
     <p
       v-if="rule.mode === 'SELECTOR' || rule.mode === 'ID'"
       class=":uno: mt-2 rounded-md border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-700"
@@ -130,20 +127,11 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
           撤销修改
         </VButton>
       </template>
-      <select
-        :value="rule.position"
-        class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none bg-white"
-        @change="
-          updateField(
-            'position',
-            ($event.target as HTMLSelectElement).value as InjectionRule['position'],
-          )
-        "
-      >
-        <option v-for="o in POSITION_OPTIONS" :key="o.value" :value="o.value">
-          {{ o.label }}
-        </option>
-      </select>
+      <SelectDropdown
+        :model-value="rule.position"
+        :options="POSITION_OPTIONS"
+        @update:model-value="updateField('position', $event as InjectionRule['position'])"
+      />
     </FormField>
   </template>
 

@@ -87,7 +87,7 @@ function closeFullscreen() {
           :placeholder="placeholder"
           :rows="rows"
           :value="modelValue"
-          class=":uno: flex-1 min-h-48 border-0 px-3 py-2 text-xs font-mono focus:outline-none leading-5 resize-y"
+          class=":uno: flex-1 min-h-40 border-0 px-3 py-2 text-xs font-mono focus:outline-none leading-5 resize-y"
           spellcheck="false"
           @change="handleChange"
           @input="handleInput"
