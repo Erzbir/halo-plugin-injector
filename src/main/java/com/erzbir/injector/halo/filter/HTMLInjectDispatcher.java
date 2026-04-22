@@ -8,11 +8,12 @@ import com.erzbir.injector.halo.core.InjectHelper;
 import com.erzbir.injector.halo.core.SelectorInjector;
 import com.erzbir.injector.halo.scheme.InjectionRule;
 import com.erzbir.injector.halo.util.FingerprintUtil;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import java.time.Duration;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -25,7 +26,13 @@ import reactor.core.scheduler.Schedulers;
 class HTMLInjectDispatcher {
     private final InjectHelper injectHelper;
     private final Map<InjectMode, HTMLInjector> injectorMap;
-    private final ConcurrentHashMap<String, Long> ruleFingerprintsMap = new ConcurrentHashMap<>();
+    private static final int CACHE_MAX_SIZE = 1024;
+    private static final Duration TTL = Duration.ofDays(1);
+
+    private final Cache<String, Long> ruleFingerprintsCache = Caffeine.newBuilder()
+        .maximumSize(CACHE_MAX_SIZE)
+        .expireAfterAccess(TTL)
+        .build();
 
     public HTMLInjectDispatcher(InjectHelper injectHelper) {
         this.injectHelper = injectHelper;
@@ -35,14 +42,13 @@ class HTMLInjectDispatcher {
     }
 
     public Mono<String> dispatch(String html, String permalink) {
-        AtomicLong fingerprintHolder = new AtomicLong(0L);
         return collectAllRuleCodes(permalink)
             .collectList()
             .flatMap(ruleCodes -> {
                 if (ruleCodes.isEmpty()) {
                     return Mono.just(html);
                 }
-                long fingerprint = getOrComputeFingerprint(html, fingerprintHolder);
+                long fingerprint = FingerprintUtil.fnv1a64(html);
                 String cached = HTMLResponseCache.get(permalink, fingerprint);
                 if (cached != null) {
                     log.debug("Return cached injection result for {}", permalink);
@@ -77,18 +83,15 @@ class HTMLInjectDispatcher {
 
     private String applyRuleCodes(Document document, String path, List<RuleCode> ruleCodes) {
         Document.OutputSettings outputSettings = document.outputSettings();
+        Long cur = buildRuleFingerprint(ruleCodes);
 
-        Long prev = ruleFingerprintsMap.get(path);
-        Long cur = buildRuleFingerprints(ruleCodes);
-        if (prev == null || prev == 0L) {
-            ruleFingerprintsMap.put(path, cur);
-        } else {
-            if (!prev.equals(cur)) {
+        ruleFingerprintsCache.asMap().compute(path, (k, prev) -> {
+            if (prev != null && !prev.equals(cur)) {
                 log.info("Rule changed for [{}], invalidating cache", path);
                 HTMLResponseCache.invalidateCache(path);
-                ruleFingerprintsMap.put(path, cur);
             }
-        }
+            return cur;
+        });
 
         for (RuleCode rc : ruleCodes) {
             HTMLInjector injector = injectorMap.get(rc.rule().getMode());
@@ -103,16 +106,13 @@ class HTMLInjectDispatcher {
                 log.warn("Injection failed for path [{}] with rule [{}]", path, rc.rule().getId(),
                     e);
             }
-
             log.debug("Injected rule [{}] into [{}]", rc.rule().getId(), path);
-
-            // reset to default
             document.outputSettings(outputSettings);
         }
         return document.html();
     }
 
-    private Long buildRuleFingerprints(List<RuleCode> ruleCodes) {
+    private Long buildRuleFingerprint(List<RuleCode> ruleCodes) {
         if (ruleCodes == null || ruleCodes.isEmpty()) {
             return 0L;
         }
@@ -120,19 +120,10 @@ class HTMLInjectDispatcher {
             .map(RuleCode::fpString)
             .map(FingerprintUtil::fnv1a64)
             .sorted()
-            .reduce(0L, (a, b) -> FingerprintUtil.fnv1a64(a + "," + b));
-    }
-
-    private long getOrComputeFingerprint(String html, AtomicLong holder) {
-        long existing = holder.get();
-        if (existing != 0L) {
-            return existing;
-        }
-        long computed = FingerprintUtil.fnv1a64(html);
-        if (holder.compareAndSet(0L, computed)) {
-            return computed;
-        }
-        return holder.get();
+            .reduce(0L, (a, b) -> {
+                long rotated = (a << 17) | (a >>> 47);
+                return rotated ^ b;
+            });
     }
 
     private record RuleCode(InjectionRule rule, String code) {
