@@ -36,20 +36,39 @@ const emit = defineEmits<{
 
 <template>
   <div class=":uno: aside aside-left h-full flex-none flex flex-col overflow-hidden">
-    <div class=":uno: sticky top-0 z-10 h-12 flex items-center justify-end gap-2 border-b bg-white px-4 shrink-0">
-      <div class=":uno: flex items-center gap-1.5">
-        <SelectDropdown
-          :model-value="activeSortMode"
-          :options="sortModeOptions"
-          :full-width="false"
+    <div
+      class=":uno: sticky top-0 z-10 h-12 flex items-center justify-end gap-2 border-b bg-white px-4 shrink-0"
+    >
+      <div class=":uno: flex items-center gap-1.5 min-w-0">
+        <div class=":uno: min-w-0 shrink">
+          <SelectDropdown
+            :model-value="activeSortMode"
+            :options="sortModeOptions"
+            :full-width="false"
+            size="sm"
+            align="end"
+            placeholder="排序"
+            @update:model-value="emit('update:sort-mode', $event)"
+          />
+        </div>
+        <VButton
+          v-if="!batchMode"
           size="sm"
-          align="end"
-          placeholder="排序"
-          @update:model-value="emit('update:sort-mode', $event)"
-        />
-        <VButton v-if="!batchMode" size="sm" @click="emit('toggle-batch-mode')">批量操作</VButton>
-        <VButton v-else size="sm" @click="emit('toggle-batch-mode')">退出批量操作</VButton>
-        <VButton :disabled="batchMode" size="sm" type="secondary" @click="emit('open-create')">新建</VButton>
+          class=":uno: shrink-0"
+          @click="emit('toggle-batch-mode')"
+          >批量操作</VButton
+        >
+        <VButton v-else size="sm" class=":uno: shrink-0" @click="emit('toggle-batch-mode')"
+          >退出批量操作</VButton
+        >
+        <VButton
+          :disabled="batchMode"
+          size="sm"
+          type="secondary"
+          class=":uno: shrink-0"
+          @click="emit('open-create')"
+          >新建</VButton
+        >
       </div>
     </div>
 
@@ -63,10 +82,18 @@ const emit = defineEmits<{
         {{ allBatchSelected ? '取消全选' : '全选' }}
       </VButton>
       <div class=":uno: flex items-center gap-1">
-        <VButton :disabled="!batchSelectedIds.length || saving" size="xs" @click="emit('batch-enable')">
+        <VButton
+          :disabled="!batchSelectedIds.length || saving"
+          size="xs"
+          @click="emit('batch-enable')"
+        >
           启用
         </VButton>
-        <VButton :disabled="!batchSelectedIds.length || saving" size="xs" @click="emit('batch-disable')">
+        <VButton
+          :disabled="!batchSelectedIds.length || saving"
+          size="xs"
+          @click="emit('batch-disable')"
+        >
           禁用
         </VButton>
         <VButton

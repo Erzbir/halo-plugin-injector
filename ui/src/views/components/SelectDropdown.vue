@@ -46,19 +46,18 @@ function handleSelect(value: string) {
 
 <template>
   <VDropdown :placement="placement">
-    <div
-      :class="fullWidth ? ':uno: w-full' : ':uno: inline-block max-w-full'"
-      class=":uno: relative"
-    >
+    <div :class="fullWidth ? ':uno: w-full' : ':uno: block min-w-0'" class=":uno: relative">
       <VButton
-        :class="[fullWidth ? ':uno: !w-full !pr-8' : ':uno: !pr-5']"
-        class=":uno: !justify-start !text-left"
+        :class="[fullWidth ? ':uno: !w-full !pr-8' : ':uno: !w-full !pr-5']"
+        class=":uno: !justify-start !text-left !overflow-hidden"
         :disabled="disabled"
         :size="size"
       >
         <span
           :class="
-            fullWidth ? ':uno: block w-full min-w-0 truncate' : ':uno: block whitespace-nowrap'
+            fullWidth
+              ? ':uno: block w-full min-w-0 truncate'
+              : ':uno: block min-w-0 overflow-hidden text-ellipsis whitespace-nowrap'
           "
           class=":uno: leading-5"
         >
