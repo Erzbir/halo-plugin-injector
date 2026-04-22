@@ -1,21 +1,25 @@
 package com.erzbir.injector.halo.filter;
 
 import com.erzbir.injector.api.InjectMode;
-import com.erzbir.injector.halo.core.*;
+import com.erzbir.injector.halo.core.ElementIDInjector;
+import com.erzbir.injector.halo.core.HTMLCode;
+import com.erzbir.injector.halo.core.HTMLInjector;
+import com.erzbir.injector.halo.core.InjectHelper;
+import com.erzbir.injector.halo.core.SelectorInjector;
 import com.erzbir.injector.halo.scheme.InjectionRule;
 import com.erzbir.injector.halo.util.FingerprintUtil;
-import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Slf4j
 class HTMLInjectDispatcher {
@@ -33,33 +37,32 @@ class HTMLInjectDispatcher {
     public Mono<String> dispatch(String html, String permalink) {
         AtomicLong fingerprintHolder = new AtomicLong(0L);
         return collectAllRuleCodes(permalink)
-                .collectList()
-                .flatMap(ruleCodes -> {
-                    if (ruleCodes.isEmpty()) {
-                        return Mono.just(html);
-                    }
-                    long fingerprint = getOrComputeFingerprint(html, fingerprintHolder);
-                    String cached = HTMLResponseCache.get(permalink, fingerprint);
-                    if (cached != null) {
-                        return Mono.just(cached);
-                    }
-                    Document document = Jsoup.parse(html);
-                    return Mono.fromCallable(() -> applyRuleCodes(document, permalink, ruleCodes))
-                            .doOnNext(processed -> HTMLResponseCache.put(
-                                    permalink,
-                                    fingerprint,
-                                    processed
-                            ));
-                })
-                .onErrorResume(e -> {
-                    log.warn("Failed to inject HTML for path [{}]", permalink, e);
+            .collectList()
+            .flatMap(ruleCodes -> {
+                if (ruleCodes.isEmpty()) {
                     return Mono.just(html);
-                });
+                }
+                long fingerprint = getOrComputeFingerprint(html, fingerprintHolder);
+                String cached = HTMLResponseCache.get(permalink, fingerprint);
+                if (cached != null) {
+                    log.debug("Return cached injection result for {}", permalink);
+                    return Mono.just(cached);
+                }
+                return Mono.fromCallable(() -> {
+                        Document document = Jsoup.parse(html);
+                        document.outputSettings(new Document.OutputSettings().prettyPrint(false));
+                        return applyRuleCodes(document, permalink, ruleCodes);
+                    })
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .doOnSuccess(processed ->
+                        HTMLResponseCache.put(permalink, fingerprint, processed)
+                    );
+            });
     }
 
     private Flux<RuleCode> collectAllRuleCodes(String permalink) {
         return Flux.fromArray(InjectMode.values())
-                .flatMap(mode -> fetchRuleCodes(permalink, mode));
+            .flatMap(mode -> fetchRuleCodes(permalink, mode));
     }
 
     private Flux<RuleCode> fetchRuleCodes(String path, InjectMode mode) {
@@ -67,10 +70,9 @@ class HTMLInjectDispatcher {
         if (matchedRules == null) {
             return Flux.empty();
         }
-        return matchedRules
-                .concatMap(rule -> injectHelper.getConcatCode(rule)
-                        .map(code -> new RuleCode(rule, code)))
-                .filter(rc -> !rc.code().isBlank());
+        return matchedRules.concatMap(rule -> injectHelper.getConcatCode(rule)
+                .map(code -> new RuleCode(rule, code)))
+            .filter(rc -> !rc.code().isBlank());
     }
 
     private String applyRuleCodes(Document document, String path, List<RuleCode> ruleCodes) {
@@ -82,6 +84,7 @@ class HTMLInjectDispatcher {
             ruleFingerprintsMap.put(path, cur);
         } else {
             if (!prev.equals(cur)) {
+                log.info("Rule changed for [{}], invalidating cache", path);
                 HTMLResponseCache.invalidateCache(path);
                 ruleFingerprintsMap.put(path, cur);
             }
@@ -90,11 +93,19 @@ class HTMLInjectDispatcher {
         for (RuleCode rc : ruleCodes) {
             HTMLInjector injector = injectorMap.get(rc.rule().getMode());
             if (injector == null) {
-                log.warn("No injector found for mode {}", rc.rule().getMode());
+                log.debug("No injector found for rule {}", rc.rule().getId());
                 continue;
             }
             log.debug("Injecting rule [{}] into [{}]", rc.rule().getId(), path);
-            injector.inject(document, new HTMLCode(rc.code()), rc.rule(), null);
+            try {
+                injector.inject(document, new HTMLCode(rc.code()), rc.rule(), null);
+            } catch (Exception e) {
+                log.warn("Injection failed for path [{}] with rule [{}]", path, rc.rule().getId(),
+                    e);
+            }
+
+            log.debug("Injected rule [{}] into [{}]", rc.rule().getId(), path);
+
             // reset to default
             document.outputSettings(outputSettings);
         }
@@ -106,10 +117,10 @@ class HTMLInjectDispatcher {
             return 0L;
         }
         return ruleCodes.stream()
-                .map(RuleCode::fpString)
-                .map(FingerprintUtil::fnv1a64)
-                .sorted()
-                .reduce(0L, (a, b) -> FingerprintUtil.fnv1a64(a + "," + b));
+            .map(RuleCode::fpString)
+            .map(FingerprintUtil::fnv1a64)
+            .sorted()
+            .reduce(0L, (a, b) -> FingerprintUtil.fnv1a64(a + "," + b));
     }
 
     private long getOrComputeFingerprint(String html, AtomicLong holder) {
@@ -127,12 +138,12 @@ class HTMLInjectDispatcher {
     private record RuleCode(InjectionRule rule, String code) {
         String fpString() {
             return rule.getId()
-                    + "|" + rule.getMode()
-                    + "|" + rule.getMatch()
-                    + "|" + rule.getPosition()
-                    + "|" + rule.getMatchRule()
-                    + "|" + rule.getSnippetIds().stream().sorted().collect(Collectors.joining(","))
-                    + "|" + code;
+                + "|" + rule.getMode()
+                + "|" + rule.getMatch()
+                + "|" + rule.getPosition()
+                + "|" + rule.getMatchRule()
+                + "|" + rule.getSnippetIds().stream().sorted().collect(Collectors.joining(","))
+                + "|" + code;
         }
     }
 }

@@ -58,28 +58,15 @@ class HTMLInjectDispatcherTest {
     }
 
     @Test
-    void shouldReturnOriginalHtmlWhenDispatchFails() {
-        InjectHelper injectHelper = mock(InjectHelper.class);
-        HTMLInjectDispatcher dispatcher = new HTMLInjectDispatcher(injectHelper);
-
-        when(injectHelper.getMatchedRules("/p/1", InjectMode.SELECTOR))
-                .thenReturn(Flux.error(new IllegalStateException("boom")));
-
-        String result = dispatcher.dispatch("<html>raw</html>", "/p/1").block();
-
-        assertEquals("<html>raw</html>", result);
-    }
-
-    @Test
     void shouldReturnOriginalHtmlWhenNoRulesMatch() {
         InjectHelper injectHelper = mock(InjectHelper.class);
         HTMLInjectDispatcher dispatcher = new HTMLInjectDispatcher(injectHelper);
         when(injectHelper.getMatchedRules("/p/1", InjectMode.SELECTOR)).thenReturn(Flux.empty());
         when(injectHelper.getMatchedRules("/p/1", InjectMode.ID)).thenReturn(Flux.empty());
 
-        String result = dispatcher.dispatch("<html>raw</html>", "/p/1").block();
+        String result = dispatcher.dispatch("<html><head></head><body>raw</body></html>", "/p/1").block();
 
-        assertEquals("<html>raw</html>", result);
+        assertEquals("<html><head></head><body>raw</body></html>", result);
     }
 
     @Test
@@ -98,8 +85,8 @@ class HTMLInjectDispatcherTest {
         when(injectHelper.getMatchedRules("/p/1", InjectMode.ID)).thenReturn(Flux.empty());
         when(injectHelper.getConcatCode(selectorRule)).thenReturn(Mono.just("S"));
 
-        String result = dispatcher.dispatch("<html>raw</html>", "/p/1").block();
+        String result = dispatcher.dispatch("<html><head></head><body>raw</body></html>", "/p/1").block();
 
-        assertEquals("<html>raw</html>", result);
+        assertEquals("<html><head></head><body>raw</body></html>", result);
     }
 }

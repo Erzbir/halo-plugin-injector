@@ -1,4 +1,6 @@
 package com.erzbir.injector.halo.filter;
+
+import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.reactivestreams.Publisher;
@@ -12,8 +14,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.nio.charset.StandardCharsets;
-
 /**
  * @author Erzbir
  * @since 1.0.0
@@ -24,7 +24,7 @@ class InjectorResponseDecorator extends ServerHttpResponseDecorator {
     private final HTMLInjectDispatcher dispatcher;
 
     public InjectorResponseDecorator(ServerWebExchange exchange,
-                                     HTMLInjectDispatcher dispatcher) {
+        HTMLInjectDispatcher dispatcher) {
         super(exchange.getResponse());
         this.exchange = exchange;
         this.dispatcher = dispatcher;
@@ -33,7 +33,7 @@ class InjectorResponseDecorator extends ServerHttpResponseDecorator {
     @Override
     @NonNull
     public Mono<Void> writeAndFlushWith(
-            @NonNull Publisher<? extends Publisher<? extends DataBuffer>> body) {
+        @NonNull Publisher<? extends Publisher<? extends DataBuffer>> body) {
         return writeWith(Flux.from(body).flatMapSequential(publisher -> publisher));
     }
 
@@ -48,13 +48,13 @@ class InjectorResponseDecorator extends ServerHttpResponseDecorator {
             return super.writeWith(body);
         }
         return DataBufferUtils.join(Flux.from(body))
-                .flatMap(dataBuffer -> processBuffer(dataBuffer, getDelegate(), path))
-                .flatMap(processed -> super.writeWith(Mono.just(processed)));
+            .flatMap(dataBuffer -> processBuffer(dataBuffer, getDelegate(), path))
+            .flatMap(processed -> super.writeWith(Mono.just(processed)));
     }
 
     private Mono<DataBuffer> processBuffer(DataBuffer dataBuffer,
-                                           ServerHttpResponse response,
-                                           String path) {
+        ServerHttpResponse response,
+        String path) {
         final String html;
         try {
             html = dataBuffer.toString(StandardCharsets.UTF_8);
@@ -66,14 +66,14 @@ class InjectorResponseDecorator extends ServerHttpResponseDecorator {
         }
 
         return dispatcher.dispatch(html, path)
-                .onErrorResume(e -> {
-                    log.warn("Injection failed for path [{}], returning original HTML", path, e);
-                    return Mono.just(html);
-                })
-                .map(processed -> {
-                    byte[] bytes = processed.getBytes(StandardCharsets.UTF_8);
-                    return response.bufferFactory().wrap(bytes);
-                });
+            .onErrorResume(e -> {
+                log.warn("Injection failed for path [{}], returning original HTML", path, e);
+                return Mono.just(html);
+            })
+            .map(processed -> {
+                byte[] bytes = processed.getBytes(StandardCharsets.UTF_8);
+                return response.bufferFactory().wrap(bytes);
+            });
     }
 
     private boolean shouldProcessResponse() {

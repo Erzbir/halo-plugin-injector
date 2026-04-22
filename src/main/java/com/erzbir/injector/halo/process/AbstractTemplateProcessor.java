@@ -26,16 +26,21 @@ public abstract class AbstractTemplateProcessor {
 
     protected Mono<Void> processInternal(ITemplateContext context, IModel model) {
         String path = ContextUtil.getPath(context);
-
         return injectHelper.getMatchedRules(path, mode())
-                .flatMap(rule ->
-                        injectHelper.getConcatCode(rule)
-                                .doOnNext(code -> {
-                                    doProcess(context, model, code);
-                                }).doOnSuccess(s -> log.debug("Injected rule: [{}] into [{}]",
-                                        rule.getId(),
-                                        path))
-                )
-                .then();
+            .concatMap(rule ->
+                injectHelper.getConcatCode(rule)
+                    .flatMap(code -> Mono.fromCallable(() -> {
+                        doProcess(context, model, code);
+                        return code;
+                    }))
+                    .doOnSuccess(
+                        code -> log.debug("Injected rule [{}] into [{}]", rule.getId(), path))
+                    .onErrorResume(e -> {
+                        log.warn("Injection failed for path [{}] with rule [{}]", path,
+                            rule.getId(), e);
+                        return Mono.empty();
+                    })
+            )
+            .then();
     }
 }
