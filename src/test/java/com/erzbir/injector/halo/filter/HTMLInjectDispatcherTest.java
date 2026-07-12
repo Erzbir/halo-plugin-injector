@@ -58,6 +58,34 @@ class HTMLInjectDispatcherTest {
     }
 
     @Test
+    void shouldRecomputeWhenRuleCodeChanges() {
+        InjectHelper injectHelper = mock(InjectHelper.class);
+        HTMLInjectDispatcher dispatcher = new HTMLInjectDispatcher(injectHelper);
+
+        InjectionRule selectorRule = mock(InjectionRule.class);
+        when(selectorRule.getId()).thenReturn("changing-rule");
+        when(selectorRule.getMode()).thenReturn(InjectMode.SELECTOR);
+        when(selectorRule.getMatch()).thenReturn(".entry");
+        when(selectorRule.getPosition()).thenReturn(InjectPosition.APPEND);
+        when(selectorRule.getMatchRule()).thenReturn(MatchRule.defaultRule());
+        when(selectorRule.getSnippetIds()).thenReturn(Set.of("s1"));
+        when(injectHelper.getMatchedRules("/cache/rule-change", InjectMode.SELECTOR))
+            .thenReturn(Flux.just(selectorRule));
+        when(injectHelper.getMatchedRules("/cache/rule-change", InjectMode.ID))
+            .thenReturn(Flux.empty());
+        when(injectHelper.getConcatCode(selectorRule))
+            .thenReturn(Mono.just("<span>before</span>"), Mono.just("<span>after</span>"));
+
+        String html = "<html><body><div class='entry'></div></body></html>";
+        String first = dispatcher.dispatch(html, "/cache/rule-change").block();
+        String second = dispatcher.dispatch(html, "/cache/rule-change").block();
+
+        assertTrue(first.contains("<span>before</span>"));
+        assertTrue(second.contains("<span>after</span>"));
+        assertFalse(second.contains("<span>before</span>"));
+    }
+
+    @Test
     void shouldReturnOriginalHtmlWhenNoRulesMatch() {
         InjectHelper injectHelper = mock(InjectHelper.class);
         HTMLInjectDispatcher dispatcher = new HTMLInjectDispatcher(injectHelper);

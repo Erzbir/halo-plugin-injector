@@ -8,9 +8,6 @@ import com.erzbir.injector.halo.core.InjectHelper;
 import com.erzbir.injector.halo.core.SelectorInjector;
 import com.erzbir.injector.halo.scheme.InjectionRule;
 import com.erzbir.injector.halo.util.FingerprintUtil;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import java.time.Duration;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -26,13 +23,6 @@ import reactor.core.scheduler.Schedulers;
 class HTMLInjectDispatcher {
     private final InjectHelper injectHelper;
     private final Map<InjectMode, HTMLInjector> injectorMap;
-    private static final int CACHE_MAX_SIZE = 1024;
-    private static final Duration TTL = Duration.ofDays(1);
-
-    private final Cache<String, Long> ruleFingerprintsCache = Caffeine.newBuilder()
-        .maximumSize(CACHE_MAX_SIZE)
-        .expireAfterAccess(TTL)
-        .build();
 
     public HTMLInjectDispatcher(InjectHelper injectHelper) {
         this.injectHelper = injectHelper;
@@ -48,8 +38,10 @@ class HTMLInjectDispatcher {
                 if (ruleCodes.isEmpty()) {
                     return Mono.just(html);
                 }
-                long fingerprint = FingerprintUtil.fnv1a64(html);
-                String cached = HTMLResponseCache.get(permalink, fingerprint);
+                long htmlFingerprint = FingerprintUtil.fnv1a64(html);
+                long ruleFingerprint = buildRuleFingerprint(ruleCodes);
+                long cacheFingerprint = Long.rotateLeft(htmlFingerprint, 17) ^ ruleFingerprint;
+                String cached = HTMLResponseCache.get(permalink, cacheFingerprint);
                 if (cached != null) {
                     log.debug("Return cached injection result for {}", permalink);
                     return Mono.just(cached);
@@ -61,7 +53,7 @@ class HTMLInjectDispatcher {
                     })
                     .subscribeOn(Schedulers.boundedElastic())
                     .doOnSuccess(processed ->
-                        HTMLResponseCache.put(permalink, fingerprint, processed)
+                        HTMLResponseCache.put(permalink, cacheFingerprint, processed)
                     );
             });
     }
@@ -83,16 +75,6 @@ class HTMLInjectDispatcher {
 
     private String applyRuleCodes(Document document, String path, List<RuleCode> ruleCodes) {
         Document.OutputSettings outputSettings = document.outputSettings();
-        Long cur = buildRuleFingerprint(ruleCodes);
-
-        ruleFingerprintsCache.asMap().compute(path, (k, prev) -> {
-            if (prev != null && !prev.equals(cur)) {
-                log.info("Rule changed for [{}], invalidating cache", path);
-                HTMLResponseCache.invalidateCache(path);
-            }
-            return cur;
-        });
-
         for (RuleCode rc : ruleCodes) {
             HTMLInjector injector = injectorMap.get(rc.rule().getMode());
             if (injector == null) {
