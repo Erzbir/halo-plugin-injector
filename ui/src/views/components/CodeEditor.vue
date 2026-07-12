@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { computed, ref, useTemplateRef } from 'vue'
-import { Teleport } from 'vue'
 import { VButton } from '@halo-dev/components'
 
 const props = withDefaults(
