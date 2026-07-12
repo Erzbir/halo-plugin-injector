@@ -337,10 +337,19 @@ export function useInjectorData() {
 
   async function toggleSnippetEnabled() {
     if (!editSnippet.value) return
+    const persisted = snippets.value.find((snippet) => snippet.id === editSnippet.value?.id)
+    if (!persisted) return
+    const enabled = !persisted.enabled
     try {
-      editSnippet.value.enabled = !editSnippet.value.enabled
-      await snippetApi.update(editSnippet.value.id, editSnippet.value)
-      await fetchAll()
+      await snippetApi.update(persisted.id, { ...persisted, enabled })
+      setSnippetsItems(
+        snippets.value.map((snippet) =>
+          snippet.id === persisted.id ? { ...snippet, enabled } : snippet,
+        ),
+      )
+      editSnippet.value = { ...editSnippet.value, enabled }
+      if (originalSnippet.value) originalSnippet.value = { ...originalSnippet.value, enabled }
+      refreshDirty()
     } catch {
       Toast.error('操作失败')
     }
@@ -348,10 +357,17 @@ export function useInjectorData() {
 
   async function toggleRuleEnabled() {
     if (!editRule.value) return
+    const persisted = rules.value.find((rule) => rule.id === editRule.value?.id)
+    if (!persisted) return
+    const enabled = !persisted.enabled
     try {
-      editRule.value.enabled = !editRule.value.enabled
-      await ruleApi.update(editRule.value.id, editRule.value)
-      await fetchAll()
+      await ruleApi.update(persisted.id, { ...persisted, enabled })
+      setRulesItems(
+        rules.value.map((rule) => (rule.id === persisted.id ? { ...rule, enabled } : rule)),
+      )
+      editRule.value = { ...editRule.value, enabled }
+      if (originalRule.value) originalRule.value = { ...originalRule.value, enabled }
+      refreshDirty()
     } catch {
       Toast.error('操作失败')
     }
