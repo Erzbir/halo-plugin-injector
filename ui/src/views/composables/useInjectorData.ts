@@ -78,7 +78,8 @@ export function useInjectorData() {
   const originalRule = ref<InjectionRule | null>(null)
   const originalRuleSnippetIds = ref<string[]>([])
 
-  const editDirty = ref(false)
+  const snippetDirty = ref(false)
+  const ruleDirty = ref(false)
 
   function cloneValue<T>(value: T): T {
     return JSON.parse(JSON.stringify(value)) as T
@@ -107,19 +108,21 @@ export function useInjectorData() {
         normalizedIds(editSnippetRuleIds.value),
         normalizedIds(originalSnippetRuleIds.value),
       )
-      editDirty.value = !(sameSnippet && sameRelations)
-      return
+      snippetDirty.value = !(sameSnippet && sameRelations)
+    } else {
+      snippetDirty.value = false
     }
+
     if (selectedRuleId.value && editRule.value && originalRule.value) {
       const sameRule = isSameJson(editRule.value, originalRule.value)
       const sameRelations = isSameJson(
         normalizedIds(editRuleSnippetIds.value),
         normalizedIds(originalRuleSnippetIds.value),
       )
-      editDirty.value = !(sameRule && sameRelations)
-      return
+      ruleDirty.value = !(sameRule && sameRelations)
+    } else {
+      ruleDirty.value = false
     }
-    editDirty.value = false
   }
 
   const rulesUsingSnippet = computed(() => {
@@ -200,7 +203,7 @@ export function useInjectorData() {
       originalSnippet.value = null
       editSnippetRuleIds.value = []
       originalSnippetRuleIds.value = []
-      editDirty.value = false
+      snippetDirty.value = false
       return
     }
     const found = snippets.value.find((s) => s.id === selectedSnippetId.value)
@@ -219,7 +222,7 @@ export function useInjectorData() {
       originalRule.value = null
       editRuleSnippetIds.value = []
       originalRuleSnippetIds.value = []
-      editDirty.value = false
+      ruleDirty.value = false
       return
     }
     const found = rules.value.find((r) => r.id === selectedRuleId.value)
@@ -297,7 +300,7 @@ export function useInjectorData() {
       await snippetApi.update(editSnippet.value.id, { ...editSnippet.value, ruleIds: nextRuleIds })
       await _applySnippetRuleSelection(editSnippet.value.id, nextRuleIds)
       await fetchAll()
-      editDirty.value = false
+      snippetDirty.value = false
       Toast.success('保存成功')
     } catch {
       Toast.error('保存失败')
@@ -323,7 +326,7 @@ export function useInjectorData() {
       await ruleApi.update(editRule.value.id, nextRule)
       await _applyRuleSnippetSelection(editRule.value.id, nextSnippetIds)
       await fetchAll()
-      editDirty.value = false
+      ruleDirty.value = false
       Toast.success('保存成功')
     } catch {
       Toast.error('保存失败')
@@ -459,7 +462,7 @@ export function useInjectorData() {
           if (selectedSnippetId.value === id) selectedSnippetId.value = null
           editSnippet.value = null
           editSnippetRuleIds.value = []
-          editDirty.value = false
+          snippetDirty.value = false
           Toast.success('代码片段已删除')
         } catch {
           Toast.error('删除失败')
@@ -483,7 +486,7 @@ export function useInjectorData() {
           if (selectedRuleId.value === id) selectedRuleId.value = null
           editRule.value = null
           editRuleSnippetIds.value = []
-          editDirty.value = false
+          ruleDirty.value = false
           Toast.success('规则已删除')
         } catch {
           Toast.error('删除失败')
@@ -613,7 +616,8 @@ export function useInjectorData() {
     editSnippetRuleIds,
     editRule,
     editRuleSnippetIds,
-    editDirty,
+    snippetDirty,
+    ruleDirty,
     refreshDirty,
     rulesUsingSnippet,
     snippetsInRule,

@@ -51,7 +51,8 @@ const {
   editSnippetRuleIds,
   editRule,
   editRuleSnippetIds,
-  editDirty,
+  snippetDirty,
+  ruleDirty,
   rulesUsingSnippet,
   snippetsInRule,
   fetchAll,
@@ -78,6 +79,10 @@ const {
   batchDeleteSnippets,
   batchDeleteRules,
 } = useInjectorData()
+
+const editDirty = computed(() =>
+  activeTab.value === 'snippets' ? snippetDirty.value : ruleDirty.value,
+)
 
 const snippetDirtyFields = computed(() => ({
   name: isSnippetFieldDirty('name'),
