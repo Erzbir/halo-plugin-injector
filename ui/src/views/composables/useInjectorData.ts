@@ -556,12 +556,22 @@ export function useInjectorData() {
   async function batchDeleteSnippets(ids: string[]) {
     const targets = uniqueStrings(ids)
     if (!targets.length) return
+    const targetSet = new Set(targets)
     saving.value = true
     try {
+      await Promise.all(
+        rules.value
+          .filter((rule) => rule.snippetIds?.some((id) => targetSet.has(id)))
+          .map((rule) =>
+            ruleApi.update(rule.id, {
+              ...rule,
+              snippetIds: (rule.snippetIds ?? []).filter((id) => !targetSet.has(id)),
+            }),
+          ),
+      )
       const deletedIds: string[] = []
       await Promise.all(
         targets.map(async (id) => {
-          await _applySnippetRuleSelection(id, [])
           await snippetApi.delete(id)
           deletedIds.push(id)
         }),
@@ -590,12 +600,22 @@ export function useInjectorData() {
   async function batchDeleteRules(ids: string[]) {
     const targets = uniqueStrings(ids)
     if (!targets.length) return
+    const targetSet = new Set(targets)
     saving.value = true
     try {
+      await Promise.all(
+        snippets.value
+          .filter((snippet) => snippet.ruleIds?.some((id) => targetSet.has(id)))
+          .map((snippet) =>
+            snippetApi.update(snippet.id, {
+              ...snippet,
+              ruleIds: (snippet.ruleIds ?? []).filter((id) => !targetSet.has(id)),
+            }),
+          ),
+      )
       const deletedIds: string[] = []
       await Promise.all(
         targets.map(async (id) => {
-          await _applyRuleSnippetSelection(id, [])
           await ruleApi.delete(id)
           deletedIds.push(id)
         }),
