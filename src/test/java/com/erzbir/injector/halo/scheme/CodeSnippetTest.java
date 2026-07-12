@@ -8,6 +8,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CodeSnippetTest {
 
     @Test
+    void shouldTreatNullEnabledAsDisabled() {
+        CodeSnippet snippet = new CodeSnippet();
+        snippet.setEnabled(null);
+
+        assertFalse(snippet.isEnabled());
+    }
+
+    @Test
     void shouldBeInvalidWhenCodeIsNullOrBlank() {
         CodeSnippet snippet = new CodeSnippet();
         snippet.setCode(null);

@@ -10,6 +10,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class InjectionRuleTest {
 
     @Test
+    void shouldTreatNullEnabledAsDisabled() {
+        InjectionRule rule = new InjectionRule();
+        rule.setEnabled(null);
+
+        assertFalse(rule.isEnabled());
+    }
+
+    @Test
     void shouldRequireNonBlankMatchWhenModeIsId() {
         InjectionRule rule = new InjectionRule();
         rule.setMode(InjectMode.ID);

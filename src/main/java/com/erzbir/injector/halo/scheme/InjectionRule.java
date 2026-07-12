@@ -53,7 +53,7 @@ public class InjectionRule extends AbstractExtension implements IInjectionRule {
 
     @Override
     public boolean isEnabled() {
-        return enabled;
+        return Boolean.TRUE.equals(enabled);
     }
 
     public boolean valid() {

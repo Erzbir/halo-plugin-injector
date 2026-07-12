@@ -31,7 +31,7 @@ public class CodeSnippet extends AbstractExtension implements ICodeSnippet {
 
     @Override
     public boolean isEnabled() {
-        return enabled;
+        return Boolean.TRUE.equals(enabled);
     }
 
     @Override
