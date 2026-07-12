@@ -18,7 +18,7 @@ const emit = defineEmits<{
     <span v-else />
     <div class=":uno: flex items-center gap-2">
       <VButton :disabled="!dirty || saving" @click="emit('revert-all')">撤销全部</VButton>
-      <VButton :disabled="!dirty || saving" type="secondary" @click="emit('save')">
+      <VButton :disabled="saving" type="secondary" @click="emit('save')">
         {{ saving ? '保存中...' : '保存' }}
       </VButton>
     </div>
