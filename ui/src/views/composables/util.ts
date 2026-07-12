@@ -1,4 +1,4 @@
-import { type InjectionRule, type MatchRule, MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
+import { type InjectionRule, MODE_OPTIONS, POSITION_OPTIONS } from '@/types'
 
 export function modeLabel(mode: string) {
   return MODE_OPTIONS.find((o) => o.value === mode)?.label ?? mode
