@@ -33,6 +33,7 @@ class InjectorResponseDecoratorTest {
     void shouldUseDispatcherForHtmlResponse() {
         var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/posts/use-dispatcher").build());
         exchange.getResponse().getHeaders().setContentType(MediaType.TEXT_HTML);
+        exchange.getResponse().getHeaders().setContentLength("<html>origin</html>".length());
         HTMLInjectDispatcher dispatcher = mock(HTMLInjectDispatcher.class);
         when(dispatcher.dispatch("<html>origin</html>", "/posts/use-dispatcher"))
                 .thenReturn(Mono.just("<html>changed</html>"));
@@ -43,6 +44,8 @@ class InjectorResponseDecoratorTest {
 
         String body = exchange.getResponse().getBodyAsString().block();
         assertEquals("<html>changed</html>", body);
+        assertEquals("<html>changed</html>".length(),
+            exchange.getResponse().getHeaders().getContentLength());
         verify(dispatcher).dispatch("<html>origin</html>", "/posts/use-dispatcher");
     }
 

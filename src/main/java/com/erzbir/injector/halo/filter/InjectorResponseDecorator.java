@@ -72,6 +72,7 @@ class InjectorResponseDecorator extends ServerHttpResponseDecorator {
             })
             .map(processed -> {
                 byte[] bytes = processed.getBytes(StandardCharsets.UTF_8);
+                response.getHeaders().setContentLength(bytes.length);
                 return response.bufferFactory().wrap(bytes);
             });
     }
