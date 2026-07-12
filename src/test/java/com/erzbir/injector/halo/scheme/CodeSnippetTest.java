@@ -16,7 +16,7 @@ class CodeSnippetTest {
 
         snippet.setCode(" ");
 
-        assertTrue(snippet.valid());
+        assertFalse(snippet.valid());
     }
 
     @Test

@@ -48,7 +48,7 @@ public class CodeSnippet extends AbstractExtension implements ICodeSnippet {
     }
 
     public boolean valid() {
-        return code != null && !code.isEmpty();
+        return code != null && !code.isBlank();
     }
 
     @AssertTrue(message = "CodeSnippet code must not be blank")
