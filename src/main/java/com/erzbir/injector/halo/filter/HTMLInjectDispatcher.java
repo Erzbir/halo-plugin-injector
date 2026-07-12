@@ -21,6 +21,8 @@ import reactor.core.scheduler.Schedulers;
 
 @Slf4j
 class HTMLInjectDispatcher {
+    private static final List<InjectMode> HTML_INJECT_MODES =
+        List.of(InjectMode.SELECTOR, InjectMode.ID);
     private final InjectHelper injectHelper;
     private final Map<InjectMode, HTMLInjector> injectorMap;
 
@@ -59,8 +61,8 @@ class HTMLInjectDispatcher {
     }
 
     private Flux<RuleCode> collectAllRuleCodes(String permalink) {
-        return Flux.fromArray(InjectMode.values())
-            .flatMap(mode -> fetchRuleCodes(permalink, mode));
+        return Flux.fromIterable(HTML_INJECT_MODES)
+            .concatMap(mode -> fetchRuleCodes(permalink, mode));
     }
 
     private Flux<RuleCode> fetchRuleCodes(String path, InjectMode mode) {

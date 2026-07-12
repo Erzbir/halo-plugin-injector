@@ -15,6 +15,8 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @Slf4j
@@ -95,6 +97,8 @@ class HTMLInjectDispatcherTest {
         String result = dispatcher.dispatch("<html><head></head><body>raw</body></html>", "/p/1").block();
 
         assertEquals("<html><head></head><body>raw</body></html>", result);
+        verify(injectHelper, never()).getMatchedRules("/p/1", InjectMode.HEAD);
+        verify(injectHelper, never()).getMatchedRules("/p/1", InjectMode.FOOTER);
     }
 
     @Test
