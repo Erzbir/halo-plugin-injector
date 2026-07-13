@@ -5,7 +5,7 @@
 >
 import StatusDot from './StatusDot.vue'
 
-defineProps<{
+const props = defineProps<{
   items: T[]
   selectedId?: string | null
   emptyText?: string
@@ -19,13 +19,23 @@ const emit = defineEmits<{
   (e: 'create'): void
   (e: 'toggle-batch-select', id: string): void
 }>()
+
+function activate(id: string) {
+  if (props.batchMode) emit('toggle-batch-select', id)
+  else emit('select', id)
+}
 </script>
 
 <template>
   <div :class="stretch ? ':uno: flex-1 overflow-y-auto' : ''">
     <slot name="placeholder" />
 
-    <ul class=":uno: divide-y divide-gray-100">
+    <ul
+      :aria-multiselectable="batchMode || undefined"
+      aria-label="项目列表"
+      class=":uno: divide-y divide-gray-100"
+      role="listbox"
+    >
       <li
         v-if="!items.length"
         class=":uno: flex flex-col items-center justify-center gap-3 py-10 px-4"
@@ -37,8 +47,13 @@ const emit = defineEmits<{
       <li
         v-for="item in items"
         :key="item.id"
+        :aria-selected="batchMode ? batchSelectedIds?.includes(item.id) : selectedId === item.id"
         class=":uno: relative cursor-pointer group"
-        @click="batchMode ? emit('toggle-batch-select', item.id) : emit('select', item.id)"
+        role="option"
+        tabindex="0"
+        @click="activate(item.id)"
+        @keydown.enter.prevent="activate(item.id)"
+        @keydown.space.prevent="activate(item.id)"
       >
         <div
           v-if="!batchMode && selectedId !== undefined && selectedId === item.id"

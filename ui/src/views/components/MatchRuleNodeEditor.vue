@@ -17,12 +17,16 @@ const props = withDefaults(
     canRemove?: boolean
     hasPrevious?: boolean
     sortable?: boolean
+    canMoveUp?: boolean
+    canMoveDown?: boolean
   }>(),
   {
     depth: 0,
     canRemove: false,
     hasPrevious: false,
     sortable: false,
+    canMoveUp: false,
+    canMoveDown: false,
   },
 )
 
@@ -30,6 +34,8 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: MatchRule): void
   (e: 'change'): void
   (e: 'remove'): void
+  (e: 'move-up'): void
+  (e: 'move-down'): void
 }>()
 
 const isGroup = computed(() => props.modelValue.type === 'GROUP')
@@ -115,6 +121,15 @@ function updateChild(index: number, nextChild: MatchRule) {
 function removeChild(index: number) {
   const children = [...(props.modelValue.children ?? [])]
   children.splice(index, 1)
+  update({ children })
+}
+
+function moveChild(fromIndex: number, toIndex: number) {
+  if (toIndex < 0 || toIndex >= (props.modelValue.children?.length ?? 0)) return
+  const children = [...(props.modelValue.children ?? [])]
+  const [moved] = children.splice(fromIndex, 1)
+  if (!moved) return
+  children.splice(toIndex, 0, moved)
   update({ children })
 }
 
@@ -205,11 +220,30 @@ function onChildDragEnd(event: DragEvent) {
       </label>
 
       <VButton v-if="canRemove" size="xs" type="danger" @click="emit('remove')">删除</VButton>
+      <div v-if="sortable" class=":uno: ml-auto flex items-center gap-1">
+        <VButton
+          :disabled="!canMoveUp"
+          aria-label="上移当前规则"
+          size="xs"
+          @click="emit('move-up')"
+        >
+          上移
+        </VButton>
+        <VButton
+          :disabled="!canMoveDown"
+          aria-label="下移当前规则"
+          size="xs"
+          @click="emit('move-down')"
+        >
+          下移
+        </VButton>
+      </div>
       <span
         v-if="sortable"
-        class=":uno: ml-auto inline-flex items-center text-[11px] text-gray-400 select-none cursor-move"
+        aria-label="拖动当前规则排序"
+        class=":uno: inline-flex items-center text-[11px] text-gray-400 select-none cursor-move"
         :draggable="true"
-        aria-hidden="true"
+        role="img"
       >
         ⋮⋮
       </span>
@@ -232,12 +266,16 @@ function onChildDragEnd(event: DragEvent) {
         >
           <MatchRuleNodeEditor
             :can-remove="true"
+            :can-move-down="index < (modelValue.children?.length ?? 0) - 1"
+            :can-move-up="index > 0"
             :depth="currentDepth + 1"
             :has-previous="index > 0"
             :model-value="child"
             :sortable="true"
             @change="emit('change')"
             @remove="removeChild(index)"
+            @move-down="moveChild(index, index + 1)"
+            @move-up="moveChild(index, index - 1)"
             @update:model-value="updateChild(index, $event)"
           />
         </div>
