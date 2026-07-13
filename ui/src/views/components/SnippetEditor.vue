@@ -21,7 +21,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'save'): void
   (e: 'delete'): void
-  (e: 'toggle-enabled'): void
+  (e: 'set-enabled', enabled: boolean): void
   (e: 'toggle-rule', ruleId: string): void
   (e: 'field-change', field: keyof CodeSnippet | 'ruleIds'): void
   (e: 'revert-field', field: keyof CodeSnippet | 'ruleIds'): void
@@ -46,7 +46,7 @@ const sortedRules = computed(() => sortSelectedFirst(props.rules, props.selected
       @delete="emit('delete')"
       @revert-all="emit('revert-all')"
       @save="emit('save')"
-      @toggle-enabled="emit('toggle-enabled')"
+      @set-enabled="emit('set-enabled', $event)"
       @open-relations="emit('open-relations')"
     />
 

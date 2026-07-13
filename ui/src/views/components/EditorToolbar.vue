@@ -1,5 +1,12 @@
 <script lang="ts" setup>
-import { VButton, VSpace } from '@halo-dev/components'
+import {
+  VButton,
+  vClosePopper,
+  VDropdown,
+  VDropdownItem,
+  VSpace,
+  VSwitch,
+} from '@halo-dev/components'
 
 defineProps<{
   title: string
@@ -12,7 +19,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'toggle-enabled'): void
+  (e: 'set-enabled', enabled: boolean): void
   (e: 'delete'): void
   (e: 'revert-all'): void
   (e: 'save'): void
@@ -36,18 +43,31 @@ const emit = defineEmits<{
         ID: {{ displayId }}
       </span>
     </div>
-    <VSpace v-if="showActions">
+    <VSpace v-if="showActions" class=":uno: shrink-0">
       <VButton size="sm" @click="emit('open-relations')">
         关联 {{ relationCount ?? 0 }}
       </VButton>
-      <VButton size="sm" @click="emit('toggle-enabled')">
-        {{ enabled ? '禁用' : '启用' }}
-      </VButton>
-      <VButton size="sm" type="danger" @click="emit('delete')">删除</VButton>
+      <label class=":uno: flex items-center gap-2 text-xs text-gray-600 whitespace-nowrap">
+        <VSwitch
+          :disabled="saving"
+          :loading="saving"
+          :model-value="enabled"
+          @update:model-value="emit('set-enabled', $event)"
+        />
+        {{ enabled ? '已启用' : '已停用' }}
+      </label>
       <VButton :disabled="!dirty || saving" size="sm" @click="emit('revert-all')">撤销全部</VButton>
-      <VButton :disabled="saving" size="sm" type="secondary" @click="emit('save')">
+      <VButton :disabled="!dirty || saving" size="sm" type="primary" @click="emit('save')">
         {{ saving ? '保存中...' : '保存' }}
       </VButton>
+      <VDropdown placement="bottom-end">
+        <VButton size="sm">更多</VButton>
+        <template #popper>
+          <VDropdownItem v-close-popper type="danger" @click="emit('delete')">
+            删除
+          </VDropdownItem>
+        </template>
+      </VDropdown>
     </VSpace>
   </div>
 </template>

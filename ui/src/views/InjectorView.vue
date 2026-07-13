@@ -61,7 +61,7 @@ const {
   fetchAll,
   addSnippet,
   saveSnippet,
-  toggleSnippetEnabled,
+  setSnippetEnabled,
   confirmDeleteSnippet,
   toggleRuleInSnippetEditor,
   updateEditSnippet,
@@ -70,7 +70,7 @@ const {
   isSnippetFieldDirty,
   addRule,
   saveRule,
-  toggleRuleEnabled,
+  setRuleEnabled,
   confirmDeleteRule,
   toggleSnippetInRuleEditor,
   updateEditRule,
@@ -340,6 +340,41 @@ async function handleSelectRule(id: string) {
     mobileEditorOpen.value = true
   })
 }
+
+async function requestSnippetEnabled(enabled: boolean) {
+  if (!snippetDirty.value) {
+    await setSnippetEnabled(enabled)
+    return
+  }
+  confirmSaveBeforeStatusChange(enabled, '代码片段', saveSnippet, setSnippetEnabled)
+}
+
+async function requestRuleEnabled(enabled: boolean) {
+  if (!ruleDirty.value) {
+    await setRuleEnabled(enabled)
+    return
+  }
+  confirmSaveBeforeStatusChange(enabled, '规则', saveRule, setRuleEnabled)
+}
+
+function confirmSaveBeforeStatusChange(
+  enabled: boolean,
+  kind: string,
+  save: () => Promise<boolean>,
+  updateStatus: (enabled: boolean) => Promise<void>,
+) {
+  const action = enabled ? '启用' : '停用'
+  Dialog.warning({
+    title: `保存并${action}${kind}`,
+    description: `当前${kind}存在未保存的修改, 需要先保存修改再${action}`,
+    confirmText: `保存并${action}`,
+    cancelText: '继续编辑',
+    async onConfirm() {
+      const saved = await save()
+      if (saved) await updateStatus(enabled)
+    },
+  })
+}
 </script>
 
 <template>
@@ -425,7 +460,7 @@ async function handleSelectRule(id: string) {
                   @field-change="() => undefined"
                   @revert-field="revertSnippetField"
                   @revert-all="revertSnippetAll"
-                  @toggle-enabled="toggleSnippetEnabled"
+                  @set-enabled="requestSnippetEnabled"
                   @toggle-rule="toggleRuleInSnippetEditor"
                   @update:snippet="updateEditSnippet"
                   @open-relations="relationDrawerOpen = true"
@@ -444,7 +479,7 @@ async function handleSelectRule(id: string) {
                   @field-change="() => undefined"
                   @revert-field="revertRuleField"
                   @revert-all="revertRuleAll"
-                  @toggle-enabled="toggleRuleEnabled"
+                  @set-enabled="requestRuleEnabled"
                   @toggle-snippet="toggleSnippetInRuleEditor"
                   @update:rule="updateEditRule"
                   @open-relations="relationDrawerOpen = true"

@@ -155,10 +155,10 @@ export function useInjectorData() {
     }
   }
 
-  async function saveSnippet() {
+  async function saveSnippet(): Promise<boolean> {
     if (!editSnippet.value?.code.trim()) {
       Toast.error('代码内容不能为空')
-      return
+      return false
     }
     const snippet = editSnippet.value
     const previousSnippet = originalSnippet.value
@@ -175,20 +175,22 @@ export function useInjectorData() {
       }
       await fetchAll()
       Toast.success('保存成功')
+      return true
     } catch {
       await fetchAll()
       Toast.error('保存失败')
+      return false
     } finally {
       saving.value = false
     }
   }
 
-  async function saveRule() {
-    if (!editRule.value) return
+  async function saveRule(): Promise<boolean> {
+    if (!editRule.value) return false
     const errorMessage = validateRule(editRule.value)
     if (errorMessage) {
       Toast.error(errorMessage)
-      return
+      return false
     }
     saving.value = true
     try {
@@ -198,18 +200,21 @@ export function useInjectorData() {
       })
       await fetchAll()
       Toast.success('保存成功')
+      return true
     } catch {
       Toast.error('保存失败')
+      return false
     } finally {
       saving.value = false
     }
   }
 
-  async function toggleSnippetEnabled() {
+  async function setSnippetEnabled(enabled: boolean) {
     if (!editSnippet.value) return
     const persisted = snippets.value.find((snippet) => snippet.id === editSnippet.value?.id)
     if (!persisted) return
-    const enabled = !persisted.enabled
+    if (persisted.enabled === enabled) return
+    saving.value = true
     try {
       await snippetApi.update(persisted.id, { ...persisted, enabled })
       setSnippetsItems(
@@ -222,14 +227,17 @@ export function useInjectorData() {
       refreshDirty()
     } catch {
       Toast.error('操作失败')
+    } finally {
+      saving.value = false
     }
   }
 
-  async function toggleRuleEnabled() {
+  async function setRuleEnabled(enabled: boolean) {
     if (!editRule.value) return
     const persisted = rules.value.find((rule) => rule.id === editRule.value?.id)
     if (!persisted) return
-    const enabled = !persisted.enabled
+    if (persisted.enabled === enabled) return
+    saving.value = true
     try {
       await ruleApi.update(persisted.id, { ...persisted, enabled })
       setRulesItems(
@@ -240,6 +248,8 @@ export function useInjectorData() {
       refreshDirty()
     } catch {
       Toast.error('操作失败')
+    } finally {
+      saving.value = false
     }
   }
 
@@ -426,7 +436,7 @@ export function useInjectorData() {
     fetchAll,
     addSnippet,
     saveSnippet,
-    toggleSnippetEnabled,
+    setSnippetEnabled,
     confirmDeleteSnippet,
     toggleRuleInSnippetEditor: editor.toggleRuleInSnippetEditor,
     updateEditSnippet: editor.updateEditSnippet,
@@ -435,7 +445,7 @@ export function useInjectorData() {
     isSnippetFieldDirty: editor.isSnippetFieldDirty,
     addRule,
     saveRule,
-    toggleRuleEnabled,
+    setRuleEnabled,
     confirmDeleteRule,
     toggleSnippetInRuleEditor: editor.toggleSnippetInRuleEditor,
     updateEditRule: editor.updateEditRule,
