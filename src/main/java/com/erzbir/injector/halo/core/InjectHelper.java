@@ -40,7 +40,7 @@ public class InjectHelper {
 
     public Mono<String> getConcatCode(InjectionRule rule) {
         return Flux.fromIterable(rule.getSnippetIds())
-                .flatMap(snippetManager::get)
+                .concatMap(snippetManager::get)
                 .filter(CodeSnippet::isEnabled)
                 .map(CodeSnippet::getCode)
                 .collectList()

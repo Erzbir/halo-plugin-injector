@@ -15,7 +15,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -117,6 +119,18 @@ class InjectHelperTest {
 
         String code = injectHelper.getConcatCode(rule).block();
         assertEquals("", code);
+    }
+
+    @Test
+    void shouldPreserveConfiguredSnippetOrderWhenLoadsCompleteOutOfOrder() {
+        InjectionRule rule = new InjectionRule();
+        rule.setSnippetIds(new LinkedHashSet<>(List.of("slow", "fast")));
+        when(snippetManager.get("slow")).thenReturn(Mono.delay(Duration.ofMillis(25))
+            .map(ignored -> createSnippet(true, "slow"))
+            .subscribeOn(Schedulers.parallel()));
+        when(snippetManager.get("fast")).thenReturn(Mono.just(createSnippet(true, "fast")));
+
+        assertEquals("slowfast", injectHelper.getConcatCode(rule).block());
     }
 
     @Test
