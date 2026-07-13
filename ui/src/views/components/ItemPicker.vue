@@ -1,7 +1,7 @@
 <script
   generic="T extends { id: string; name: string; description?: string; enabled: boolean }"
   lang="ts"
-setup
+  setup
 >
 import { computed, ref } from 'vue'
 import { VButton } from '@halo-dev/components'
@@ -57,38 +57,41 @@ function toggleVisibleItems() {
         {{ allVisibleSelected ? '取消当前结果' : '全选当前结果' }}
       </VButton>
     </div>
-    <div class=":uno: max-h-56 overflow-y-auto divide-y divide-gray-100">
-    <div
-      v-if="!filteredItems.length"
-      class=":uno: flex items-center justify-center h-14 text-xs text-gray-400"
-    >
-      {{ items.length ? '没有匹配的结果' : (emptyText ?? '暂无数据') }}
-    </div>
-    <label
-      v-for="item in filteredItems"
-      :key="item.id"
-      :class="selectedIds.includes(item.id) ? ':uno: bg-primary/5' : ':uno: hover:bg-gray-50'"
-      class=":uno: flex items-start gap-2 px-3 py-2 cursor-pointer transition-colors"
-    >
-      <input
-        :checked="selectedIds.includes(item.id)"
-        class=":uno: mt-1 shrink-0"
-        type="checkbox"
-        @change="emit('toggle', item.id)"
-      />
-      <div class=":uno: min-w-0 flex-1">
-        <span class=":uno: text-sm text-gray-900 font-medium block truncate">
-          {{ item.name || item.id }}
-        </span>
-        <span v-if="item.description" class=":uno: text-xs text-gray-500 block truncate">
-          {{ item.description }}
-        </span>
-        <span v-if="previewFn" class=":uno: text-xs text-gray-400 block truncate font-mono mt-0.5">
-          {{ previewFn(item) }}
-        </span>
+    <div class=":uno: divide-y divide-gray-100">
+      <div
+        v-if="!filteredItems.length"
+        class=":uno: flex items-center justify-center h-14 text-xs text-gray-400"
+      >
+        {{ items.length ? '没有匹配的结果' : (emptyText ?? '暂无数据') }}
       </div>
-      <StatusDot :enabled="item.enabled" />
-    </label>
+      <label
+        v-for="item in filteredItems"
+        :key="item.id"
+        :class="selectedIds.includes(item.id) ? ':uno: bg-primary/5' : ':uno: hover:bg-gray-50'"
+        class=":uno: flex items-start gap-2 px-3 py-2 cursor-pointer transition-colors"
+      >
+        <input
+          :checked="selectedIds.includes(item.id)"
+          class=":uno: mt-1 shrink-0"
+          type="checkbox"
+          @change="emit('toggle', item.id)"
+        />
+        <div class=":uno: min-w-0 flex-1">
+          <span class=":uno: text-sm text-gray-900 font-medium block truncate">
+            {{ item.name || item.id }}
+          </span>
+          <span v-if="item.description" class=":uno: text-xs text-gray-500 block truncate">
+            {{ item.description }}
+          </span>
+          <span
+            v-if="previewFn"
+            class=":uno: text-xs text-gray-400 block truncate font-mono mt-0.5"
+          >
+            {{ previewFn(item) }}
+          </span>
+        </div>
+        <StatusDot :enabled="item.enabled" />
+      </label>
     </div>
   </div>
 </template>

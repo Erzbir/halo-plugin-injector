@@ -46,7 +46,7 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
       :value="snippet.name"
       class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
       placeholder="不填默认为 ID"
-      @change="updateField('name', ($event.target as HTMLInputElement).value)"
+      @input="updateField('name', ($event.target as HTMLInputElement).value)"
     />
   </FormField>
 
@@ -65,7 +65,7 @@ function updateField<K extends keyof CodeSnippet>(key: K, value: CodeSnippet[K])
       :value="snippet.description"
       class=":uno: w-full min-h-[34px] resize-y rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
       placeholder="说明此代码片段的用途"
-      @change="updateField('description', ($event.target as HTMLTextAreaElement).value)"
+      @input="updateField('description', ($event.target as HTMLTextAreaElement).value)"
     ></textarea>
   </FormField>
 

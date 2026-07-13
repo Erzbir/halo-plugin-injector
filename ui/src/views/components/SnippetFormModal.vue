@@ -23,6 +23,7 @@ const selectedRuleIds = ref<string[]>([])
 const dirty = computed(
   () => !isSameJson(snippet.value, makeSnippet()) || selectedRuleIds.value.length > 0,
 )
+const valid = computed(() => !!snippet.value.code.trim())
 
 onMounted(reset)
 
@@ -46,6 +47,7 @@ function handleSubmit() {
   <BaseFormModal
     :saving="saving"
     :dirty="dirty"
+    :valid="valid"
     title="新建代码片段"
     @close="emit('close')"
     @submit="handleSubmit"

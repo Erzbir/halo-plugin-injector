@@ -31,9 +31,7 @@ const emit = defineEmits<{
   <div
     class=":uno: sticky top-0 z-10 min-h-12 flex items-center justify-between border-b bg-white px-4 py-2 shrink-0"
   >
-    <div
-      class=":uno: group/title flex min-w-0 flex-1 items-center gap-2 overflow-hidden"
-    >
+    <div class=":uno: group/title flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
       <h2 class=":uno: shrink-0 text-sm font-semibold text-gray-900">{{ title }}</h2>
       <span
         v-if="displayId"
@@ -42,11 +40,12 @@ const emit = defineEmits<{
       >
         ID: {{ displayId }}
       </span>
+      <span v-if="dirty" class=":uno: shrink-0 text-xs text-amber-600" role="status">
+        有未保存修改
+      </span>
     </div>
     <VSpace v-if="showActions" class=":uno: shrink-0">
-      <VButton size="sm" @click="emit('open-relations')">
-        关联 {{ relationCount ?? 0 }}
-      </VButton>
+      <VButton size="sm" @click="emit('open-relations')"> 关联 {{ relationCount ?? 0 }} </VButton>
       <label class=":uno: flex items-center gap-2 text-xs text-gray-600 whitespace-nowrap">
         <VSwitch
           :disabled="saving"
@@ -63,9 +62,7 @@ const emit = defineEmits<{
       <VDropdown placement="bottom-end">
         <VButton size="sm">更多</VButton>
         <template #popper>
-          <VDropdownItem v-close-popper type="danger" @click="emit('delete')">
-            删除
-          </VDropdownItem>
+          <VDropdownItem v-close-popper type="danger" @click="emit('delete')"> 删除 </VDropdownItem>
         </template>
       </VDropdown>
     </VSpace>

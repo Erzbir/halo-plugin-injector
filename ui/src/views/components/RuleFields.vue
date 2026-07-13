@@ -47,7 +47,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
       :value="rule.name"
       class=":uno: w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
       placeholder="不填默认为 ID"
-      @change="updateField('name', ($event.target as HTMLInputElement).value)"
+      @input="updateField('name', ($event.target as HTMLInputElement).value)"
     />
   </FormField>
 
@@ -66,7 +66,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
       :value="rule.description"
       class=":uno: w-full min-h-[34px] resize-y rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
       placeholder="说明此规则的用途"
-      @change="updateField('description', ($event.target as HTMLTextAreaElement).value)"
+      @input="updateField('description', ($event.target as HTMLTextAreaElement).value)"
     ></textarea>
   </FormField>
 
@@ -113,7 +113,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
             ? ':uno: w-full min-h-[34px] resize-y rounded-md border border-gray-200 px-3 py-1.5 text-sm font-mono focus:border-primary focus:outline-none'
             : ':uno: w-full min-h-[34px] resize-y rounded-md border border-red-400 px-3 py-1.5 text-sm font-mono focus:border-red-500 focus:outline-none'
         "
-        @change="updateField('match', ($event.target as HTMLTextAreaElement).value)"
+        @input="updateField('match', ($event.target as HTMLTextAreaElement).value)"
       ></textarea>
     </FormField>
 
@@ -145,7 +145,7 @@ function updateField<K extends keyof InjectionRule>(key: K, value: InjectionRule
         撤销修改
       </VButton>
     </template>
-    <div class=":uno: max-h-96 overflow-y-auto pr-1">
+    <div>
       <MatchRuleNodeEditor
         :model-value="rule.matchRule"
         @change="emit('change')"

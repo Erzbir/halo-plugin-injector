@@ -1,14 +1,10 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from 'vue'
-import {
-  type CodeSnippet,
-  type InjectionRule,
-  makeRule,
-} from '@/types'
+import { type CodeSnippet, type InjectionRule, makeRule } from '@/types'
 import BaseFormModal from './BaseFormModal.vue'
 import RuleFields from './RuleFields.vue'
 import RelationPicker from './RelationPicker.vue'
-import { isSameJson } from '@/views/composables/injectorDataUtils'
+import { isSameJson, isValidMatchRule } from '@/views/composables/injectorDataUtils'
 
 defineProps<{
   snippets: CodeSnippet[]
@@ -24,6 +20,11 @@ const rule = ref<InjectionRule>(makeRule())
 const selectedSnippetIds = ref<string[]>([])
 const dirty = computed(
   () => !isSameJson(rule.value, makeRule()) || selectedSnippetIds.value.length > 0,
+)
+const valid = computed(
+  () =>
+    isValidMatchRule(rule.value.matchRule) &&
+    (!['SELECTOR', 'ID'].includes(rule.value.mode) || !!rule.value.match.trim()),
 )
 
 onMounted(reset)
@@ -52,6 +53,7 @@ function handleRuleUpdate(nextRule: InjectionRule) {
   <BaseFormModal
     :saving="saving"
     :dirty="dirty"
+    :valid="valid"
     title="新建注入规则"
     @close="emit('close')"
     @submit="handleSubmit"

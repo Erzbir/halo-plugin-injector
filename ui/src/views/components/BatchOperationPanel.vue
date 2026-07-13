@@ -34,7 +34,9 @@ const kind = computed(() => (props.activeTab === 'snippets' ? '代码片段' : '
 
 <template>
   <div class=":uno: h-full min-h-0 flex flex-col">
-    <div class=":uno: min-h-12 flex items-center justify-between border-b bg-white px-4 py-2 shrink-0">
+    <div
+      class=":uno: min-h-12 flex items-center justify-between border-b bg-white px-4 py-2 shrink-0"
+    >
       <div>
         <h2 class=":uno: text-gray-900 font-semibold text-sm">批量操作</h2>
         <p class=":uno: mt-0.5 text-xs text-gray-500">集中检查选择范围后再执行操作</p>
@@ -97,14 +99,20 @@ const kind = computed(() => (props.activeTab === 'snippets' ? '代码片段' : '
             </div>
           </div>
 
-          <ul class=":uno: max-h-80 divide-y divide-gray-100 overflow-y-auto">
-            <li v-for="item in items" :key="item.id" class=":uno: flex items-center gap-3 px-4 py-3">
+          <ul class=":uno: divide-y divide-gray-100">
+            <li
+              v-for="item in items"
+              :key="item.id"
+              class=":uno: flex items-center gap-3 px-4 py-3"
+            >
               <StatusDot :enabled="item.enabled" />
               <div class=":uno: min-w-0 flex-1">
                 <p class=":uno: truncate text-sm font-medium text-gray-900">
                   {{ item.name || item.id }}
                 </p>
-                <p class=":uno: truncate text-xs text-gray-500">{{ item.description || item.id }}</p>
+                <p class=":uno: truncate text-xs text-gray-500">
+                  {{ item.description || item.id }}
+                </p>
               </div>
               <VButton size="xs" @click="emit('remove', item.id)">移除</VButton>
             </li>
