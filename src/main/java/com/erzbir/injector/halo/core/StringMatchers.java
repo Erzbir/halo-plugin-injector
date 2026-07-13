@@ -1,6 +1,8 @@
 package com.erzbir.injector.halo.core;
 
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.Getter;
 import org.springframework.http.server.PathContainer;
 import org.springframework.util.AntPathMatcher;
@@ -9,7 +11,6 @@ import org.springframework.web.util.pattern.PathPatternParser;
 import org.springframework.web.util.pattern.PathPatternRouteMatcher;
 import org.springframework.web.util.pattern.PatternParseException;
 
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -36,7 +37,7 @@ enum StringMatchers {
 }
 
 final class PathPatternMatcher implements StringMatcher {
-    public static PathPatternMatcher INSTANCE = new PathPatternMatcher();
+    public static final PathPatternMatcher INSTANCE = new PathPatternMatcher();
 
     private final PathPatternRouteMatcher patternMatcher;
 
@@ -57,7 +58,7 @@ final class PathPatternMatcher implements StringMatcher {
 }
 
 final class AntMatcher implements StringMatcher {
-    public static AntMatcher INSTANCE = new AntMatcher();
+    public static final AntMatcher INSTANCE = new AntMatcher();
 
     private final SimpleRouteMatcher antMatcher = new SimpleRouteMatcher(new AntPathMatcher());
 
@@ -76,9 +77,12 @@ final class AntMatcher implements StringMatcher {
 }
 
 final class RegexMatcher implements StringMatcher {
-    public static RegexMatcher INSTANCE = new RegexMatcher();
+    private static final int REGEX_CACHE_MAX_SIZE = 256;
+    public static final RegexMatcher INSTANCE = new RegexMatcher();
 
-    private final ConcurrentHashMap<String, Pattern> regexCache = new ConcurrentHashMap<>();
+    private final Cache<String, Pattern> regexCache = Caffeine.newBuilder()
+            .maximumSize(REGEX_CACHE_MAX_SIZE)
+            .build();
 
     private RegexMatcher() {
 
@@ -87,8 +91,7 @@ final class RegexMatcher implements StringMatcher {
     @Override
     public boolean match(String target, String rule) {
         try {
-            return regexCache
-                    .computeIfAbsent(rule, Pattern::compile)
+            return regexCache.get(rule, Pattern::compile)
                     .matcher(target)
                     .matches();
         } catch (PatternSyntaxException e) {
