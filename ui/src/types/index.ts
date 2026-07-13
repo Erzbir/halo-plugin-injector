@@ -9,6 +9,7 @@ export interface CodeSnippet {
   code: string
   description: string
   enabled: boolean
+  /** @deprecated InjectionRule.snippetIds is the canonical relation source. */
   ruleIds: string[]
 }
 
