@@ -81,6 +81,39 @@ class InjectorResponseDecoratorTest {
     }
 
     @Test
+    void shouldBypassDispatcherForLargeHtmlResponse() {
+        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/posts/large").build());
+        exchange.getResponse().getHeaders().setContentType(MediaType.TEXT_HTML);
+        exchange.getResponse().getHeaders()
+            .setContentLength(InjectorResponseDecorator.MAX_HTML_RESPONSE_SIZE + 1);
+        HTMLInjectDispatcher dispatcher = mock(HTMLInjectDispatcher.class);
+        InjectorResponseDecorator decorator = new InjectorResponseDecorator(exchange, dispatcher);
+        DataBuffer dataBuffer = exchange.getResponse().bufferFactory()
+            .wrap("<html>origin</html>".getBytes(StandardCharsets.UTF_8));
+
+        decorator.writeWith(Mono.just(dataBuffer)).block();
+
+        assertEquals("<html>origin</html>", exchange.getResponse().getBodyAsString().block());
+        verify(dispatcher, never()).dispatch(anyString(), anyString());
+    }
+
+    @Test
+    void shouldBypassDispatcherForEncodedHtmlResponse() {
+        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/posts/gzip").build());
+        exchange.getResponse().getHeaders().setContentType(MediaType.TEXT_HTML);
+        exchange.getResponse().getHeaders().set("Content-Encoding", "gzip");
+        HTMLInjectDispatcher dispatcher = mock(HTMLInjectDispatcher.class);
+        InjectorResponseDecorator decorator = new InjectorResponseDecorator(exchange, dispatcher);
+        DataBuffer dataBuffer = exchange.getResponse().bufferFactory()
+            .wrap("encoded".getBytes(StandardCharsets.UTF_8));
+
+        decorator.writeWith(Mono.just(dataBuffer)).block();
+
+        assertEquals("encoded", exchange.getResponse().getBodyAsString().block());
+        verify(dispatcher, never()).dispatch(anyString(), anyString());
+    }
+
+    @Test
     void shouldReuseDecoratorCacheAcrossDecoratorInstances() {
         HTMLInjectDispatcher dispatcher = mock(HTMLInjectDispatcher.class);
         when(dispatcher.dispatch("<html>origin</html>", "/posts/cache-reuse"))

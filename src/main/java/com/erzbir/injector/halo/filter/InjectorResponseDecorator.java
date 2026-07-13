@@ -20,6 +20,8 @@ import reactor.core.publisher.Mono;
  */
 @Slf4j
 class InjectorResponseDecorator extends ServerHttpResponseDecorator {
+    static final long MAX_HTML_RESPONSE_SIZE = 2 * 1024 * 1024;
+
     private final ServerWebExchange exchange;
     private final HTMLInjectDispatcher dispatcher;
 
@@ -84,6 +86,14 @@ class InjectorResponseDecorator extends ServerHttpResponseDecorator {
             return false;
         }
         MediaType contentType = response.getHeaders().getContentType();
-        return contentType != null && contentType.includes(MediaType.TEXT_HTML);
+        if (contentType == null || !contentType.includes(MediaType.TEXT_HTML)) {
+            return false;
+        }
+        if (!response.getHeaders().getOrEmpty("Content-Encoding").stream()
+            .allMatch(encoding -> encoding.equalsIgnoreCase("identity"))) {
+            return false;
+        }
+        long contentLength = response.getHeaders().getContentLength();
+        return contentLength < 0 || contentLength <= MAX_HTML_RESPONSE_SIZE;
     }
 }
