@@ -7,6 +7,39 @@ import { emptyList, isValidMatchRule } from './injectorDataUtils'
 import { detachSnippetsFromRules, syncSnippetRuleRelations } from './injectorRelations'
 import { useInjectorEditorState } from './useInjectorEditorState'
 
+export type BatchActionResult = {
+  succeededIds: string[]
+  failedIds: string[]
+}
+
+function emptyBatchResult(): BatchActionResult {
+  return { succeededIds: [], failedIds: [] }
+}
+
+async function settleById(
+  ids: string[],
+  action: (id: string) => Promise<unknown>,
+): Promise<BatchActionResult> {
+  const results = await Promise.allSettled(ids.map((id) => action(id)))
+  return results.reduce<BatchActionResult>((result, item, index) => {
+    const id = ids[index]
+    if (!id) return result
+    if (item.status === 'fulfilled') result.succeededIds.push(id)
+    else result.failedIds.push(id)
+    return result
+  }, emptyBatchResult())
+}
+
+function showBatchResult(result: BatchActionResult, action: string) {
+  if (!result.failedIds.length) {
+    Toast.success(`${action}成功, 共 ${result.succeededIds.length} 项`)
+    return
+  }
+  Toast.error(
+    `${action}完成, 成功 ${result.succeededIds.length} 项, 失败 ${result.failedIds.length} 项`,
+  )
+}
+
 export function useInjectorData() {
   const loading = ref(false)
   const saving = ref(false)
@@ -258,90 +291,92 @@ export function useInjectorData() {
     })
   }
 
-  async function batchSetSnippetEnabled(ids: string[], enabled: boolean) {
+  async function batchSetSnippetEnabled(
+    ids: string[],
+    enabled: boolean,
+  ): Promise<BatchActionResult> {
     const targets = new Set(uniqueStrings(ids))
-    if (!targets.size) return
+    if (!targets.size) return emptyBatchResult()
+    const targetSnippets = snippets.value.filter((snippet) => targets.has(snippet.id))
     saving.value = true
     try {
-      await Promise.all(
-        snippets.value
-          .filter((snippet) => targets.has(snippet.id))
-          .map((snippet) => snippetApi.update(snippet.id, { ...snippet, enabled })),
+      const snippetById = new Map(targetSnippets.map((snippet) => [snippet.id, snippet]))
+      const result = await settleById(
+        targetSnippets.map((snippet) => snippet.id),
+        (id) => snippetApi.update(id, { ...snippetById.get(id)!, enabled }),
       )
       await fetchAll()
-      Toast.success(enabled ? '批量启用成功' : '批量禁用成功')
-    } catch {
-      Toast.error('批量状态更新失败')
+      showBatchResult(result, enabled ? '批量启用' : '批量禁用')
+      return result
     } finally {
       saving.value = false
     }
   }
 
-  async function batchSetRuleEnabled(ids: string[], enabled: boolean) {
+  async function batchSetRuleEnabled(
+    ids: string[],
+    enabled: boolean,
+  ): Promise<BatchActionResult> {
     const targets = new Set(uniqueStrings(ids))
-    if (!targets.size) return
+    if (!targets.size) return emptyBatchResult()
+    const targetRules = rules.value.filter((rule) => targets.has(rule.id))
     saving.value = true
     try {
-      await Promise.all(
-        rules.value
-          .filter((rule) => targets.has(rule.id))
-          .map((rule) => ruleApi.update(rule.id, { ...rule, enabled })),
+      const ruleById = new Map(targetRules.map((rule) => [rule.id, rule]))
+      const result = await settleById(
+        targetRules.map((rule) => rule.id),
+        (id) => ruleApi.update(id, { ...ruleById.get(id)!, enabled }),
       )
       await fetchAll()
-      Toast.success(enabled ? '批量启用成功' : '批量禁用成功')
-    } catch {
-      Toast.error('批量状态更新失败')
+      showBatchResult(result, enabled ? '批量启用' : '批量禁用')
+      return result
     } finally {
       saving.value = false
     }
   }
 
-  async function batchDeleteSnippets(ids: string[]) {
+  async function batchDeleteSnippets(ids: string[]): Promise<BatchActionResult> {
     const targets = uniqueStrings(ids)
-    if (!targets.length) return
-    const targetSet = new Set(targets)
+    if (!targets.length) return emptyBatchResult()
     saving.value = true
     try {
       await detachSnippetsFromRules(targets, rules.value)
-      await Promise.all(targets.map((id) => snippetApi.delete(id)))
-      setSnippetsItems(snippets.value.filter((snippet) => !targetSet.has(snippet.id)))
-      setRulesItems(
-        rules.value.map((rule) => ({
-          ...rule,
-          snippetIds: (rule.snippetIds ?? []).filter((id) => !targetSet.has(id)),
-        })),
-      )
-      if (selectedSnippetId.value && targetSet.has(selectedSnippetId.value)) {
+      const result = await settleById(targets, snippetApi.delete)
+      const succeeded = new Set(result.succeededIds)
+      setSnippetsItems(snippets.value.filter((snippet) => !succeeded.has(snippet.id)))
+      if (selectedSnippetId.value && succeeded.has(selectedSnippetId.value)) {
         selectedSnippetId.value = null
       }
+      await fetchAll()
       syncEditSnippet()
       syncEditRule()
-      Toast.success('批量删除成功')
+      showBatchResult(result, '批量删除')
+      return result
     } catch {
       await fetchAll()
       Toast.error('批量删除失败')
+      return { succeededIds: [], failedIds: targets }
     } finally {
       saving.value = false
     }
   }
 
-  async function batchDeleteRules(ids: string[]) {
+  async function batchDeleteRules(ids: string[]): Promise<BatchActionResult> {
     const targets = uniqueStrings(ids)
-    if (!targets.length) return
-    const targetSet = new Set(targets)
+    if (!targets.length) return emptyBatchResult()
     saving.value = true
     try {
-      await Promise.all(targets.map((id) => ruleApi.delete(id)))
-      setRulesItems(rules.value.filter((rule) => !targetSet.has(rule.id)))
-      if (selectedRuleId.value && targetSet.has(selectedRuleId.value)) {
+      const result = await settleById(targets, ruleApi.delete)
+      const succeeded = new Set(result.succeededIds)
+      setRulesItems(rules.value.filter((rule) => !succeeded.has(rule.id)))
+      if (selectedRuleId.value && succeeded.has(selectedRuleId.value)) {
         selectedRuleId.value = null
       }
+      await fetchAll()
       syncEditRule()
       syncEditSnippet()
-      Toast.success('批量删除成功')
-    } catch {
-      await fetchAll()
-      Toast.error('批量删除失败')
+      showBatchResult(result, '批量删除')
+      return result
     } finally {
       saving.value = false
     }

@@ -4,6 +4,7 @@ import { Dialog, VCard, VPageHeader } from '@halo-dev/components'
 
 import type { ActiveTab } from '@/types'
 import { useInjectorData } from './composables/useInjectorData.ts'
+import type { BatchActionResult } from './composables/useInjectorData.ts'
 import { rulePreview } from './composables/util.ts'
 
 import SnippetEditor from './components/SnippetEditor.vue'
@@ -212,14 +213,24 @@ function toggleSelectAll() {
 
 async function batchEnableSelected() {
   if (!batchSelectedIds.value.length) return
-  if (activeTab.value === 'snippets') await batchSetSnippetEnabled(batchSelectedIds.value, true)
-  else await batchSetRuleEnabled(batchSelectedIds.value, true)
+  const result =
+    activeTab.value === 'snippets'
+      ? await batchSetSnippetEnabled(batchSelectedIds.value, true)
+      : await batchSetRuleEnabled(batchSelectedIds.value, true)
+  applyBatchResult(result)
 }
 
 async function batchDisableSelected() {
   if (!batchSelectedIds.value.length) return
-  if (activeTab.value === 'snippets') await batchSetSnippetEnabled(batchSelectedIds.value, false)
-  else await batchSetRuleEnabled(batchSelectedIds.value, false)
+  const result =
+    activeTab.value === 'snippets'
+      ? await batchSetSnippetEnabled(batchSelectedIds.value, false)
+      : await batchSetRuleEnabled(batchSelectedIds.value, false)
+  applyBatchResult(result)
+}
+
+function applyBatchResult(result: BatchActionResult) {
+  batchSelectedIds.value = result.failedIds
 }
 
 async function batchDeleteSelected() {
@@ -234,9 +245,11 @@ async function batchDeleteSelected() {
       confirmText: '确认删除',
       cancelText: '取消',
       async onConfirm() {
-        if (activeTab.value === 'snippets') await batchDeleteSnippets(batchSelectedIds.value)
-        else await batchDeleteRules(batchSelectedIds.value)
-        batchSelectedIds.value = []
+        const result =
+          activeTab.value === 'snippets'
+            ? await batchDeleteSnippets(batchSelectedIds.value)
+            : await batchDeleteRules(batchSelectedIds.value)
+        applyBatchResult(result)
         resolve()
       },
       onCancel() {
