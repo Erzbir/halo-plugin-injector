@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { makeRule } from '@/types'
 import {
   detachSnippetsFromRules,
+  restoreDetachedSnippetRelations,
   ruleIdsForSnippet,
   syncSnippetRuleRelations,
 } from '../injectorRelations'
@@ -58,5 +59,32 @@ describe('injectorRelations', () => {
     )
 
     expect(update).toHaveBeenCalledWith('r1', r1)
+  })
+
+  it('restores only snippets whose deletion failed', async () => {
+    const rule = makeRule({ id: 'r1', snippetIds: ['kept', 'deleted', 'unrelated'] })
+    const update = vi.fn(async () => undefined)
+
+    await restoreDetachedSnippetRelations(['kept', 'deleted'], ['kept'], [rule], update)
+
+    expect(update).toHaveBeenCalledOnce()
+    expect(update).toHaveBeenCalledWith(
+      'r1',
+      expect.objectContaining({ snippetIds: ['kept', 'unrelated'] }),
+    )
+  })
+
+  it('returns restored rules to the detached state when restoration is incomplete', async () => {
+    const r1 = makeRule({ id: 'r1', snippetIds: ['s1'] })
+    const r2 = makeRule({ id: 'r2', snippetIds: ['s1'] })
+    const update = vi.fn(async (id: string, rule: ReturnType<typeof makeRule>) => {
+      if (id === 'r2' && rule.snippetIds.includes('s1')) throw new Error('failed')
+    })
+
+    await expect(
+      restoreDetachedSnippetRelations(['s1'], ['s1'], [r1, r2], update),
+    ).rejects.toThrow('Failed to synchronize')
+
+    expect(update).toHaveBeenCalledWith('r1', expect.objectContaining({ snippetIds: [] }))
   })
 })

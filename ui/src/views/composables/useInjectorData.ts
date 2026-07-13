@@ -4,7 +4,11 @@ import { ruleApi, snippetApi } from '@/apis'
 import type { CodeSnippet, InjectionRule, ItemList } from '@/types'
 import { uniqueStrings } from './util'
 import { emptyList, isValidMatchRule } from './injectorDataUtils'
-import { detachSnippetsFromRules, syncSnippetRuleRelations } from './injectorRelations'
+import {
+  detachSnippetsFromRules,
+  restoreDetachedSnippetRelations,
+  syncSnippetRuleRelations,
+} from './injectorRelations'
 import { useInjectorEditorState } from './useInjectorEditorState'
 
 export type BatchActionResult = {
@@ -247,8 +251,10 @@ export function useInjectorData() {
       description: `确认删除代码片段 ${id}? 删除后无法恢复`,
       confirmType: 'danger',
       async onConfirm() {
+        let detached = false
         try {
           await detachSnippetsFromRules([id], rules.value)
+          detached = true
           await snippetApi.delete(id)
           setSnippetsItems(snippets.value.filter((snippet) => snippet.id !== id))
           setRulesItems(
@@ -262,8 +268,17 @@ export function useInjectorData() {
           syncEditRule()
           Toast.success('代码片段已删除')
         } catch {
+          if (detached) {
+            try {
+              await restoreDetachedSnippetRelations([id], [id], rules.value)
+            } catch {
+              await fetchAll()
+              Toast.error('删除失败, 关联恢复失败, 请检查相关规则')
+              return
+            }
+          }
           await fetchAll()
-          Toast.error('删除失败')
+          Toast.error(detached ? '删除失败, 原关联已恢复' : '删除失败')
         }
       },
     })
@@ -342,6 +357,17 @@ export function useInjectorData() {
     try {
       await detachSnippetsFromRules(targets, rules.value)
       const result = await settleById(targets, snippetApi.delete)
+      if (result.failedIds.length) {
+        try {
+          await restoreDetachedSnippetRelations(targets, result.failedIds, rules.value)
+        } catch {
+          await fetchAll()
+          Toast.error(
+            `批量删除完成, 成功 ${result.succeededIds.length} 项, 失败 ${result.failedIds.length} 项, 部分关联恢复失败`,
+          )
+          return result
+        }
+      }
       const succeeded = new Set(result.succeededIds)
       setSnippetsItems(snippets.value.filter((snippet) => !succeeded.has(snippet.id)))
       if (selectedSnippetId.value && succeeded.has(selectedSnippetId.value)) {

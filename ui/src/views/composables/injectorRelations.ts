@@ -58,3 +58,28 @@ export async function detachSnippetsFromRules(
     }))
   await applyRuleChanges(changes, updateRule)
 }
+
+export async function restoreDetachedSnippetRelations(
+  detachedSnippetIds: string[],
+  restoredSnippetIds: string[],
+  rules: InjectionRule[],
+  updateRule: UpdateRule = ruleApi.update,
+) {
+  const detached = new Set(uniqueStrings(detachedSnippetIds))
+  const restored = new Set(uniqueStrings(restoredSnippetIds))
+  const changes = rules
+    .filter((rule) => rule.snippetIds?.some((id) => restored.has(id)))
+    .map((rule) => ({
+      before: {
+        ...rule,
+        snippetIds: (rule.snippetIds ?? []).filter((id) => !detached.has(id)),
+      },
+      after: {
+        ...rule,
+        snippetIds: (rule.snippetIds ?? []).filter(
+          (id) => !detached.has(id) || restored.has(id),
+        ),
+      },
+    }))
+  await applyRuleChanges(changes, updateRule)
+}
