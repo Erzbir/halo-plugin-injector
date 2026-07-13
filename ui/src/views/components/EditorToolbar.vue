@@ -8,6 +8,7 @@ defineProps<{
   showActions?: boolean
   dirty?: boolean
   saving?: boolean
+  relationCount?: number
 }>()
 
 const emit = defineEmits<{
@@ -15,6 +16,7 @@ const emit = defineEmits<{
   (e: 'delete'): void
   (e: 'revert-all'): void
   (e: 'save'): void
+  (e: 'open-relations'): void
 }>()
 </script>
 
@@ -35,6 +37,9 @@ const emit = defineEmits<{
       </span>
     </div>
     <VSpace v-if="showActions">
+      <VButton size="sm" @click="emit('open-relations')">
+        关联 {{ relationCount ?? 0 }}
+      </VButton>
       <VButton size="sm" @click="emit('toggle-enabled')">
         {{ enabled ? '禁用' : '启用' }}
       </VButton>

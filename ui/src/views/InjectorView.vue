@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Dialog, VCard, VPageHeader } from '@halo-dev/components'
+import { Dialog, VButton, VCard, VPageHeader } from '@halo-dev/components'
 
 import type { ActiveTab } from '@/types'
 import { useInjectorData } from './composables/useInjectorData.ts'
@@ -36,6 +36,8 @@ const showSnippetModal = ref(false)
 const showRuleModal = ref(false)
 const batchMode = ref(false)
 const batchSelectedIds = ref<string[]>([])
+const relationDrawerOpen = ref(false)
+const mobileEditorOpen = ref(false)
 const topTabs: Array<{ key: ActiveTab; label: string }> = [
   { key: 'snippets', label: '代码片段' },
   { key: 'rules', label: '注入规则' },
@@ -83,6 +85,9 @@ const {
 
 const editDirty = computed(() =>
   activeTab.value === 'snippets' ? snippetDirty.value : ruleDirty.value,
+)
+const activeRelationCount = computed(() =>
+  activeTab.value === 'snippets' ? rulesUsingSnippet.value.length : snippetsInRule.value.length,
 )
 
 const snippetDirtyFields = computed(() => ({
@@ -193,6 +198,8 @@ async function toggleBatchMode() {
   await guardWithDiscard(() => {
     batchMode.value = true
     batchSelectedIds.value = []
+    mobileEditorOpen.value = false
+    relationDrawerOpen.value = false
   })
 }
 
@@ -288,6 +295,8 @@ async function jumpToRule(id: string) {
   await guardWithDiscard(() => {
     activeTab.value = 'rules'
     selectedRuleId.value = id
+    mobileEditorOpen.value = true
+    relationDrawerOpen.value = false
   })
 }
 
@@ -295,6 +304,8 @@ async function jumpToSnippet(id: string) {
   await guardWithDiscard(() => {
     activeTab.value = 'snippets'
     selectedSnippetId.value = id
+    mobileEditorOpen.value = true
+    relationDrawerOpen.value = false
   })
 }
 
@@ -303,10 +314,14 @@ async function handleSwitchTab(tab: ActiveTab) {
   if (batchMode.value) {
     activeTab.value = tab
     batchSelectedIds.value = []
+    mobileEditorOpen.value = false
+    relationDrawerOpen.value = false
     return
   }
   await guardWithDiscard(() => {
     activeTab.value = tab
+    mobileEditorOpen.value = false
+    relationDrawerOpen.value = false
   })
 }
 
@@ -314,6 +329,7 @@ async function handleSelectSnippet(id: string) {
   if (selectedSnippetId.value === id) return
   await guardWithDiscard(() => {
     selectedSnippetId.value = id
+    mobileEditorOpen.value = true
   })
 }
 
@@ -321,6 +337,7 @@ async function handleSelectRule(id: string) {
   if (selectedRuleId.value === id) return
   await guardWithDiscard(() => {
     selectedRuleId.value = id
+    mobileEditorOpen.value = true
   })
 }
 </script>
@@ -347,11 +364,14 @@ async function handleSelectRule(id: string) {
     </VPageHeader>
 
     <div class=":uno: m-0 md:m-4">
-      <VCard :body-class="['injector-view-card-body']" style="height: calc(100vh - 5.5rem)">
+      <VCard :body-class="['injector-view-card-body']" class="injector-view-card">
         <div class=":uno: h-full flex flex-col">
           <InjectorTopTabs :active-tab="activeTab" :tabs="topTabs" @switch="handleSwitchTab" />
-          <div class=":uno: flex-1 overflow-x-auto">
-            <div class=":uno: h-full min-w-[980px] flex divide-x divide-gray-100">
+          <div class=":uno: flex-1 min-h-0 overflow-hidden">
+            <div
+              class="injector-workspace"
+              :class="{ 'show-mobile-editor': mobileEditorOpen }"
+            >
               <InjectorSidebar
                 :active-tab="activeTab"
                 :active-sort-mode="activeSortMode"
@@ -380,7 +400,10 @@ async function handleSelectRule(id: string) {
                 @update:sort-mode="activeSortMode = $event as SortMode"
               />
 
-              <div class=":uno: main h-full flex-none flex flex-col overflow-hidden">
+              <div class=":uno: main h-full min-w-0 flex flex-col overflow-hidden">
+                <div class="mobile-editor-navigation">
+                  <VButton size="sm" @click="mobileEditorOpen = false">返回列表</VButton>
+                </div>
                 <div v-if="batchMode" class=":uno: h-full flex flex-col">
                   <div
                     class=":uno: sticky top-0 z-10 min-h-12 flex items-center border-b bg-white px-4 py-2 shrink-0"
@@ -396,6 +419,7 @@ async function handleSelectRule(id: string) {
                   :selected-rule-ids="editSnippetRuleIds"
                   :snippet="editSnippet"
                   :dirty-fields="snippetDirtyFields"
+                  :relation-count="activeRelationCount"
                   @delete="confirmDeleteSnippet"
                   @save="saveSnippet"
                   @field-change="() => undefined"
@@ -404,6 +428,7 @@ async function handleSelectRule(id: string) {
                   @toggle-enabled="toggleSnippetEnabled"
                   @toggle-rule="toggleRuleInSnippetEditor"
                   @update:snippet="updateEditSnippet"
+                  @open-relations="relationDrawerOpen = true"
                 />
                 <RuleEditor
                   v-else
@@ -413,6 +438,7 @@ async function handleSelectRule(id: string) {
                   :selected-snippet-ids="editRuleSnippetIds"
                   :snippets="sortedSnippets"
                   :dirty-fields="ruleDirtyFields"
+                  :relation-count="activeRelationCount"
                   @delete="confirmDeleteRule"
                   @save="saveRule"
                   @field-change="() => undefined"
@@ -421,23 +447,38 @@ async function handleSelectRule(id: string) {
                   @toggle-enabled="toggleRuleEnabled"
                   @toggle-snippet="toggleSnippetInRuleEditor"
                   @update:rule="updateEditRule"
+                  @open-relations="relationDrawerOpen = true"
                 />
               </div>
 
-              <div
-                v-if="!batchMode"
-                class=":uno: aside aside-right h-full flex-none flex flex-col overflow-hidden"
+              <button
+                v-if="relationDrawerOpen"
+                aria-label="关闭关联信息"
+                class="relation-drawer-backdrop"
+                type="button"
+                @click="relationDrawerOpen = false"
+              />
+              <aside
+                v-if="!batchMode && relationDrawerOpen"
+                aria-label="关联信息"
+                class="relation-drawer"
               >
-                <RelationPanel
-                  :mode="activeTab"
-                  :rules-using-snippet="rulesUsingSnippet"
-                  :selected-rule-id="selectedRuleId"
-                  :selected-snippet-id="selectedSnippetId"
-                  :snippets-in-rule="snippetsInRule"
-                  @jump-to-rule="jumpToRule"
-                  @jump-to-snippet="jumpToSnippet"
-                />
-              </div>
+                <div class=":uno: h-12 flex items-center justify-between border-b px-4 shrink-0">
+                  <h2 class=":uno: text-sm font-semibold text-gray-900">关联信息</h2>
+                  <VButton size="sm" @click="relationDrawerOpen = false">关闭</VButton>
+                </div>
+                <div class=":uno: min-h-0 flex-1">
+                  <RelationPanel
+                    :mode="activeTab"
+                    :rules-using-snippet="rulesUsingSnippet"
+                    :selected-rule-id="selectedRuleId"
+                    :selected-snippet-id="selectedSnippetId"
+                    :snippets-in-rule="snippetsInRule"
+                    @jump-to-rule="jumpToRule"
+                    @jump-to-snippet="jumpToSnippet"
+                  />
+                </div>
+              </aside>
             </div>
           </div>
         </div>

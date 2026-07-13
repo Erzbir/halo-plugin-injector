@@ -1,21 +1,50 @@
-$right-aside-width: 20%;
-$left-aside-width: 21%;
-$main-width: 59%;
-
 #injector-view {
-  .aside {
+  .injector-view-card {
+    height: calc(100dvh - 5.5rem);
+    min-height: 32rem;
+  }
+
+  .injector-workspace {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(15rem, 17.5rem) minmax(0, 1fr);
+    height: 100%;
+    overflow: hidden;
   }
 
   .aside-left {
-    width: $left-aside-width;
-  }
-
-  .aside-right {
-    width: $right-aside-width;
+    width: auto;
+    border-right: 1px solid rgb(243, 244, 246);
   }
 
   .main {
-    width: $main-width
+    width: auto;
+  }
+
+  .mobile-editor-navigation {
+    display: none;
+  }
+
+  .relation-drawer-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    border: 0;
+    background: rgb(17 24 39 / 18%);
+  }
+
+  .relation-drawer {
+    position: absolute;
+    inset-block: 0;
+    right: 0;
+    z-index: 40;
+    display: flex;
+    width: min(24rem, 90%);
+    flex-direction: column;
+    overflow: hidden;
+    border-left: 1px solid rgb(229, 231, 235);
+    background: white;
+    box-shadow: -8px 0 24px rgb(17 24 39 / 12%);
   }
 
   .injector-editor-container {
@@ -26,6 +55,50 @@ $main-width: 59%;
       &:focus {
         box-shadow: 0 0 0 1px rgb(59, 130, 246);
       }
+    }
+  }
+}
+
+@media (max-width: 767px) {
+  #injector-view {
+    .injector-view-card {
+      height: calc(100dvh - 4rem);
+      min-height: 28rem;
+    }
+
+    .injector-workspace {
+      display: block;
+    }
+
+    .aside-left,
+    .main {
+      width: 100%;
+    }
+
+    .main {
+      display: none;
+    }
+
+    .show-mobile-editor {
+      .aside-left {
+        display: none;
+      }
+
+      .main {
+        display: flex;
+      }
+    }
+
+    .mobile-editor-navigation {
+      display: flex;
+      min-height: 3rem;
+      align-items: center;
+      border-bottom: 1px solid rgb(243, 244, 246);
+      padding-inline: 1rem;
+    }
+
+    .relation-drawer {
+      width: 100%;
     }
   }
 }

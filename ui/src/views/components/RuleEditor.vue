@@ -14,6 +14,7 @@ const props = defineProps<{
   selectedSnippetIds: string[]
   saving: boolean
   dirty: boolean
+  relationCount: number
   dirtyFields: Partial<Record<keyof InjectionRule | 'snippetIds', boolean>>
 }>()
 
@@ -26,6 +27,7 @@ const emit = defineEmits<{
   (e: 'revert-field', field: keyof InjectionRule | 'snippetIds'): void
   (e: 'revert-all'): void
   (e: 'update:rule', rule: InjectionRule): void
+  (e: 'open-relations'): void
 }>()
 
 const sortedSnippets = computed(() => sortSelectedFirst(props.snippets, props.selectedSnippetIds))
@@ -40,10 +42,12 @@ const sortedSnippets = computed(() => sortSelectedFirst(props.snippets, props.se
       :title="rule ? '编辑规则' : '注入规则'"
       :dirty="dirty"
       :saving="saving"
+      :relation-count="relationCount"
       @delete="emit('delete')"
       @revert-all="emit('revert-all')"
       @save="emit('save')"
       @toggle-enabled="emit('toggle-enabled')"
+      @open-relations="emit('open-relations')"
     />
 
     <div v-if="!rule" class=":uno: flex flex-1 items-center justify-center">

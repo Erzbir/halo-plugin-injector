@@ -14,6 +14,7 @@ const props = defineProps<{
   selectedRuleIds: string[]
   saving: boolean
   dirty: boolean
+  relationCount: number
   dirtyFields: Partial<Record<keyof CodeSnippet | 'ruleIds', boolean>>
 }>()
 
@@ -26,6 +27,7 @@ const emit = defineEmits<{
   (e: 'revert-field', field: keyof CodeSnippet | 'ruleIds'): void
   (e: 'revert-all'): void
   (e: 'update:snippet', snippet: CodeSnippet): void
+  (e: 'open-relations'): void
 }>()
 
 const sortedRules = computed(() => sortSelectedFirst(props.rules, props.selectedRuleIds))
@@ -40,10 +42,12 @@ const sortedRules = computed(() => sortSelectedFirst(props.rules, props.selected
       :title="snippet ? '编辑代码片段' : '代码片段'"
       :dirty="dirty"
       :saving="saving"
+      :relation-count="relationCount"
       @delete="emit('delete')"
       @revert-all="emit('revert-all')"
       @save="emit('save')"
       @toggle-enabled="emit('toggle-enabled')"
+      @open-relations="emit('open-relations')"
     />
 
     <div v-if="!snippet" class=":uno: flex flex-1 items-center justify-center">
