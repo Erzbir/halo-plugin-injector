@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Dialog, VButton, VCard, VPageHeader } from '@halo-dev/components'
 
-import type { ActiveTab } from '@/types'
+import { MODE_OPTIONS, type ActiveTab, type InjectionRule } from '@/types'
 import { useInjectorData } from './composables/useInjectorData.ts'
 import type { BatchActionResult } from './composables/useInjectorData.ts'
 import { rulePreview } from './composables/util.ts'
@@ -25,6 +25,20 @@ const snippetSortField = ref<SortField>('createdAt')
 const snippetSortOrder = ref<SortOrder>('desc')
 const ruleSortField = ref<SortField>('createdAt')
 const ruleSortOrder = ref<SortOrder>('desc')
+const snippetSearchQuery = ref('')
+const ruleSearchQuery = ref('')
+const snippetStatusFilter = ref('all')
+const ruleStatusFilter = ref('all')
+const ruleModeFilter = ref('all')
+const statusFilterOptions = [
+  { value: 'all', label: '全部状态' },
+  { value: 'enabled', label: '仅已启用' },
+  { value: 'disabled', label: '仅已停用' },
+]
+const modeFilterOptions = [
+  { value: 'all', label: '全部模式' },
+  ...MODE_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+]
 const sortModeOptions: Array<{ value: SortMode; label: string }> = [
   { value: 'name-asc', label: '按名称升序' },
   { value: 'name-desc', label: '按名称降序' },
@@ -45,9 +59,15 @@ const topTabs: Array<{ key: ActiveTab; label: string }> = [
 
 const {
   loading,
+  loadingMoreSnippets,
+  loadingMoreRules,
   saving,
   snippets,
   rules,
+  snippetsTotal,
+  rulesTotal,
+  hasMoreSnippets,
+  hasMoreRules,
   selectedSnippetId,
   selectedRuleId,
   editSnippet,
@@ -59,6 +79,8 @@ const {
   rulesUsingSnippet,
   snippetsInRule,
   fetchAll,
+  loadMoreSnippets,
+  loadMoreRules,
   addSnippet,
   saveSnippet,
   setSnippetEnabled,
@@ -111,6 +133,36 @@ const sortedSnippets = computed(() =>
   sortItems(snippets.value, snippetSortField.value, snippetSortOrder.value),
 )
 const sortedRules = computed(() => sortItems(rules.value, ruleSortField.value, ruleSortOrder.value))
+const filteredSnippets = computed(() =>
+  sortedSnippets.value.filter(
+    (snippet) =>
+      matchesQuery(snippet, snippetSearchQuery.value) &&
+      matchesStatus(snippet.enabled, snippetStatusFilter.value),
+  ),
+)
+const filteredRules = computed(() =>
+  sortedRules.value.filter(
+    (rule) =>
+      matchesQuery(rule, ruleSearchQuery.value) &&
+      matchesStatus(rule.enabled, ruleStatusFilter.value) &&
+      (ruleModeFilter.value === 'all' || rule.mode === ruleModeFilter.value),
+  ),
+)
+const activeSearchQuery = computed({
+  get: () => (activeTab.value === 'snippets' ? snippetSearchQuery.value : ruleSearchQuery.value),
+  set: (query: string) => {
+    if (activeTab.value === 'snippets') snippetSearchQuery.value = query
+    else ruleSearchQuery.value = query
+  },
+})
+const activeStatusFilter = computed({
+  get: () =>
+    activeTab.value === 'snippets' ? snippetStatusFilter.value : ruleStatusFilter.value,
+  set: (status: string) => {
+    if (activeTab.value === 'snippets') snippetStatusFilter.value = status
+    else ruleStatusFilter.value = status
+  },
+})
 const activeSortMode = computed<SortMode>({
   get: () => {
     const field = activeTab.value === 'snippets' ? snippetSortField.value : ruleSortField.value
@@ -129,11 +181,24 @@ const activeSortMode = computed<SortMode>({
   },
 })
 const currentItems = computed(() =>
-  activeTab.value === 'snippets' ? sortedSnippets.value : sortedRules.value,
+  activeTab.value === 'snippets' ? filteredSnippets.value : filteredRules.value,
 )
 const allBatchSelected = computed(
   () =>
-    currentItems.value.length > 0 && batchSelectedIds.value.length === currentItems.value.length,
+    currentItems.value.length > 0 &&
+    currentItems.value.every((item) => batchSelectedIds.value.includes(item.id)),
+)
+const activeLoadedCount = computed(() =>
+  activeTab.value === 'snippets' ? snippets.value.length : rules.value.length,
+)
+const activeTotal = computed(() =>
+  activeTab.value === 'snippets' ? snippetsTotal.value : rulesTotal.value,
+)
+const activeHasMore = computed(() =>
+  activeTab.value === 'snippets' ? hasMoreSnippets.value : hasMoreRules.value,
+)
+const activeLoadingMore = computed(() =>
+  activeTab.value === 'snippets' ? loadingMoreSnippets.value : loadingMoreRules.value,
 )
 
 function itemName(item: { id: string; name?: string }) {
@@ -146,6 +211,20 @@ function itemCreatedAt(item: { metadata?: { creationTimestamp?: string | null } 
   if (!timestamp) return 0
   const parsed = Date.parse(timestamp)
   return Number.isNaN(parsed) ? 0 : parsed
+}
+
+function matchesQuery(item: { id: string; name?: string; description?: string }, query: string) {
+  const keyword = query.trim().toLocaleLowerCase()
+  if (!keyword) return true
+  return [item.name, item.id, item.description]
+    .filter(Boolean)
+    .some((value) => value!.toLocaleLowerCase().includes(keyword))
+}
+
+function matchesStatus(enabled: boolean, filter: string) {
+  if (filter === 'enabled') return enabled
+  if (filter === 'disabled') return !enabled
+  return true
 }
 
 function sortItems<
@@ -211,11 +290,17 @@ function toggleBatchSelect(id: string) {
 }
 
 function toggleSelectAll() {
+  const visibleIds = new Set(currentItems.value.map((item) => item.id))
   if (allBatchSelected.value) {
-    batchSelectedIds.value = []
+    batchSelectedIds.value = batchSelectedIds.value.filter((id) => !visibleIds.has(id))
     return
   }
-  batchSelectedIds.value = currentItems.value.map((item) => item.id)
+  batchSelectedIds.value = [...new Set([...batchSelectedIds.value, ...visibleIds])]
+}
+
+async function loadMoreActiveItems() {
+  if (activeTab.value === 'snippets') await loadMoreSnippets()
+  else await loadMoreRules()
 }
 
 async function batchEnableSelected() {
@@ -413,14 +498,23 @@ function confirmSaveBeforeStatusChange(
                 :all-batch-selected="allBatchSelected"
                 :batch-mode="batchMode"
                 :batch-selected-ids="batchSelectedIds"
+                :has-more="activeHasMore"
                 :loading="loading"
+                :loading-more="activeLoadingMore"
+                :loaded-count="activeLoadedCount"
+                :mode-filter="ruleModeFilter"
+                :mode-filter-options="modeFilterOptions"
                 :rule-preview="rulePreview"
-                :rules="sortedRules"
+                :rules="filteredRules"
                 :saving="saving"
+                :search-query="activeSearchQuery"
                 :selected-rule-id="selectedRuleId"
                 :selected-snippet-id="selectedSnippetId"
-                :snippets="sortedSnippets"
+                :snippets="filteredSnippets"
                 :sort-mode-options="sortModeOptions"
+                :status-filter="activeStatusFilter"
+                :status-filter-options="statusFilterOptions"
+                :total="activeTotal"
                 @batch-delete="batchDeleteSelected"
                 @batch-disable="batchDisableSelected"
                 @batch-enable="batchEnableSelected"
@@ -429,10 +523,14 @@ function confirmSaveBeforeStatusChange(
                 "
                 @select-rule="handleSelectRule"
                 @select-snippet="handleSelectSnippet"
+                @load-more="loadMoreActiveItems"
                 @toggle-batch-mode="toggleBatchMode"
                 @toggle-batch-select="toggleBatchSelect"
                 @toggle-select-all="toggleSelectAll"
                 @update:sort-mode="activeSortMode = $event as SortMode"
+                @update:search-query="activeSearchQuery = $event"
+                @update:status-filter="activeStatusFilter = $event"
+                @update:mode-filter="ruleModeFilter = $event as InjectionRule['mode'] | 'all'"
               />
 
               <div class=":uno: main h-full min-w-0 flex flex-col overflow-hidden">

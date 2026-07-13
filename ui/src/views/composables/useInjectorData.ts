@@ -16,6 +16,8 @@ export type BatchActionResult = {
   failedIds: string[]
 }
 
+const PAGE_SIZE = 50
+
 function emptyBatchResult(): BatchActionResult {
   return { succeededIds: [], failedIds: [] }
 }
@@ -46,11 +48,17 @@ function showBatchResult(result: BatchActionResult, action: string) {
 
 export function useInjectorData() {
   const loading = ref(false)
+  const loadingMoreSnippets = ref(false)
+  const loadingMoreRules = ref(false)
   const saving = ref(false)
   const snippetsResp = ref<ItemList<CodeSnippet>>(emptyList())
   const rulesResp = ref<ItemList<InjectionRule>>(emptyList())
   const snippets = computed(() => snippetsResp.value.items)
   const rules = computed(() => rulesResp.value.items)
+  const snippetsTotal = computed(() => snippetsResp.value.total)
+  const rulesTotal = computed(() => rulesResp.value.total)
+  const hasMoreSnippets = computed(() => snippetsResp.value.hasNext)
+  const hasMoreRules = computed(() => rulesResp.value.hasNext)
 
   const editor = useInjectorEditorState(snippets, rules)
   const {
@@ -90,15 +98,62 @@ export function useInjectorData() {
   async function fetchAll() {
     loading.value = true
     try {
-      const [snippetResponse, ruleResponse] = await Promise.all([snippetApi.list(), ruleApi.list()])
+      const [snippetResponse, ruleResponse] = await Promise.all([
+        snippetApi.list({ page: 0, size: Math.max(PAGE_SIZE, snippets.value.length) }),
+        ruleApi.list({ page: 0, size: Math.max(PAGE_SIZE, rules.value.length) }),
+      ])
       snippetsResp.value = snippetResponse.data
       rulesResp.value = ruleResponse.data
+      if (!selectedSnippetId.value && snippets.value[0]) {
+        selectedSnippetId.value = snippets.value[0].id
+      }
+      if (!selectedRuleId.value && rules.value[0]) {
+        selectedRuleId.value = rules.value[0].id
+      }
       syncEditSnippet()
       syncEditRule()
     } catch {
       Toast.error('加载数据失败')
     } finally {
       loading.value = false
+    }
+  }
+
+  async function loadMoreSnippets() {
+    if (!snippetsResp.value.hasNext || loadingMoreSnippets.value) return
+    loadingMoreSnippets.value = true
+    try {
+      const response = await snippetApi.list({
+        page: snippetsResp.value.page + 1,
+        size: snippetsResp.value.size || PAGE_SIZE,
+      })
+      snippetsResp.value = {
+        ...response.data,
+        items: [...snippets.value, ...response.data.items],
+      }
+    } catch {
+      Toast.error('加载更多代码片段失败')
+    } finally {
+      loadingMoreSnippets.value = false
+    }
+  }
+
+  async function loadMoreRules() {
+    if (!rulesResp.value.hasNext || loadingMoreRules.value) return
+    loadingMoreRules.value = true
+    try {
+      const response = await ruleApi.list({
+        page: rulesResp.value.page + 1,
+        size: rulesResp.value.size || PAGE_SIZE,
+      })
+      rulesResp.value = {
+        ...response.data,
+        items: [...rules.value, ...response.data.items],
+      }
+    } catch {
+      Toast.error('加载更多规则失败')
+    } finally {
+      loadingMoreRules.value = false
     }
   }
 
@@ -420,9 +475,15 @@ export function useInjectorData() {
 
   return {
     loading,
+    loadingMoreSnippets,
+    loadingMoreRules,
     saving,
     snippets,
     rules,
+    snippetsTotal,
+    rulesTotal,
+    hasMoreSnippets,
+    hasMoreRules,
     selectedSnippetId,
     selectedRuleId,
     editSnippet,
@@ -434,6 +495,8 @@ export function useInjectorData() {
     rulesUsingSnippet,
     snippetsInRule,
     fetchAll,
+    loadMoreSnippets,
+    loadMoreRules,
     addSnippet,
     saveSnippet,
     setSnippetEnabled,

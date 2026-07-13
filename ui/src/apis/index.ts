@@ -5,9 +5,14 @@ const BASE = '/apis/injector.erzbir.com/v1alpha1'
 const SNIPPETS = `${BASE}/codeSnippets`
 const RULES = `${BASE}/injectionRules`
 
+export type ListParams = {
+  page?: number
+  size?: number
+}
+
 export const snippetApi = {
-  list() {
-    return axiosInstance.get<ItemList<CodeSnippet>>(SNIPPETS)
+  list(params: ListParams = {}) {
+    return axiosInstance.get<ItemList<CodeSnippet>>(SNIPPETS, { params })
   },
 
   add(snippet: CodeSnippet) {
@@ -24,8 +29,8 @@ export const snippetApi = {
 }
 
 export const ruleApi = {
-  list() {
-    return axiosInstance.get<ItemList<InjectionRule>>(RULES)
+  list(params: ListParams = {}) {
+    return axiosInstance.get<ItemList<InjectionRule>>(RULES, { params })
   },
 
   add(rule: InjectionRule) {

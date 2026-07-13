@@ -13,8 +13,17 @@ defineProps<{
   allBatchSelected: boolean
   sortModeOptions: Array<{ value: string; label: string }>
   activeSortMode: string
+  searchQuery: string
+  statusFilter: string
+  modeFilter: string
+  statusFilterOptions: Array<{ value: string; label: string }>
+  modeFilterOptions: Array<{ value: string; label: string }>
   snippets: Array<{ id: string; name: string; description?: string; enabled: boolean }>
   rules: Array<{ id: string; name: string; description?: string; enabled: boolean }>
+  loadedCount: number
+  total: number
+  hasMore: boolean
+  loadingMore: boolean
   selectedSnippetId?: string | null
   selectedRuleId?: string | null
   rulePreview: (rule: unknown) => string
@@ -22,6 +31,10 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'update:sort-mode', mode: string): void
+  (e: 'update:search-query', query: string): void
+  (e: 'update:status-filter', status: string): void
+  (e: 'update:mode-filter', mode: string): void
+  (e: 'load-more'): void
   (e: 'toggle-batch-mode'): void
   (e: 'open-create'): void
   (e: 'toggle-select-all'): void
@@ -36,10 +49,16 @@ const emit = defineEmits<{
 
 <template>
   <div class=":uno: aside aside-left h-full flex-none flex flex-col overflow-hidden">
-    <div
-      class=":uno: sticky top-0 z-10 h-12 flex items-center justify-end gap-2 border-b bg-white px-4 shrink-0"
-    >
-      <div class=":uno: flex items-center gap-1.5 min-w-0">
+    <div class=":uno: sticky top-0 z-10 border-b bg-white px-3 py-2 space-y-2 shrink-0">
+      <input
+        :value="searchQuery"
+        aria-label="搜索列表"
+        class=":uno: w-full rounded-md border border-gray-200 px-2.5 py-1.5 text-xs focus:border-primary focus:outline-none"
+        placeholder="搜索名称、ID 或描述"
+        type="search"
+        @input="emit('update:search-query', ($event.target as HTMLInputElement).value)"
+      />
+      <div class=":uno: flex items-center justify-between gap-1.5 min-w-0">
         <div class=":uno: min-w-0 shrink">
           <SelectDropdown
             :model-value="activeSortMode"
@@ -105,6 +124,22 @@ const emit = defineEmits<{
           删除
         </VButton>
       </div>
+      <div class=":uno: grid grid-cols-2 gap-1.5">
+        <SelectDropdown
+          :model-value="statusFilter"
+          :options="statusFilterOptions"
+          size="xs"
+          @update:model-value="emit('update:status-filter', $event)"
+        />
+        <SelectDropdown
+          v-if="activeTab === 'rules'"
+          :model-value="modeFilter"
+          :options="modeFilterOptions"
+          size="xs"
+          @update:model-value="emit('update:mode-filter', $event)"
+        />
+        <span v-else />
+      </div>
     </div>
 
     <div class=":uno: flex-1 overflow-y-auto">
@@ -138,8 +173,11 @@ const emit = defineEmits<{
 
     <div class=":uno: h-9 flex items-center justify-between gap-2 border-t bg-white px-4 shrink-0">
       <span class=":uno: text-xs text-gray-500 whitespace-nowrap">
-        {{ activeTab === 'snippets' ? `共 ${snippets.length} 个` : `共 ${rules.length} 个` }}
+        显示 {{ activeTab === 'snippets' ? snippets.length : rules.length }} / {{ total }} 个
       </span>
+      <VButton v-if="hasMore" :disabled="loadingMore" size="xs" @click="emit('load-more')">
+        {{ loadingMore ? '加载中...' : `继续加载 (${loadedCount}/${total})` }}
+      </VButton>
     </div>
   </div>
 </template>
