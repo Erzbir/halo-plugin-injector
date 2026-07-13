@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { VButton, VLoading } from '@halo-dev/components'
+import { VButton } from '@halo-dev/components'
 import type { ActiveTab } from '@/types'
 import ItemListV from './ItemListV.vue'
 import SelectDropdown from './SelectDropdown.vue'
@@ -24,6 +24,7 @@ defineProps<{
   total: number
   hasMore: boolean
   loadingMore: boolean
+  loadError: string
   selectedSnippetId?: string | null
   selectedRuleId?: string | null
   rulePreview: (rule: unknown) => string
@@ -35,6 +36,7 @@ const emit = defineEmits<{
   (e: 'update:status-filter', status: string): void
   (e: 'update:mode-filter', mode: string): void
   (e: 'load-more'): void
+  (e: 'retry'): void
   (e: 'toggle-batch-mode'): void
   (e: 'open-create'): void
   (e: 'toggle-select-all'): void
@@ -89,9 +91,39 @@ const emit = defineEmits<{
           >新建</VButton
         >
       </div>
+      <div class=":uno: grid grid-cols-2 gap-1.5">
+        <SelectDropdown
+          :model-value="statusFilter"
+          :options="statusFilterOptions"
+          size="xs"
+          @update:model-value="emit('update:status-filter', $event)"
+        />
+        <SelectDropdown
+          v-if="activeTab === 'rules'"
+          :model-value="modeFilter"
+          :options="modeFilterOptions"
+          size="xs"
+          @update:model-value="emit('update:mode-filter', $event)"
+        />
+        <span v-else />
+      </div>
     </div>
 
-    <VLoading v-if="loading" />
+    <div v-if="loading && !loadedCount" class=":uno: space-y-3 p-4" aria-label="正在加载列表">
+      <div v-for="index in 5" :key="index" class=":uno: animate-pulse space-y-2">
+        <div class=":uno: h-4 w-3/4 rounded bg-gray-200" />
+        <div class=":uno: h-3 w-full rounded bg-gray-100" />
+      </div>
+    </div>
+
+    <div
+      v-if="loadError"
+      class=":uno: m-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-700"
+      role="alert"
+    >
+      <p class=":uno: break-words text-xs">{{ loadError }}</p>
+      <VButton class=":uno: mt-2" size="xs" @click="emit('retry')">重新加载</VButton>
+    </div>
 
     <div
       v-if="batchMode"
@@ -124,25 +156,9 @@ const emit = defineEmits<{
           删除
         </VButton>
       </div>
-      <div class=":uno: grid grid-cols-2 gap-1.5">
-        <SelectDropdown
-          :model-value="statusFilter"
-          :options="statusFilterOptions"
-          size="xs"
-          @update:model-value="emit('update:status-filter', $event)"
-        />
-        <SelectDropdown
-          v-if="activeTab === 'rules'"
-          :model-value="modeFilter"
-          :options="modeFilterOptions"
-          size="xs"
-          @update:model-value="emit('update:mode-filter', $event)"
-        />
-        <span v-else />
-      </div>
     </div>
 
-    <div class=":uno: flex-1 overflow-y-auto">
+    <div v-if="!loading || loadedCount" class=":uno: flex-1 overflow-y-auto">
       <ItemListV
         v-if="activeTab === 'snippets'"
         :batch-mode="batchMode"

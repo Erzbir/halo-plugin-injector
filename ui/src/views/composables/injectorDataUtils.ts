@@ -48,3 +48,17 @@ export function normalizedIds(ids: string[]) {
 export function isSameJson(a: unknown, b: unknown) {
   return JSON.stringify(a) === JSON.stringify(b)
 }
+
+export function apiErrorMessage(error: unknown, fallback: string) {
+  if (!error || typeof error !== 'object') return fallback
+  const responseMessage = (error as { response?: { data?: { message?: unknown } } }).response?.data
+    ?.message
+  const directMessage = (error as { message?: unknown }).message
+  const detail =
+    typeof responseMessage === 'string'
+      ? responseMessage.trim()
+      : typeof directMessage === 'string'
+        ? directMessage.trim()
+        : ''
+  return detail ? `${fallback}: ${detail}` : fallback
+}

@@ -63,6 +63,8 @@ const {
   loading,
   loadingMoreSnippets,
   loadingMoreRules,
+  snippetLoadError,
+  ruleLoadError,
   saving,
   snippets,
   rules,
@@ -158,8 +160,7 @@ const activeSearchQuery = computed({
   },
 })
 const activeStatusFilter = computed({
-  get: () =>
-    activeTab.value === 'snippets' ? snippetStatusFilter.value : ruleStatusFilter.value,
+  get: () => (activeTab.value === 'snippets' ? snippetStatusFilter.value : ruleStatusFilter.value),
   set: (status: string) => {
     if (activeTab.value === 'snippets') snippetStatusFilter.value = status
     else ruleStatusFilter.value = status
@@ -206,6 +207,9 @@ const activeHasMore = computed(() =>
 )
 const activeLoadingMore = computed(() =>
   activeTab.value === 'snippets' ? loadingMoreSnippets.value : loadingMoreRules.value,
+)
+const activeLoadError = computed(() =>
+  activeTab.value === 'snippets' ? snippetLoadError.value : ruleLoadError.value,
 )
 
 function itemName(item: { id: string; name?: string }) {
@@ -508,10 +512,7 @@ function confirmSaveBeforeStatusChange(
         <div class=":uno: h-full flex flex-col">
           <InjectorTopTabs :active-tab="activeTab" :tabs="topTabs" @switch="handleSwitchTab" />
           <div class=":uno: flex-1 min-h-0 overflow-hidden">
-            <div
-              class="injector-workspace"
-              :class="{ 'show-mobile-editor': mobileEditorOpen }"
-            >
+            <div class="injector-workspace" :class="{ 'show-mobile-editor': mobileEditorOpen }">
               <InjectorSidebar
                 :active-tab="activeTab"
                 :active-sort-mode="activeSortMode"
@@ -521,6 +522,7 @@ function confirmSaveBeforeStatusChange(
                 :has-more="activeHasMore"
                 :loading="loading"
                 :loading-more="activeLoadingMore"
+                :load-error="activeLoadError"
                 :loaded-count="activeLoadedCount"
                 :mode-filter="ruleModeFilter"
                 :mode-filter-options="modeFilterOptions"
@@ -544,6 +546,7 @@ function confirmSaveBeforeStatusChange(
                 @select-rule="handleSelectRule"
                 @select-snippet="handleSelectSnippet"
                 @load-more="loadMoreActiveItems"
+                @retry="fetchAll"
                 @toggle-batch-mode="toggleBatchMode"
                 @toggle-batch-select="toggleBatchSelect"
                 @toggle-select-all="toggleSelectAll"

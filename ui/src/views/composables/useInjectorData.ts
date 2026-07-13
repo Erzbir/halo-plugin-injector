@@ -3,7 +3,7 @@ import { Dialog, Toast } from '@halo-dev/components'
 import { ruleApi, snippetApi } from '@/apis'
 import type { CodeSnippet, InjectionRule, ItemList } from '@/types'
 import { uniqueStrings } from './util'
-import { emptyList, isValidMatchRule } from './injectorDataUtils'
+import { apiErrorMessage, emptyList, isValidMatchRule } from './injectorDataUtils'
 import {
   detachSnippetsFromRules,
   restoreDetachedSnippetRelations,
@@ -50,6 +50,8 @@ export function useInjectorData() {
   const loading = ref(false)
   const loadingMoreSnippets = ref(false)
   const loadingMoreRules = ref(false)
+  const snippetLoadError = ref('')
+  const ruleLoadError = ref('')
   const saving = ref(false)
   const snippetsResp = ref<ItemList<CodeSnippet>>(emptyList())
   const rulesResp = ref<ItemList<InjectionRule>>(emptyList())
@@ -98,12 +100,22 @@ export function useInjectorData() {
   async function fetchAll() {
     loading.value = true
     try {
-      const [snippetResponse, ruleResponse] = await Promise.all([
+      const [snippetResult, ruleResult] = await Promise.allSettled([
         snippetApi.list({ page: 0, size: Math.max(PAGE_SIZE, snippets.value.length) }),
         ruleApi.list({ page: 0, size: Math.max(PAGE_SIZE, rules.value.length) }),
       ])
-      snippetsResp.value = snippetResponse.data
-      rulesResp.value = ruleResponse.data
+      if (snippetResult.status === 'fulfilled') {
+        snippetsResp.value = snippetResult.value.data
+        snippetLoadError.value = ''
+      } else {
+        snippetLoadError.value = apiErrorMessage(snippetResult.reason, '加载代码片段失败')
+      }
+      if (ruleResult.status === 'fulfilled') {
+        rulesResp.value = ruleResult.value.data
+        ruleLoadError.value = ''
+      } else {
+        ruleLoadError.value = apiErrorMessage(ruleResult.reason, '加载规则失败')
+      }
       if (!selectedSnippetId.value && snippets.value[0]) {
         selectedSnippetId.value = snippets.value[0].id
       }
@@ -112,8 +124,7 @@ export function useInjectorData() {
       }
       syncEditSnippet()
       syncEditRule()
-    } catch {
-      Toast.error('加载数据失败')
+      if (snippetLoadError.value || ruleLoadError.value) Toast.error('部分数据加载失败')
     } finally {
       loading.value = false
     }
@@ -123,6 +134,7 @@ export function useInjectorData() {
     if (!snippetsResp.value.hasNext || loadingMoreSnippets.value) return
     loadingMoreSnippets.value = true
     try {
+      snippetLoadError.value = ''
       const response = await snippetApi.list({
         page: snippetsResp.value.page + 1,
         size: snippetsResp.value.size || PAGE_SIZE,
@@ -131,8 +143,9 @@ export function useInjectorData() {
         ...response.data,
         items: [...snippets.value, ...response.data.items],
       }
-    } catch {
-      Toast.error('加载更多代码片段失败')
+    } catch (error) {
+      snippetLoadError.value = apiErrorMessage(error, '加载更多代码片段失败')
+      Toast.error(snippetLoadError.value)
     } finally {
       loadingMoreSnippets.value = false
     }
@@ -142,6 +155,7 @@ export function useInjectorData() {
     if (!rulesResp.value.hasNext || loadingMoreRules.value) return
     loadingMoreRules.value = true
     try {
+      ruleLoadError.value = ''
       const response = await ruleApi.list({
         page: rulesResp.value.page + 1,
         size: rulesResp.value.size || PAGE_SIZE,
@@ -150,8 +164,9 @@ export function useInjectorData() {
         ...response.data,
         items: [...rules.value, ...response.data.items],
       }
-    } catch {
-      Toast.error('加载更多规则失败')
+    } catch (error) {
+      ruleLoadError.value = apiErrorMessage(error, '加载更多规则失败')
+      Toast.error(ruleLoadError.value)
     } finally {
       loadingMoreRules.value = false
     }
@@ -178,8 +193,8 @@ export function useInjectorData() {
       selectedSnippetId.value = id
       Toast.success('代码片段已创建')
       return id
-    } catch {
-      Toast.error('创建失败')
+    } catch (error) {
+      Toast.error(apiErrorMessage(error, '创建代码片段失败'))
       return null
     } finally {
       saving.value = false
@@ -202,8 +217,8 @@ export function useInjectorData() {
       selectedRuleId.value = response.data.id
       Toast.success('规则已创建')
       return response.data.id
-    } catch {
-      Toast.error('创建失败')
+    } catch (error) {
+      Toast.error(apiErrorMessage(error, '创建规则失败'))
       return null
     } finally {
       saving.value = false
@@ -231,9 +246,9 @@ export function useInjectorData() {
       await fetchAll()
       Toast.success('保存成功')
       return true
-    } catch {
+    } catch (error) {
       await fetchAll()
-      Toast.error('保存失败')
+      Toast.error(apiErrorMessage(error, '保存代码片段失败'))
       return false
     } finally {
       saving.value = false
@@ -256,8 +271,8 @@ export function useInjectorData() {
       await fetchAll()
       Toast.success('保存成功')
       return true
-    } catch {
-      Toast.error('保存失败')
+    } catch (error) {
+      Toast.error(apiErrorMessage(error, '保存规则失败'))
       return false
     } finally {
       saving.value = false
@@ -280,8 +295,8 @@ export function useInjectorData() {
       editSnippet.value = { ...editSnippet.value, enabled }
       if (originalSnippet.value) originalSnippet.value = { ...originalSnippet.value, enabled }
       refreshDirty()
-    } catch {
-      Toast.error('操作失败')
+    } catch (error) {
+      Toast.error(apiErrorMessage(error, '更新代码片段状态失败'))
     } finally {
       saving.value = false
     }
@@ -301,8 +316,8 @@ export function useInjectorData() {
       editRule.value = { ...editRule.value, enabled }
       if (originalRule.value) originalRule.value = { ...originalRule.value, enabled }
       refreshDirty()
-    } catch {
-      Toast.error('操作失败')
+    } catch (error) {
+      Toast.error(apiErrorMessage(error, '更新规则状态失败'))
     } finally {
       saving.value = false
     }
@@ -332,18 +347,20 @@ export function useInjectorData() {
           syncEditSnippet()
           syncEditRule()
           Toast.success('代码片段已删除')
-        } catch {
+        } catch (error) {
           if (detached) {
             try {
               await restoreDetachedSnippetRelations([id], [id], rules.value)
-            } catch {
+            } catch (restoreError) {
               await fetchAll()
-              Toast.error('删除失败, 关联恢复失败, 请检查相关规则')
+              Toast.error(apiErrorMessage(restoreError, '删除失败, 关联恢复失败, 请检查相关规则'))
               return
             }
           }
           await fetchAll()
-          Toast.error(detached ? '删除失败, 原关联已恢复' : '删除失败')
+          Toast.error(
+            apiErrorMessage(error, detached ? '删除失败, 原关联已恢复' : '删除代码片段失败'),
+          )
         }
       },
     })
@@ -364,8 +381,8 @@ export function useInjectorData() {
           syncEditRule()
           syncEditSnippet()
           Toast.success('规则已删除')
-        } catch {
-          Toast.error('删除失败')
+        } catch (error) {
+          Toast.error(apiErrorMessage(error, '删除规则失败'))
         }
       },
     })
@@ -393,10 +410,7 @@ export function useInjectorData() {
     }
   }
 
-  async function batchSetRuleEnabled(
-    ids: string[],
-    enabled: boolean,
-  ): Promise<BatchActionResult> {
+  async function batchSetRuleEnabled(ids: string[], enabled: boolean): Promise<BatchActionResult> {
     const targets = new Set(uniqueStrings(ids))
     if (!targets.size) return emptyBatchResult()
     const targetRules = rules.value.filter((rule) => targets.has(rule.id))
@@ -477,6 +491,8 @@ export function useInjectorData() {
     loading,
     loadingMoreSnippets,
     loadingMoreRules,
+    snippetLoadError,
+    ruleLoadError,
     saving,
     snippets,
     rules,
