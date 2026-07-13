@@ -19,7 +19,8 @@ public class ContextUtil {
             IWebRequest request = Contexts.asWebContext(context).getExchange().getRequest();
             return request.getRequestPath();
         } catch (Exception e) {
-            log.debug("Failed to resolve request path from template context", e);
+            log.warn("Failed to resolve request path from template context, context: {}",
+                context == null ? "null" : context.getClass().getName(), e);
             return "";
         }
     }

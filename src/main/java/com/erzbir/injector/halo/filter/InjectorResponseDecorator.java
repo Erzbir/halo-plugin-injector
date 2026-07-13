@@ -69,7 +69,8 @@ class InjectorResponseDecorator extends ServerHttpResponseDecorator {
 
         return dispatcher.dispatch(html, path)
             .onErrorResume(e -> {
-                log.warn("Injection failed for path [{}], returning original HTML", path, e);
+                log.warn("Failed to process HTML response, path: {}, fallback: original", path,
+                    e);
                 return Mono.just(html);
             })
             .map(processed -> {
@@ -94,6 +95,11 @@ class InjectorResponseDecorator extends ServerHttpResponseDecorator {
             return false;
         }
         long contentLength = response.getHeaders().getContentLength();
-        return contentLength < 0 || contentLength <= MAX_HTML_RESPONSE_SIZE;
+        if (contentLength > MAX_HTML_RESPONSE_SIZE) {
+            log.debug("Skip HTML injection for large response, path: {}, size: {}, limit: {}",
+                exchange.getRequest().getPath().value(), contentLength, MAX_HTML_RESPONSE_SIZE);
+            return false;
+        }
+        return true;
     }
 }

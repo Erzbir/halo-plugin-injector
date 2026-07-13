@@ -33,7 +33,8 @@ public class InjectHelper {
                 .filter(InjectionRule::isEnabled)
                 .filter(rule -> matchRuleResolver.matches(rule.getMatchRule(), targetPath))
                 .onErrorResume(e -> {
-                    log.error("Failed to get matched rules for mode: {}", mode, e);
+                    log.warn("Failed to resolve matched rules, mode: {}, path: {}", mode,
+                        targetPath, e);
                     return Flux.empty();
                 });
     }

@@ -33,11 +33,9 @@ public abstract class AbstractTemplateProcessor {
                         doProcess(context, model, code);
                         return code;
                     }))
-                    .doOnSuccess(
-                        code -> log.debug("Injected rule [{}] into [{}]", rule.getId(), path))
                     .onErrorResume(e -> {
-                        log.warn("Injection failed for path [{}] with rule [{}]", path,
-                            rule.getId(), e);
+                        log.warn("Failed to inject template rule, rule: {}, mode: {}, path: {}",
+                            rule.getId(), mode(), path, e);
                         return Mono.empty();
                     })
             )

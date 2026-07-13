@@ -1,7 +1,6 @@
 package com.erzbir.injector.halo.manager;
 
 import com.erzbir.injector.halo.scheme.CodeSnippet;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import run.halo.app.extension.ReactiveExtensionClient;
@@ -10,7 +9,6 @@ import run.halo.app.extension.ReactiveExtensionClient;
  * @author Erzbir
  * @since 1.0.0
  */
-@Slf4j
 @Component
 public class CodeSnippetManager {
 

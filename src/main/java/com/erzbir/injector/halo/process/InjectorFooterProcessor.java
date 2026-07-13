@@ -4,7 +4,6 @@ import com.erzbir.injector.api.InjectMode;
 import com.erzbir.injector.halo.core.FooterInjector;
 import com.erzbir.injector.halo.core.HTMLCode;
 import com.erzbir.injector.halo.core.InjectHelper;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.thymeleaf.context.ITemplateContext;
 import org.thymeleaf.model.IModel;
@@ -17,7 +16,6 @@ import run.halo.app.theme.dialect.TemplateFooterProcessor;
  * @author Erzbir
  * @since 1.0.0
  */
-@Slf4j
 @Component
 public class InjectorFooterProcessor extends AbstractTemplateProcessor
         implements TemplateFooterProcessor {

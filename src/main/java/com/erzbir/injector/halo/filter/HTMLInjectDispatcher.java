@@ -42,7 +42,6 @@ class HTMLInjectDispatcher {
                 long cacheFingerprint = Long.rotateLeft(htmlFingerprint, 17) ^ ruleFingerprint;
                 String cached = HTMLResponseCache.get(permalink, cacheFingerprint);
                 if (cached != null) {
-                    log.debug("Return cached injection result for {}", permalink);
                     return Mono.just(cached);
                 }
                 return Mono.fromCallable(() -> {
@@ -76,15 +75,14 @@ class HTMLInjectDispatcher {
         Document.OutputSettings outputSettings = document.outputSettings();
         for (RuleCode rc : ruleCodes) {
             var rule = rc.rule();
-            log.debug("Injecting rule [{}] into [{}]", rule.getId(), path);
             try {
                 rc.injector().inject(document, new HTMLCode(rc.code()), rule, null);
             } catch (Exception e) {
-                log.warn("Injection failed for path [{}] with rule [{}]", path, rule.getId(),
-                    e);
+                log.warn("Failed to inject HTML rule, rule: {}, mode: {}, path: {}", rule.getId(),
+                    rule.getMode(), path, e);
+            } finally {
+                document.outputSettings(outputSettings);
             }
-            log.debug("Injected rule [{}] into [{}]", rule.getId(), path);
-            document.outputSettings(outputSettings);
         }
         return document.html();
     }
