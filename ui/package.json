@@ -18,11 +18,15 @@
     "tabWidth": 2
   },
   "dependencies": {
+    "@codemirror/lang-html": "^6.4.11",
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.6",
     "@halo-dev/api-client": "^2.25.2",
     "@halo-dev/components": "^2.25.2",
     "@halo-dev/ui-shared": "^2.25.2",
     "axios": "^1.16.1",
     "canvas-confetti": "^1.9.4",
+    "codemirror": "^6.0.2",
     "vue": "^3.5.39"
   },
   "devDependencies": {

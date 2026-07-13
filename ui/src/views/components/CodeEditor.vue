@@ -1,5 +1,9 @@
 <script lang="ts" setup>
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { basicSetup } from 'codemirror'
+import { html } from '@codemirror/lang-html'
+import { EditorState } from '@codemirror/state'
+import { EditorView, placeholder as editorPlaceholder } from '@codemirror/view'
 import { VButton } from '@halo-dev/components'
 
 const props = withDefaults(
@@ -24,119 +28,157 @@ const emit = defineEmits<{
 }>()
 
 const fullscreen = ref(false)
-const editor = useTemplateRef<HTMLTextAreaElement>('editor')
-const fullscreenEditor = useTemplateRef<HTMLTextAreaElement>('fullscreenEditor')
-const gutter = useTemplateRef<HTMLDivElement>('gutter')
-const fullscreenGutter = useTemplateRef<HTMLDivElement>('fullscreenGutter')
+const normalHost = useTemplateRef<HTMLDivElement>('normalHost')
+const fullscreenHost = useTemplateRef<HTMLDivElement>('fullscreenHost')
+const editorHeight = computed(() => `${Math.max(160, props.rows * 20 + 16)}px`)
 
-const lineNumbers = computed(() => {
-  const lines = Math.max(1, (props.modelValue?.match(/\n/g)?.length ?? 0) + 1)
-  return Array.from({ length: lines }, (_, i) => i + 1)
-})
+let view: EditorView | undefined
+let updatingFromProps = false
+let previousBodyOverflow = ''
+let fullscreenTrigger: HTMLElement | null = null
 
-function handleInput(event: Event) {
-  emit('update:modelValue', (event.target as HTMLTextAreaElement).value)
+function createEditor() {
+  if (!normalHost.value) return
+  view = new EditorView({
+    parent: normalHost.value,
+    state: EditorState.create({
+      doc: props.modelValue,
+      extensions: [
+        basicSetup,
+        html({ selfClosingTags: true }),
+        EditorState.tabSize.of(2),
+        editorPlaceholder(props.placeholder),
+        EditorView.lineWrapping,
+        EditorView.contentAttributes.of({
+          'aria-label': '代码内容',
+          'aria-invalid': String(props.invalid),
+          'data-placeholder': props.placeholder,
+        }),
+        EditorView.theme({
+          '&': { height: '100%' },
+          '.cm-scroller': {
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+            fontSize: '12px',
+          },
+          '.cm-content': { minHeight: '100%' },
+          '.cm-gutters': { backgroundColor: '#f9fafb', color: '#9ca3af' },
+          '&.cm-focused': { outline: 'none' },
+        }),
+        EditorView.updateListener.of((update) => {
+          if (!update.docChanged || updatingFromProps) return
+          emit('update:modelValue', update.state.doc.toString())
+        }),
+      ],
+    }),
+  })
+  if (props.autofocus) nextTick(() => view?.focus())
 }
 
-function handleChange(event: Event) {
-  emit('change', (event.target as HTMLTextAreaElement).value)
+function moveEditor(host: HTMLDivElement | null) {
+  if (view && host) host.append(view.dom)
 }
 
-function syncScroll(normal: boolean) {
-  if (normal) {
-    if (gutter.value && editor.value) gutter.value.scrollTop = editor.value.scrollTop
-    return
-  }
-  if (fullscreenGutter.value && fullscreenEditor.value) {
-    fullscreenGutter.value.scrollTop = fullscreenEditor.value.scrollTop
-  }
-}
-
-function openFullscreen() {
+async function openFullscreen() {
+  fullscreenTrigger = document.activeElement as HTMLElement | null
+  previousBodyOverflow = document.body.style.overflow
+  document.body.style.overflow = 'hidden'
   fullscreen.value = true
+  await nextTick()
+  moveEditor(fullscreenHost.value)
+  view?.requestMeasure()
+  view?.focus()
 }
 
-function closeFullscreen() {
+async function closeFullscreen() {
+  moveEditor(normalHost.value)
   fullscreen.value = false
+  document.body.style.overflow = previousBodyOverflow
+  await nextTick()
+  view?.requestMeasure()
+  fullscreenTrigger?.focus()
 }
+
+function handleFocusOut() {
+  emit('change', view?.state.doc.toString() ?? props.modelValue)
+}
+
+watch(
+  () => props.modelValue,
+  (value) => {
+    if (!view || value === view.state.doc.toString()) return
+    updatingFromProps = true
+    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: value } })
+    updatingFromProps = false
+  },
+)
+
+watch(
+  () => props.invalid,
+  (invalid) => {
+    view?.contentDOM.setAttribute('aria-invalid', String(invalid))
+  },
+)
+
+onMounted(createEditor)
+
+onBeforeUnmount(() => {
+  document.body.style.overflow = previousBodyOverflow
+  view?.destroy()
+})
 </script>
 
 <template>
   <div class=":uno: space-y-2">
     <div class=":uno: flex justify-end">
-      <VButton size="xs" @click="openFullscreen">全屏</VButton>
+      <VButton size="xs" @click="openFullscreen">全屏编辑</VButton>
     </div>
     <div
       :class="invalid ? ':uno: border-red-400' : ':uno: border-gray-200'"
-      class=":uno: w-full rounded-md border bg-white overflow-hidden"
+      class=":uno: code-editor-frame w-full rounded-md border bg-white overflow-hidden"
+      :style="{ height: editorHeight }"
+      @focusout="handleFocusOut"
     >
-      <div class=":uno: flex">
-        <div ref="gutter" class=":uno: w-10 shrink-0 bg-gray-50 border-r border-gray-200 overflow-hidden py-2">
-          <div
-            v-for="n in lineNumbers"
-            :key="n"
-            class=":uno: h-5 leading-5 text-right pr-2 text-[11px] text-gray-400 font-mono select-none"
-          >
-            {{ n }}
-          </div>
-        </div>
-        <textarea
-          ref="editor"
-          :autofocus="autofocus"
-          :placeholder="placeholder"
-          :rows="rows"
-          :value="modelValue"
-          class=":uno: flex-1 min-h-40 border-0 px-3 py-2 text-xs font-mono focus:outline-none leading-5 resize-y"
-          spellcheck="false"
-          @change="handleChange"
-          @input="handleInput"
-          @scroll="syncScroll(true)"
-        />
-      </div>
+      <div ref="normalHost" class=":uno: code-editor-host h-full" />
     </div>
   </div>
 
   <Teleport to="body">
     <div
       v-if="fullscreen"
+      aria-label="代码编辑"
+      aria-modal="true"
       class=":uno: fixed inset-0 z-[10000] bg-black/40 p-4"
+      role="dialog"
       @click.self="closeFullscreen"
+      @keydown.esc.capture.prevent.stop="closeFullscreen"
     >
       <div
         :class="invalid ? ':uno: border-red-400' : ':uno: border-gray-200'"
-        class=":uno: h-full w-full bg-white rounded-lg border shadow-xl flex flex-col"
+        class=":uno: h-full w-full bg-white rounded-lg border shadow-xl flex flex-col overflow-hidden"
       >
-        <div class=":uno: flex items-center justify-between border-b px-4 py-2">
+        <div class=":uno: flex items-center justify-between border-b px-4 py-2 shrink-0">
           <span class=":uno: text-sm font-medium text-gray-700">代码编辑</span>
           <VButton size="xs" @click="closeFullscreen">退出全屏</VButton>
         </div>
-        <div class=":uno: flex-1 overflow-hidden">
-          <div class=":uno: h-full flex">
-            <div
-              ref="fullscreenGutter"
-              class=":uno: w-12 shrink-0 bg-gray-50 border-r border-gray-200 overflow-hidden py-3"
-            >
-              <div
-                v-for="n in lineNumbers"
-                :key="n"
-                class=":uno: h-6 leading-6 text-right pr-3 text-xs text-gray-400 font-mono select-none"
-              >
-                {{ n }}
-              </div>
-            </div>
-            <textarea
-              ref="fullscreenEditor"
-              :placeholder="placeholder"
-              :value="modelValue"
-              class=":uno: h-full w-full border-0 px-4 py-3 text-sm font-mono focus:outline-none leading-6 resize-none"
-              spellcheck="false"
-              @change="handleChange"
-              @input="handleInput"
-              @scroll="syncScroll(false)"
-            />
-          </div>
+        <div class=":uno: min-h-0 flex-1" @focusout="handleFocusOut">
+          <div ref="fullscreenHost" class=":uno: code-editor-host h-full" />
         </div>
       </div>
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+.code-editor-host :deep(.cm-editor) {
+  height: 100%;
+}
+
+.code-editor-host :deep(.cm-scroller) {
+  overflow: auto;
+}
+
+.code-editor-frame:focus-within {
+  border-color: rgb(59 130 246);
+  box-shadow: 0 0 0 1px rgb(59 130 246);
+}
+</style>
