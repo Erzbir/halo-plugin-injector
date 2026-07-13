@@ -1,93 +1,213 @@
 ## 这是什么?
 
-一个用于 **按规则将 HTML 代码注入指定页面** 的 Halo 插件
+一个用于按规则将 HTML 代码注入指定页面的 Halo 插件
 
-相比 Halo 的默认的全局注入功能, 本插件支持 "代码片段 + 注入规则" 组合管理, 可精细控制注入范围与位置,
-可根据注入规则在指定页面的指定位置注入指定代码
-
-## 示例配置
-
-- <a href="assets/images/config_code.png">代码块配置</a>
-- <a href="assets/images/config_rule_1.png">规则配置 1</a>
-- <a href="assets/images/config_rule_2.png">规则配置 2</a>
+相比 Halo 默认的全局注入功能, 本插件使用 "代码片段 + 注入规则" 组合管理, 可以控制注入页面, 注入位置和匹配方式
 
 界面入口: Halo 管理后台 -> 工具 -> Injector
 
 ## 功能特性
 
-- 四种注入模式: `HEAD` / `FOOTER` / `ID` / `SELECTOR`
-- 支持注入位置: `APPEND` / `PREPEND` / `BEFORE` / `AFTER` / `REPLACE`
-- 规则组: `AND` / `OR` / `NOT`
-- 路径匹配模式: `PATH_PATTERN` / `ANT` / `REGEX` / `EXACT`
-- 代码片段与规则双向关联管理
+- 四种注入模式: `HEAD`, `FOOTER`, `ID`, `SELECTOR`
+- 五种注入位置: `APPEND`, `PREPEND`, `BEFORE`, `AFTER`, `REPLACE`
+- 支持嵌套规则组和 `AND`, `OR`, `NOT`, `AND_NOT`, `OR_NOT`
+- 四种路径匹配器: `PATH_PATTERN`, `ANT`, `REGEX`, `EXACT`
+- 代码片段和注入规则关联管理
+- 支持启用, 禁用, 批量修改和批量删除
+- 支持未保存修改提示和单字段恢复
+- 为完整 HTML 注入提供有界缓存
 
-## 关键概念
+## 使用流程
+
+1. 创建代码片段并填写需要注入的 HTML, CSS 或 JavaScript
+2. 创建注入规则并选择注入模式
+3. 配置页面匹配规则
+4. 为 `ID` 或 `SELECTOR` 模式配置目标元素和注入位置
+5. 将代码片段关联到注入规则
+6. 启用注入规则
+
+代码片段创建后默认启用, 注入规则创建后默认禁用
+
+## 示例配置
+
+- <a href="assets/images/config_code.png">代码片段配置</a>
+- <a href="assets/images/config_rule_1.png">注入规则配置 1</a>
+- <a href="assets/images/config_rule_2.png">注入规则配置 2</a>
+
+## 核心概念
 
 ### 代码片段 (CodeSnippet)
 
-你要注入的实际内容
+代码片段保存需要注入的实际内容
 
-一个片段可被多条规则复用
-
-创建后默认是启用状态, 禁用的代码片段不会注入
+一个代码片段可以被多个注入规则复用, 禁用后不会参与注入
 
 ### 注入规则 (InjectionRule)
 
-定义 "把哪些代码片段注入到哪里"
+注入规则定义代码片段需要注入到哪些页面和哪些位置
 
-创建之后默认是禁用状态, 需要手动启用
+规则包含注入模式, 目标元素, 注入位置, 页面匹配规则和关联代码片段
 
-#### 注入模式说明
+关联关系以 `InjectionRule.snippetIds` 为准
 
-| 模式         | 说明                |
-|------------|-------------------|
-| `HEAD`     | 注入到页面 `<head>`    |
-| `FOOTER`   | 注入到主题 footer 输出位置 |
-| `ID`       | 按元素 `id` 定位注入     |
-| `SELECTOR` | 按 CSS 选择器定位注入     |
+`CodeSnippet.ruleIds` 仅保留用于兼容旧数据结构, 新关联不再写入该字段
 
-> `ID` / `SELECTOR` 模式虽是一种更便利的方式, 但服务端需要处理完整 HTML, 性能开销通常高于 `HEAD` / `FOOTER`
->
-> 为了提升速度, 对于这个情况在内部构建了缓存策略, 但仍可能会带来较大开销
->
-> 常规场景建议优先使用 `HEAD` / `FOOTER`
+## 注入模式
 
-#### 注入位置选项
+| 模式         | 处理阶段      | 说明                   |
+|------------|-----------|----------------------|
+| `HEAD`     | 模板渲染阶段    | 注入到 `<head>`         |
+| `FOOTER`   | 模板渲染阶段    | 注入到主题 footer 扩展位置    |
+| `ID`       | HTML 响应阶段 | 通过元素 `id` 查找目标       |
+| `SELECTOR` | HTML 响应阶段 | 通过 CSS Selector 查找目标 |
 
-在 id 或 selector 模式下, 可以选择注入到目标元素的相对位置:
+`HEAD` 和 `FOOTER` 不解析完整 HTML, 常规场景建议优先使用
 
-- append: 追加为目标元素的子元素
-- prepend: 插入到目标元素第一个子元素之前
-- before: 插入到目标元素之前
-- after: 插入到目标元素之后
-- replace: 替换目标元素
+`ID` 和 `SELECTOR` 使用 Jsoup 解析完整 HTML, 功能更灵活, 但会增加内存和 CPU 开销
 
-> 注入到 <head> 时需注意 HTML 合法性. 例如 <div> 等块级标签不会被放入 <head>, 而是自动插入到 <body> 的第一个子元素位置
+注入内容会使用以下标记包裹, 已包含完整标记的内容不会重复包裹
 
-#### 路径匹配
+```html
+<!-- PluginInjector start -->
+<!-- injection code -->
+<!-- PluginInjector end -->
+```
 
-四种匹配方式
+## 注入位置
 
-- `PATH_PATTERN`: Spring 风格的路径匹配
-- `ANT`: Ant 风格
-- `REGEX`: 正则
-- `EXACT`: 精确匹配
+注入位置只用于 `ID` 和 `SELECTOR` 模式
 
-#### 规则组
+| 位置        | 说明              |
+|-----------|-----------------|
+| `APPEND`  | 追加为目标元素的最后一个子节点 |
+| `PREPEND` | 插入为目标元素的第一个子节点  |
+| `BEFORE`  | 插入到目标元素之前       |
+| `AFTER`   | 插入到目标元素之后       |
+| `REPLACE` | 使用注入内容替换目标元素    |
 
-- 节点类型: `GROUP`, `PATH`
-- 逻辑操作: `AND`, `OR`, `NOT`
-- 路径匹配器: `PATH_PATTERN`, `ANT`, `REGEX`, `EXACT`
+注入到 `<head>` 时需要保证 HTML 合法, 例如 `<div>` 等块级标签可能被浏览器或解析器移动到 `<body>`
 
-可以在一个 **规则组** 内添加多个 **路径匹配规则** 以及嵌套多个 **规则组**, 并且可根据 **逻辑操作符** 与前一项连接起来
+## 页面匹配
 
-可得到类似的结构:`GROUP(PATH('/posts/**') OR PATH('/archives/**') AND NOT(PATH('/admin/**')))`
+每个注入规则包含一个页面匹配树, 节点类型为 `GROUP` 或 `PATH`
+
+### 路径匹配器
+
+| 匹配器            | 说明                    | 示例              |
+|----------------|-----------------------|-----------------|
+| `PATH_PATTERN` | Spring PathPattern 风格 | `/posts/{slug}` |
+| `ANT`          | Ant 风格                | `/posts/**`     |
+| `REGEX`        | Java 正则表达式, 匹配完整路径    | `/posts/.*`     |
+| `EXACT`        | 完整字符串相等               | `/archives`     |
+
+无效或空白的匹配规则不会命中
+
+正则表达式会在保存时验证语法, 运行时使用有界缓存保存已编译 Pattern
+
+### 逻辑操作
+
+规则组按照子节点顺序计算, 每个子节点的操作符用于连接前一项
+
+| 操作符       | 说明                |
+|-----------|-------------------|
+| `AND`     | 前一项和当前项都需要匹配      |
+| `OR`      | 前一项或当前项任意匹配       |
+| `NOT`     | 当前项取反并使用 `AND` 连接 |
+| `AND_NOT` | 当前项取反并使用 `AND` 连接 |
+| `OR_NOT`  | 当前项取反并使用 `OR` 连接  |
+
+需要明确优先级时可以使用嵌套规则组
+
+示例:
+
+```text
+GROUP(
+  PATH('/posts/**')
+  OR PATH('/archives/**')
+  AND_NOT PATH('/admin/**')
+)
+```
+
+## HTML 响应处理
+
+`ID` 和 `SELECTOR` 通过 WebFilter 处理响应, 只处理符合以下条件的请求和响应
+
+- 请求方法为 `GET`
+- 响应状态码为 `200`
+- 响应类型包含 `text/html`
+- 响应未使用 gzip 等内容编码
+- 已知 `Content-Length` 时不超过 `2 MiB`
+
+以下系统路径默认跳过:
+
+```text
+/console/**
+/uc/**
+/login/**
+/signup/**
+/logout/**
+/themes/**
+/plugins/**
+/actuator/**
+/api/**
+/apis/**
+/system/**
+/upload/**
+/webjars/**
+```
+
+单条 HTML 规则执行失败时会跳过当前规则
+
+完整响应处理失败时会返回原始 HTML, 不会阻断页面响应
+
+## 缓存
+
+缓存只用于 `ID` 和 `SELECTOR` 模式
+
+缓存键包含请求路径, 原始 HTML 指纹和有序规则指纹, 规则顺序变化会产生新的缓存结果
+
+- 最大缓存数量: `1024`
+- 写入过期时间: `1 day`
+- HTML 指纹算法: `FNV-1a 64`
+
+代码片段或页面内容变化后会生成新指纹, 不需要手动清理缓存
+
+## 安全提示
+
+代码片段可以包含 HTML, CSS 和 JavaScript, 只应向受信任用户授予管理权限
+
+注入脚本会在访客浏览器中执行, 使用前需要确认内容来源和站点 CSP 配置
+
+复杂正则表达式可能增加路径匹配开销, 建议优先使用 `PATH_PATTERN`, `ANT` 或 `EXACT`
+
+## 项目结构
+
+```text
+src/main/java/com/erzbir/injector
+|-- api       公共接口和枚举
+`-- halo
+    |-- core      匹配和注入核心
+    |-- filter    HTML 注入
+    |-- manager   Extension 管理
+    |-- process   HEAD 和 FOOTER 模板处理器
+    |-- scheme    CodeSnippet 和 InjectionRule 模型
+    `-- util      HTML, 上下文和指纹等工具
+
+src/main/resources
+|-- extensions    扩展点和角色模板
+`-- plugin.yaml   Halo 插件清单
+
+ui/src
+|-- apis          Halo API 客户端
+|-- types         前端数据类型
+`-- views         管理界面, 编辑器和状态逻辑
+```
 
 ## 开发环境
 
-- Java 21+
-- Node.js 18+
-- pnpm
+- Java `21+`
+- Node.js `22`
+- pnpm `10`
 
 ## 开发
 
