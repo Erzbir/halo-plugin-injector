@@ -67,8 +67,7 @@ describe('injectorRelations', () => {
 
     await restoreDetachedSnippetRelations(['kept', 'deleted'], ['kept'], [rule], update)
 
-    expect(update).toHaveBeenCalledOnce()
-    expect(update).toHaveBeenCalledWith(
+    expect(update).toHaveBeenCalledExactlyOnceWith(
       'r1',
       expect.objectContaining({ snippetIds: ['kept', 'unrelated'] }),
     )
