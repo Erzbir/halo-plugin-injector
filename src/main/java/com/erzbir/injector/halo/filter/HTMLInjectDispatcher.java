@@ -8,9 +8,7 @@ import com.erzbir.injector.halo.core.InjectHelper;
 import com.erzbir.injector.halo.core.SelectorInjector;
 import com.erzbir.injector.halo.scheme.InjectionRule;
 import com.erzbir.injector.halo.util.FingerprintUtil;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
@@ -21,16 +19,15 @@ import reactor.core.scheduler.Schedulers;
 
 @Slf4j
 class HTMLInjectDispatcher {
-    private static final List<InjectMode> HTML_INJECT_MODES =
-        List.of(InjectMode.SELECTOR, InjectMode.ID);
+    private static final List<InjectionHandler> INJECTION_HANDLERS = List.of(
+        new InjectionHandler(InjectMode.SELECTOR, new SelectorInjector()),
+        new InjectionHandler(InjectMode.ID, new ElementIDInjector())
+    );
+
     private final InjectHelper injectHelper;
-    private final Map<InjectMode, HTMLInjector> injectorMap;
 
     public HTMLInjectDispatcher(InjectHelper injectHelper) {
         this.injectHelper = injectHelper;
-        this.injectorMap = new EnumMap<>(InjectMode.class);
-        this.injectorMap.put(InjectMode.SELECTOR, new SelectorInjector());
-        this.injectorMap.put(InjectMode.ID, new ElementIDInjector());
     }
 
     public Mono<String> dispatch(String html, String permalink) {
@@ -61,36 +58,32 @@ class HTMLInjectDispatcher {
     }
 
     private Flux<RuleCode> collectAllRuleCodes(String permalink) {
-        return Flux.fromIterable(HTML_INJECT_MODES)
-            .concatMap(mode -> fetchRuleCodes(permalink, mode));
+        return Flux.fromIterable(INJECTION_HANDLERS)
+            .concatMap(handler -> fetchRuleCodes(permalink, handler));
     }
 
-    private Flux<RuleCode> fetchRuleCodes(String path, InjectMode mode) {
-        var matchedRules = injectHelper.getMatchedRules(path, mode);
+    private Flux<RuleCode> fetchRuleCodes(String path, InjectionHandler handler) {
+        var matchedRules = injectHelper.getMatchedRules(path, handler.mode());
         if (matchedRules == null) {
             return Flux.empty();
         }
         return matchedRules.concatMap(rule -> injectHelper.getConcatCode(rule)
-                .map(code -> new RuleCode(rule, code)))
+                .map(code -> new RuleCode(rule, code, handler.injector())))
             .filter(rc -> !rc.code().isBlank());
     }
 
     private String applyRuleCodes(Document document, String path, List<RuleCode> ruleCodes) {
         Document.OutputSettings outputSettings = document.outputSettings();
         for (RuleCode rc : ruleCodes) {
-            HTMLInjector injector = injectorMap.get(rc.rule().getMode());
-            if (injector == null) {
-                log.debug("No injector found for rule {}", rc.rule().getId());
-                continue;
-            }
-            log.debug("Injecting rule [{}] into [{}]", rc.rule().getId(), path);
+            var rule = rc.rule();
+            log.debug("Injecting rule [{}] into [{}]", rule.getId(), path);
             try {
-                injector.inject(document, new HTMLCode(rc.code()), rc.rule(), null);
+                rc.injector().inject(document, new HTMLCode(rc.code()), rule, null);
             } catch (Exception e) {
-                log.warn("Injection failed for path [{}] with rule [{}]", path, rc.rule().getId(),
+                log.warn("Injection failed for path [{}] with rule [{}]", path, rule.getId(),
                     e);
             }
-            log.debug("Injected rule [{}] into [{}]", rc.rule().getId(), path);
+            log.debug("Injected rule [{}] into [{}]", rule.getId(), path);
             document.outputSettings(outputSettings);
         }
         return document.html();
@@ -103,14 +96,13 @@ class HTMLInjectDispatcher {
         return ruleCodes.stream()
             .map(RuleCode::fpString)
             .map(FingerprintUtil::fnv1a64)
-            .sorted()
             .reduce(0L, (a, b) -> {
                 long rotated = (a << 17) | (a >>> 47);
                 return rotated ^ b;
             });
     }
 
-    private record RuleCode(InjectionRule rule, String code) {
+    private record RuleCode(InjectionRule rule, String code, HTMLInjector injector) {
         String fpString() {
             return rule.getId()
                 + "|" + rule.getMode()
@@ -120,5 +112,8 @@ class HTMLInjectDispatcher {
                 + "|" + rule.getSnippetIds().stream().sorted().collect(Collectors.joining(","))
                 + "|" + code;
         }
+    }
+
+    private record InjectionHandler(InjectMode mode, HTMLInjector injector) {
     }
 }

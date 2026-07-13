@@ -88,6 +88,29 @@ class HTMLInjectDispatcherTest {
     }
 
     @Test
+    void shouldRecomputeWhenRuleOrderChanges() {
+        InjectHelper injectHelper = mock(InjectHelper.class);
+        HTMLInjectDispatcher dispatcher = new HTMLInjectDispatcher(injectHelper);
+        InjectionRule firstRule = selectorRule("first-rule", "s1");
+        InjectionRule secondRule = selectorRule("second-rule", "s2");
+        when(injectHelper.getMatchedRules("/cache/rule-order", InjectMode.SELECTOR))
+            .thenReturn(Flux.just(firstRule, secondRule), Flux.just(secondRule, firstRule));
+        when(injectHelper.getMatchedRules("/cache/rule-order", InjectMode.ID))
+            .thenReturn(Flux.empty());
+        when(injectHelper.getConcatCode(firstRule)).thenReturn(Mono.just("<span>A</span>"));
+        when(injectHelper.getConcatCode(secondRule)).thenReturn(Mono.just("<span>B</span>"));
+
+        String html = "<html><body><div class='entry'></div></body></html>";
+        var first = Jsoup.parse(dispatcher.dispatch(html, "/cache/rule-order").block());
+        var second = Jsoup.parse(dispatcher.dispatch(html, "/cache/rule-order").block());
+
+        String firstHtml = first.selectFirst(".entry").html();
+        String secondHtml = second.selectFirst(".entry").html();
+        assertTrue(firstHtml.indexOf("<span>A</span>") < firstHtml.indexOf("<span>B</span>"));
+        assertTrue(secondHtml.indexOf("<span>B</span>") < secondHtml.indexOf("<span>A</span>"));
+    }
+
+    @Test
     void shouldReturnOriginalHtmlWhenNoRulesMatch() {
         InjectHelper injectHelper = mock(InjectHelper.class);
         HTMLInjectDispatcher dispatcher = new HTMLInjectDispatcher(injectHelper);
@@ -120,5 +143,16 @@ class HTMLInjectDispatcherTest {
         String result = dispatcher.dispatch("<html><head></head><body>raw</body></html>", "/p/1").block();
 
         assertEquals("<html><head></head><body>raw</body></html>", result);
+    }
+
+    private InjectionRule selectorRule(String id, String snippetId) {
+        InjectionRule rule = mock(InjectionRule.class);
+        when(rule.getId()).thenReturn(id);
+        when(rule.getMode()).thenReturn(InjectMode.SELECTOR);
+        when(rule.getMatch()).thenReturn(".entry");
+        when(rule.getPosition()).thenReturn(InjectPosition.APPEND);
+        when(rule.getMatchRule()).thenReturn(MatchRule.defaultRule());
+        when(rule.getSnippetIds()).thenReturn(Set.of(snippetId));
+        return rule;
     }
 }
