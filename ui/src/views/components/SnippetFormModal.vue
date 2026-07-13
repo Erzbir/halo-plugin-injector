@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { CodeSnippet, InjectionRule } from '@/types'
 import { makeSnippet } from '@/types'
 import BaseFormModal from './BaseFormModal.vue'
 import RelationPicker from './RelationPicker.vue'
 import SnippetFields from './SnippetFields.vue'
 import { rulePreview } from '@/views/composables/util'
+import { isSameJson } from '@/views/composables/injectorDataUtils'
 
 defineProps<{
   rules: InjectionRule[]
@@ -19,6 +20,9 @@ const emit = defineEmits<{
 
 const snippet = ref<CodeSnippet>(makeSnippet())
 const selectedRuleIds = ref<string[]>([])
+const dirty = computed(
+  () => !isSameJson(snippet.value, makeSnippet()) || selectedRuleIds.value.length > 0,
+)
 
 onMounted(reset)
 
@@ -41,6 +45,7 @@ function handleSubmit() {
 <template>
   <BaseFormModal
     :saving="saving"
+    :dirty="dirty"
     title="新建代码片段"
     @close="emit('close')"
     @submit="handleSubmit"

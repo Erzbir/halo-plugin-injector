@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, getCurrentInstance, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Dialog, VButton, VCard, VPageHeader } from '@halo-dev/components'
 
 import { MODE_OPTIONS, type ActiveTab, type InjectionRule } from '@/types'
@@ -357,13 +357,22 @@ function handleBeforeUnload(event: BeforeUnloadEvent) {
   event.returnValue = ''
 }
 
+type AppRouter = {
+  beforeEach: (guard: () => Promise<boolean>) => () => void
+}
+
+const appRouter = (getCurrentInstance()?.proxy as { $router?: AppRouter } | null)?.$router
+let removeRouteGuard: (() => void) | undefined
+
 onMounted(() => {
   fetchAll()
   window.addEventListener('beforeunload', handleBeforeUnload)
+  removeRouteGuard = appRouter?.beforeEach(async () => await confirmDiscardChanges())
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
+  removeRouteGuard?.()
 })
 
 async function handleAddSnippet(...args: Parameters<typeof addSnippet>) {

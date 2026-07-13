@@ -1,9 +1,10 @@
 <script lang="ts" setup>
-import { VButton, VModal, VSpace } from '@halo-dev/components'
+import { Dialog, VButton, VModal, VSpace } from '@halo-dev/components'
 
-defineProps<{
+const props = defineProps<{
   title: string
   saving: boolean
+  dirty?: boolean
   submitLabel?: string
 }>()
 
@@ -11,10 +12,28 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'submit'): void
 }>()
+
+function requestClose() {
+  if (props.saving) return
+  if (!props.dirty) {
+    emit('close')
+    return
+  }
+  Dialog.warning({
+    title: '放弃新建内容',
+    description: '当前表单存在未保存的内容, 确认关闭吗?',
+    confirmText: '放弃内容',
+    cancelText: '继续编辑',
+    confirmType: 'danger',
+    onConfirm() {
+      emit('close')
+    },
+  })
+}
 </script>
 
 <template>
-  <VModal :title="title" :width="1000" @close="emit('close')">
+  <VModal :title="title" :width="1000" @close="requestClose">
     <div
       class=":uno: flex divide-x divide-gray-100 injector-editor-container"
       style="min-height: 400px"
@@ -30,7 +49,7 @@ const emit = defineEmits<{
 
     <template #footer>
       <VSpace>
-        <VButton @click="emit('close')">取消</VButton>
+        <VButton :disabled="saving" @click="requestClose">取消</VButton>
         <VButton :disabled="saving" type="secondary" @click="emit('submit')">
           {{ saving ? `${submitLabel ?? '创建'}中...` : (submitLabel ?? '创建') }}
         </VButton>
