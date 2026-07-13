@@ -14,6 +14,7 @@ import SnippetFormModal from './components/SnippetFormModal.vue'
 import RuleFormModal from './components/RuleFormModal.vue'
 import InjectorTopTabs from './components/InjectorTopTabs.vue'
 import InjectorSidebar from './components/InjectorSidebar.vue'
+import BatchOperationPanel from './components/BatchOperationPanel.vue'
 import PluginIcon from '@/components/PluginIcon.vue'
 
 const activeTab = ref<ActiveTab>('snippets')
@@ -50,6 +51,7 @@ const showSnippetModal = ref(false)
 const showRuleModal = ref(false)
 const batchMode = ref(false)
 const batchSelectedIds = ref<string[]>([])
+const lastBatchResult = ref<(BatchActionResult & { action: string }) | null>(null)
 const relationDrawerOpen = ref(false)
 const mobileEditorOpen = ref(false)
 const topTabs: Array<{ key: ActiveTab; label: string }> = [
@@ -183,6 +185,11 @@ const activeSortMode = computed<SortMode>({
 const currentItems = computed(() =>
   activeTab.value === 'snippets' ? filteredSnippets.value : filteredRules.value,
 )
+const selectedBatchItems = computed(() => {
+  const selected = new Set(batchSelectedIds.value)
+  const items = activeTab.value === 'snippets' ? sortedSnippets.value : sortedRules.value
+  return items.filter((item) => selected.has(item.id))
+})
 const allBatchSelected = computed(
   () =>
     currentItems.value.length > 0 &&
@@ -272,11 +279,13 @@ async function toggleBatchMode() {
   if (batchMode.value) {
     batchMode.value = false
     batchSelectedIds.value = []
+    lastBatchResult.value = null
     return
   }
   await guardWithDiscard(() => {
     batchMode.value = true
     batchSelectedIds.value = []
+    lastBatchResult.value = null
     mobileEditorOpen.value = false
     relationDrawerOpen.value = false
   })
@@ -309,7 +318,7 @@ async function batchEnableSelected() {
     activeTab.value === 'snippets'
       ? await batchSetSnippetEnabled(batchSelectedIds.value, true)
       : await batchSetRuleEnabled(batchSelectedIds.value, true)
-  applyBatchResult(result)
+  applyBatchResult(result, '批量启用')
 }
 
 async function batchDisableSelected() {
@@ -318,11 +327,12 @@ async function batchDisableSelected() {
     activeTab.value === 'snippets'
       ? await batchSetSnippetEnabled(batchSelectedIds.value, false)
       : await batchSetRuleEnabled(batchSelectedIds.value, false)
-  applyBatchResult(result)
+  applyBatchResult(result, '批量停用')
 }
 
-function applyBatchResult(result: BatchActionResult) {
+function applyBatchResult(result: BatchActionResult, action: string) {
   batchSelectedIds.value = result.failedIds
+  lastBatchResult.value = { ...result, action }
 }
 
 async function batchDeleteSelected() {
@@ -341,7 +351,7 @@ async function batchDeleteSelected() {
           activeTab.value === 'snippets'
             ? await batchDeleteSnippets(batchSelectedIds.value)
             : await batchDeleteRules(batchSelectedIds.value)
-        applyBatchResult(result)
+        applyBatchResult(result, '批量删除')
         resolve()
       },
       onCancel() {
@@ -408,6 +418,7 @@ async function handleSwitchTab(tab: ActiveTab) {
   if (batchMode.value) {
     activeTab.value = tab
     batchSelectedIds.value = []
+    lastBatchResult.value = null
     mobileEditorOpen.value = false
     relationDrawerOpen.value = false
     return
@@ -546,13 +557,18 @@ function confirmSaveBeforeStatusChange(
                 <div class="mobile-editor-navigation">
                   <VButton size="sm" @click="mobileEditorOpen = false">返回列表</VButton>
                 </div>
-                <div v-if="batchMode" class=":uno: h-full flex flex-col">
-                  <div
-                    class=":uno: sticky top-0 z-10 min-h-12 flex items-center border-b bg-white px-4 py-2 shrink-0"
-                  >
-                    <h2 class=":uno: text-gray-900 font-semibold text-sm">批量操作</h2>
-                  </div>
-                </div>
+                <BatchOperationPanel
+                  v-if="batchMode"
+                  :active-tab="activeTab"
+                  :items="selectedBatchItems"
+                  :result="lastBatchResult"
+                  :saving="saving"
+                  @clear="batchSelectedIds = []"
+                  @delete="batchDeleteSelected"
+                  @disable="batchDisableSelected"
+                  @enable="batchEnableSelected"
+                  @remove="toggleBatchSelect"
+                />
                 <SnippetEditor
                   v-else-if="activeTab === 'snippets'"
                   :dirty="editDirty"
