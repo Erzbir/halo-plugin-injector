@@ -49,8 +49,8 @@ function toggleVisibleItems() {
       <input
         v-model="query"
         aria-label="搜索关联项"
-        class=":uno: min-w-0 flex-1 rounded-md border border-gray-200 px-2 py-1 text-xs focus:border-primary focus:outline-none"
-        placeholder="搜索名称、ID 或描述"
+        class="formkit-input resize-none w-full text-black block transition-all px-3 text-sm"
+        placeholder="输入关键词搜索"
         type="search"
       />
       <VButton :disabled="!filteredItems.length" size="xs" @click="toggleVisibleItems">

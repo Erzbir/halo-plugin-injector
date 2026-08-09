@@ -1,6 +1,12 @@
 <script lang="ts" setup>
 import { computed } from 'vue'
-import { VButton, vClosePopper, VDropdown, VDropdownItem } from '@halo-dev/components'
+import {
+  IconArrowDown,
+  VButton,
+  vClosePopper,
+  VDropdown,
+  VDropdownItem,
+} from '@halo-dev/components'
 
 type DropdownOption = {
   value: string
@@ -16,6 +22,9 @@ const props = withDefaults(
     disabled?: boolean
     fullWidth?: boolean
     align?: 'start' | 'end'
+    appearance?: 'button' | 'plain'
+    prefix?: string
+    ariaLabel?: string
   }>(),
   {
     placeholder: '',
@@ -23,6 +32,9 @@ const props = withDefaults(
     disabled: false,
     fullWidth: true,
     align: 'start',
+    appearance: 'button',
+    prefix: '',
+    ariaLabel: '',
   },
 )
 
@@ -46,7 +58,19 @@ function handleSelect(value: string) {
 
 <template>
   <VDropdown :placement="placement">
-    <div :class="fullWidth ? ':uno: w-full' : ':uno: block min-w-0'" class=":uno: relative">
+    <button
+      v-if="appearance === 'plain'"
+      :aria-label="ariaLabel || undefined"
+      :disabled="disabled"
+      class=":uno: flex cursor-pointer select-none items-center border-0 bg-transparent p-0 text-sm text-gray-700 hover:text-black disabled:cursor-not-allowed disabled:opacity-60"
+      type="button"
+    >
+      <span class=":uno: mr-0.5 whitespace-nowrap">
+        <template v-if="prefix">{{ prefix }}：</template>{{ currentLabel }}
+      </span>
+      <IconArrowDown class=":uno: h-4 w-4 shrink-0" />
+    </button>
+    <div v-else :class="fullWidth ? ':uno: w-full' : ':uno: block min-w-0'" class=":uno: relative">
       <VButton
         :class="[fullWidth ? ':uno: !w-full !pr-8' : ':uno: !w-full !pr-5']"
         class=":uno: !justify-start !text-left !overflow-hidden"

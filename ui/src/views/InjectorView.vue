@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, getCurrentInstance, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Dialog, VButton, VCard, VPageHeader } from '@halo-dev/components'
+import { Dialog, IconAddCircle, VButton, VCard, VPageHeader } from '@halo-dev/components'
 
 import { MODE_OPTIONS, type ActiveTab, type InjectionRule } from '@/types'
 import { useInjectorData } from './composables/useInjectorData.ts'
@@ -13,6 +13,7 @@ import RelationPanel from './components/RelationPanel.vue'
 import SnippetFormModal from './components/SnippetFormModal.vue'
 import RuleFormModal from './components/RuleFormModal.vue'
 import InjectorTopTabs from './components/InjectorTopTabs.vue'
+import InjectorListToolbar from './components/InjectorListToolbar.vue'
 import InjectorSidebar from './components/InjectorSidebar.vue'
 import BatchOperationPanel from './components/BatchOperationPanel.vue'
 import PluginIcon from '@/components/PluginIcon.vue'
@@ -32,19 +33,19 @@ const snippetStatusFilter = ref('all')
 const ruleStatusFilter = ref('all')
 const ruleModeFilter = ref('all')
 const statusFilterOptions = [
-  { value: 'all', label: '全部状态' },
-  { value: 'enabled', label: '仅已启用' },
-  { value: 'disabled', label: '仅已停用' },
+  { value: 'all', label: '全部' },
+  { value: 'enabled', label: '已启用' },
+  { value: 'disabled', label: '已停用' },
 ]
 const modeFilterOptions = [
-  { value: 'all', label: '全部模式' },
+  { value: 'all', label: '全部' },
   ...MODE_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
 ]
 const sortModeOptions: Array<{ value: SortMode; label: string }> = [
-  { value: 'name-asc', label: '按名称升序' },
-  { value: 'name-desc', label: '按名称降序' },
-  { value: 'createdAt-asc', label: '按创建时间升序' },
-  { value: 'createdAt-desc', label: '按创建时间降序' },
+  { value: 'name-asc', label: '名称升序' },
+  { value: 'name-desc', label: '名称降序' },
+  { value: 'createdAt-asc', label: '创建时间升序' },
+  { value: 'createdAt-desc', label: '创建时间降序' },
 ]
 
 const showSnippetModal = ref(false)
@@ -271,12 +272,12 @@ async function confirmDiscardChanges() {
   })
 }
 
-async function guardWithDiscard(action: () => void) {
+async function guardWithDiscard(action: () => void | Promise<void>) {
   const shouldContinue = await confirmDiscardChanges()
   if (!shouldContinue) return
   if (activeTab.value === 'snippets') revertSnippetAll()
   else revertRuleAll()
-  action()
+  await action()
 }
 
 async function toggleBatchMode() {
@@ -314,6 +315,10 @@ function toggleSelectAll() {
 async function loadMoreActiveItems() {
   if (activeTab.value === 'snippets') await loadMoreSnippets()
   else await loadMoreRules()
+}
+
+async function refreshAll() {
+  await guardWithDiscard(fetchAll)
 }
 
 async function batchEnableSelected() {
@@ -505,12 +510,46 @@ function confirmSaveBeforeStatusChange(
 
     <VPageHeader title="Injector">
       <template #icon><PluginIcon /></template>
+      <template #actions>
+        <VButton size="sm" @click="toggleBatchMode">
+          {{ batchMode ? '退出批量操作' : '批量操作' }}
+        </VButton>
+        <VButton
+          :disabled="batchMode"
+          size="md"
+          type="secondary"
+          @click="activeTab === 'snippets' ? (showSnippetModal = true) : (showRuleModal = true)"
+        >
+          <template #icon><IconAddCircle /></template>
+          新建
+        </VButton>
+      </template>
     </VPageHeader>
 
     <div class=":uno: m-0 md:m-4">
       <VCard :body-class="['injector-view-card-body']" class="injector-view-card">
+        <template #header>
+          <div class=":uno: w-full min-w-0">
+            <InjectorTopTabs :active-tab="activeTab" :tabs="topTabs" @switch="handleSwitchTab" />
+            <InjectorListToolbar
+              :active-tab="activeTab"
+              :active-sort-mode="activeSortMode"
+              :loading="loading"
+              :mode-filter="ruleModeFilter"
+              :mode-filter-options="modeFilterOptions"
+              :search-query="activeSearchQuery"
+              :sort-mode-options="sortModeOptions"
+              :status-filter="activeStatusFilter"
+              :status-filter-options="statusFilterOptions"
+              @refresh="refreshAll"
+              @update:mode-filter="ruleModeFilter = $event as InjectionRule['mode'] | 'all'"
+              @update:search-query="activeSearchQuery = $event"
+              @update:sort-mode="activeSortMode = $event as SortMode"
+              @update:status-filter="activeStatusFilter = $event"
+            />
+          </div>
+        </template>
         <div class=":uno: h-full flex flex-col">
-          <InjectorTopTabs :active-tab="activeTab" :tabs="topTabs" @switch="handleSwitchTab" />
           <div class=":uno: flex-1 min-h-0 overflow-hidden">
             <div class="injector-workspace" :class="{ 'show-mobile-editor': mobileEditorOpen }">
               <InjectorSidebar
@@ -524,36 +563,22 @@ function confirmSaveBeforeStatusChange(
                 :loading-more="activeLoadingMore"
                 :load-error="activeLoadError"
                 :loaded-count="activeLoadedCount"
-                :mode-filter="ruleModeFilter"
-                :mode-filter-options="modeFilterOptions"
                 :rule-preview="rulePreview"
                 :rules="filteredRules"
                 :saving="saving"
-                :search-query="activeSearchQuery"
                 :selected-rule-id="selectedRuleId"
                 :selected-snippet-id="selectedSnippetId"
                 :snippets="filteredSnippets"
-                :sort-mode-options="sortModeOptions"
-                :status-filter="activeStatusFilter"
-                :status-filter-options="statusFilterOptions"
                 :total="activeTotal"
                 @batch-delete="batchDeleteSelected"
                 @batch-disable="batchDisableSelected"
                 @batch-enable="batchEnableSelected"
-                @open-create="
-                  activeTab === 'snippets' ? (showSnippetModal = true) : (showRuleModal = true)
-                "
                 @select-rule="handleSelectRule"
                 @select-snippet="handleSelectSnippet"
                 @load-more="loadMoreActiveItems"
                 @retry="fetchAll"
-                @toggle-batch-mode="toggleBatchMode"
                 @toggle-batch-select="toggleBatchSelect"
                 @toggle-select-all="toggleSelectAll"
-                @update:sort-mode="activeSortMode = $event as SortMode"
-                @update:search-query="activeSearchQuery = $event"
-                @update:status-filter="activeStatusFilter = $event"
-                @update:mode-filter="ruleModeFilter = $event as InjectionRule['mode'] | 'all'"
               />
 
               <div class=":uno: main h-full min-w-0 flex flex-col overflow-hidden">

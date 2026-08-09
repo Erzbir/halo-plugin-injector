@@ -2,7 +2,6 @@
 import { VButton } from '@halo-dev/components'
 import type { ActiveTab } from '@/types'
 import ItemListV from './ItemListV.vue'
-import SelectDropdown from './SelectDropdown.vue'
 
 defineProps<{
   activeTab: ActiveTab
@@ -11,13 +10,6 @@ defineProps<{
   batchMode: boolean
   batchSelectedIds: string[]
   allBatchSelected: boolean
-  sortModeOptions: Array<{ value: string; label: string }>
-  activeSortMode: string
-  searchQuery: string
-  statusFilter: string
-  modeFilter: string
-  statusFilterOptions: Array<{ value: string; label: string }>
-  modeFilterOptions: Array<{ value: string; label: string }>
   snippets: Array<{ id: string; name: string; description?: string; enabled: boolean }>
   rules: Array<{ id: string; name: string; description?: string; enabled: boolean }>
   loadedCount: number
@@ -31,14 +23,8 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:sort-mode', mode: string): void
-  (e: 'update:search-query', query: string): void
-  (e: 'update:status-filter', status: string): void
-  (e: 'update:mode-filter', mode: string): void
   (e: 'load-more'): void
   (e: 'retry'): void
-  (e: 'toggle-batch-mode'): void
-  (e: 'open-create'): void
   (e: 'toggle-select-all'): void
   (e: 'batch-enable'): void
   (e: 'batch-disable'): void
@@ -51,64 +37,6 @@ const emit = defineEmits<{
 
 <template>
   <div class=":uno: aside aside-left h-full flex-none flex flex-col overflow-hidden">
-    <div class=":uno: sticky top-0 z-10 border-b bg-white px-3 py-2 space-y-2 shrink-0">
-      <input
-        :value="searchQuery"
-        aria-label="搜索列表"
-        class=":uno: w-full rounded-md border border-gray-200 px-2.5 py-1.5 text-xs focus:border-primary focus:outline-none"
-        placeholder="搜索名称、ID 或描述"
-        type="search"
-        @input="emit('update:search-query', ($event.target as HTMLInputElement).value)"
-      />
-      <div class=":uno: flex items-center justify-between gap-1.5 min-w-0">
-        <div class=":uno: min-w-0 shrink">
-          <SelectDropdown
-            :model-value="activeSortMode"
-            :options="sortModeOptions"
-            :full-width="false"
-            size="sm"
-            align="end"
-            placeholder="排序"
-            @update:model-value="emit('update:sort-mode', $event)"
-          />
-        </div>
-        <VButton
-          v-if="!batchMode"
-          size="sm"
-          class=":uno: shrink-0"
-          @click="emit('toggle-batch-mode')"
-          >批量操作</VButton
-        >
-        <VButton v-else size="sm" class=":uno: shrink-0" @click="emit('toggle-batch-mode')"
-          >退出批量操作</VButton
-        >
-        <VButton
-          :disabled="batchMode"
-          size="sm"
-          type="secondary"
-          class=":uno: shrink-0"
-          @click="emit('open-create')"
-          >新建</VButton
-        >
-      </div>
-      <div class=":uno: grid grid-cols-2 gap-1.5">
-        <SelectDropdown
-          :model-value="statusFilter"
-          :options="statusFilterOptions"
-          size="xs"
-          @update:model-value="emit('update:status-filter', $event)"
-        />
-        <SelectDropdown
-          v-if="activeTab === 'rules'"
-          :model-value="modeFilter"
-          :options="modeFilterOptions"
-          size="xs"
-          @update:model-value="emit('update:mode-filter', $event)"
-        />
-        <span v-else />
-      </div>
-    </div>
-
     <div v-if="loading && !loadedCount" class=":uno: space-y-3 p-4" aria-label="正在加载列表">
       <div v-for="index in 5" :key="index" class=":uno: animate-pulse space-y-2">
         <div class=":uno: h-4 w-3/4 rounded bg-gray-200" />

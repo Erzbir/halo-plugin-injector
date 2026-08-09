@@ -48,7 +48,9 @@
   }
 
   .injector-editor-container {
-    input, textarea, select {
+    input,
+    textarea,
+    select {
       border-radius: 0.375rem;
       border: 1px solid rgb(229, 231, 235);
 
@@ -104,6 +106,7 @@
 }
 
 .injector-view-card-body {
-  height: 100% !important;
+  min-height: 0;
+  flex: 1;
   padding: 0 !important;
 }

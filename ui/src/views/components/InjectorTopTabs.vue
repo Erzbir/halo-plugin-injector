@@ -13,8 +13,8 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class=":uno: h-12 shrink-0 border-b bg-gray-100 px-4">
-    <div class=":uno: h-full flex items-center gap-2">
+  <div class=":uno: h-12 shrink-0 border-b bg-white px-4 overflow-hidden">
+    <div class=":uno: h-full flex items-center gap-2 min-w-0">
       <VTabbar
         :active-id="activeTab"
         :items="tabs"
