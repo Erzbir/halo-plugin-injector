@@ -287,13 +287,10 @@ export function useInjectorData() {
     saving.value = true
     try {
       await snippetApi.update(persisted.id, { ...persisted, enabled })
-      setSnippetsItems(
-        snippets.value.map((snippet) =>
-          snippet.id === persisted.id ? { ...snippet, enabled } : snippet,
-        ),
-      )
+      await fetchAll()
       editSnippet.value = { ...editSnippet.value, enabled }
       if (originalSnippet.value) originalSnippet.value = { ...originalSnippet.value, enabled }
+      await fetchAll()
       refreshDirty()
     } catch (error) {
       Toast.error(apiErrorMessage(error, '更新代码片段状态失败'))
@@ -310,9 +307,7 @@ export function useInjectorData() {
     saving.value = true
     try {
       await ruleApi.update(persisted.id, { ...persisted, enabled })
-      setRulesItems(
-        rules.value.map((rule) => (rule.id === persisted.id ? { ...rule, enabled } : rule)),
-      )
+      await fetchAll()
       editRule.value = { ...editRule.value, enabled }
       if (originalRule.value) originalRule.value = { ...originalRule.value, enabled }
       refreshDirty()
