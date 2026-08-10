@@ -1,12 +1,5 @@
 <script lang="ts" setup>
-import {
-  VButton,
-  vClosePopper,
-  VDropdown,
-  VDropdownItem,
-  VSpace,
-  VSwitch,
-} from '@halo-dev/components'
+import { VButton, VSpace, VSwitch } from '@halo-dev/components'
 
 defineProps<{
   title: string
@@ -58,12 +51,7 @@ const emit = defineEmits<{
       <VButton :disabled="!dirty || saving" size="sm" type="primary" @click="emit('save')">
         {{ saving ? '保存中...' : '保存' }}
       </VButton>
-      <VDropdown placement="bottom-end">
-        <VButton size="sm">更多</VButton>
-        <template #popper>
-          <VDropdownItem v-close-popper type="danger" @click="emit('delete')"> 删除 </VDropdownItem>
-        </template>
-      </VDropdown>
+      <VButton size="sm" type="danger" @click="emit('delete')">删除</VButton>
     </VSpace>
   </div>
 </template>
