@@ -11,6 +11,5 @@ defineProps<{ enabled: boolean }>()
     role="status"
   >
     <VStatusDot :state="enabled ? 'success' : 'default'" aria-hidden="true" />
-    <span>{{ enabled ? '已启用' : '已停用' }}</span>
   </span>
 </template>

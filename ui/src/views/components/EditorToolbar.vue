@@ -53,7 +53,6 @@ const emit = defineEmits<{
           :model-value="enabled"
           @update:model-value="emit('set-enabled', $event)"
         />
-        {{ enabled ? '已启用' : '已停用' }}
       </label>
       <VButton :disabled="!dirty || saving" size="sm" @click="emit('revert-all')">撤销全部</VButton>
       <VButton :disabled="!dirty || saving" size="sm" type="primary" @click="emit('save')">
