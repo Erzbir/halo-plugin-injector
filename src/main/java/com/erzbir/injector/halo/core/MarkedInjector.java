@@ -8,9 +8,6 @@ public interface MarkedInjector<RETURN, TARGET, CONTEXT> extends Injector<RETURN
 
     @Override
     default String processCode(String code) {
-        if (code.startsWith(START_MARK) && code.endsWith(END_MARK)) {
-            return code;
-        }
         return START_MARK + code + END_MARK;
     }
 }

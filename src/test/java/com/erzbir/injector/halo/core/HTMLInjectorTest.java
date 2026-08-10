@@ -21,16 +21,6 @@ class HTMLInjectorTest {
     }
 
     @Test
-    void shouldKeepInputUnchanged_whenCodeContainsCommentMarkers() {
-        HTMLInjector injector = (target, code, rule, context) -> target.html();
-        String wrapped = "<!-- PluginInjector start --><script>x</script><!-- PluginInjector end -->";
-
-        String result = injector.processCode(wrapped);
-
-        assertEquals(wrapped, result);
-    }
-
-    @Test
     void shouldReturnInjectedValue_whenImplementationIsIdentity() {
         HTMLInjector injector = (target, code, rule, context) -> target.html();
         Document document = new Document("");
